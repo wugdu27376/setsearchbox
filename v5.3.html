@@ -1,0 +1,432 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>搜索Easy V5.3</title>
+    
+<style> 
+body{text-align:center} 
+</style>
+
+<p><strong>
+
+<body>
+<a href="javascript:void(0)" id="85727544071588039023" style="font-size: 30px;">Baidu.com</a>
+</body>
+
+</strong>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex; /* 使用flex布局让输入框和按钮同行 */
+        }
+        
+        #engineSelect {
+            min-width: 75px;
+            width: 15%;
+            max-width: 15%;
+            user-select: none;
+        }
+        
+        #urlInput {
+            flex: 1; /* 输入框占据剩余空间 */
+        }
+        
+        #submitBtn {
+            margin-left: 3px; /* 按钮与输入框间距 */
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        #autoFillhttps input[type="checkbox"] {
+            margin: 0; /* 移除默认外边距 */
+            vertical-align: middle; /* 垂直对齐 */
+        }
+
+        #autoFillhttps label {
+            margin: 0; /* 移除默认外边距 */
+            vertical-align: middle; /* 垂直对齐 */
+            margin-right: 7px;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <select id="engineSelect" style="height: 24px;">
+        <optgroup label="搜索引擎">
+            <option value="baidu">百度</option>
+            <option value="google">谷歌</option>
+            <option value="bing">必应</option>
+            <option value="sogou">搜狗</option>
+            <option value="so">360搜索</option>
+            <option value="yandex">Yandex</option>
+            <option value="duckduckgo">DuckDuckGo</option>
+            <optgroup label="网页">
+            <option value="autofillHttp1">Http网页</option>
+            <option value="autofillHttps">Https网页</option>
+            <option value="newtabpageHttp1">新建标签页(Http)</option>
+            <option value="newtabpageHttps">新建标签页(Https)</option>
+            <optgroup label="手机搜索">
+            <option value="sodouyinM" id="douyinOption">抖音搜索</option>
+            <option value="yzmsmM" id="shenmaOption">神马搜索</option>
+            <option value="sotoutiaoM" id="toutiaoOption">头条搜索</option>
+            <option value="baiduMEasy" id="baidueasyOption">百度精简版</option>
+            <optgroup label="AI搜索">
+            <option value="metasosuoAI">秘塔搜索</option>
+            <option value="baiduAI" id="baiduaiOption">百度AI</option>
+            <option value="360namisoAI">360纳米AI</option>
+            <optgroup label="其他">
+            <option value="githubCode">Github</option>
+            <option value="baiduTw" id="baidutwOption">Baidu</option>
+            <option value="biliTv" id="bilibiliOption">BiliBili</option>
+            <option value="showCheckbox" id="autoFillhttpsCheckbox">工具</option>
+        </select>
+        <input type="search" id="urlInput" placeholder="输入网址" style="height: 24px;">
+        <input type="submit" style="height: 24px;" value="跳转" id="submitBtn">
+    </div>
+    
+    <div id="autoFillhttps" style="display: none; text-align: center; margin-top: 10px;">
+        <input type="checkbox" id="customCheckbox">
+            <label for="customCheckbox" style="user-select: none;">自动填充Https</label>
+        <input type="checkbox" id="focusCheckbox">
+            <label for="focusCheckbox" style="user-select: none;">输入时聚焦</label>
+            <br/>
+        <input type="checkbox" id="layoutCheckbox">
+            <label for="layoutCheckbox" style="user-select: none;">居中布局</label>
+    </div>
+
+    <script>
+    // 检测是否为电脑端
+        function isDesktop() {
+            return !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        function isDesktopMove() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        // 页面加载时恢复保存的选择
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedEngine = localStorage.getItem('selectedEngine');
+            if (savedEngine) {
+                document.getElementById('engineSelect').value = savedEngine;
+            }
+        });
+        
+        // 如果是电脑端，禁用移动搜索选项
+            if (isDesktop()) {
+                document.getElementById('douyinOption').disabled = true;
+                document.getElementById('shenmaOption').disabled = true;
+                document.getElementById('toutiaoOption').disabled = true;
+                document.getElementById('baidueasyOption').disabled = true;
+            }
+            
+            if (isDesktopMove()) {
+                document.getElementById('baiduaiOption').disabled = true;
+                document.getElementById('baidutwOption').disabled = true;
+                document.getElementById('bilibiliOption').disabled = true;
+            }
+
+        // 监听选择变化并保存
+        document.getElementById('engineSelect').addEventListener('change', function() {
+            localStorage.setItem('selectedEngine', this.value);
+        });
+
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            let url = document.getElementById('urlInput').value.trim();
+            const engine = document.getElementById('engineSelect').value;
+            
+            document.getElementById('autoFillhttpsCheckbox').disabled = 'true';
+            
+            // 保存当前选择
+            localStorage.setItem('selectedEngine', engine);
+            
+            if(url && !url.includes('://')) {
+                // 根据选择的搜索引擎构建搜索URL
+                switch(engine) {
+                    case 'baidu':
+                        url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+                        break;
+                    case 'google':
+                        url = 'https://www.google.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'bing':
+                        url = 'https://www.bing.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'sogou':
+                        url = 'https://www.sogou.com/web?query=' + encodeURIComponent(url);
+                        break;
+                    case 'so':
+                        url = 'https://www.so.com/s?q=' + encodeURIComponent(url);
+                        break;
+                    case 'yandex':
+                        url = 'https://yandex.com/search/?text=' + encodeURIComponent(url);
+                        break;
+                    case 'autofillHttp1':
+                        // 自动填充http://前缀
+                        url = 'http://' + url;
+                        break;
+                    case 'autofillHttps':
+                        // 自动填充https://前缀
+                        url = 'https://' + url;
+                        break;
+                    case 'newtabpageHttp1':
+                        // 新建标签页处理
+                        if (url) {
+                            // 如果没有协议前缀，添加http://
+                            if (!url.includes('://')) {
+                                url = 'http://' + url;
+                            }
+                            window.open(url, '_blank');
+                            return; // 直接返回，不执行下面的跳转
+                        }
+                        break;
+                        case 'newtabpageHttps':
+                        // 新建标签页处理
+                        if (url) {
+                            // 如果没有协议前缀，添加https://
+                            if (!url.includes('://')) {
+                                url = 'https://' + url;
+                            }
+                            window.open(url, '_blank');
+                            return; // 直接返回，不执行下面的跳转
+                        }
+                        break;
+                    case 'duckduckgo':
+                        url = 'https://duckduckgo.com/?q=' + encodeURIComponent(url);
+                        break;
+                    case 'sodouyinM':
+                        url = 'https://so.douyin.com/s?keyword=' + encodeURIComponent(url);
+                        break;
+                    case 'yzmsmM':
+                        url = 'https://yz.m.sm.cn/s?q=' + encodeURIComponent(url);
+                        break;
+                    case 'sotoutiaoM':
+                        url = 'https://so.toutiao.com/search?keyword=' + encodeURIComponent(url);
+                        break;
+                    case 'baiduMEasy':
+                        url = 'https://m.baidu.com/from=1030335w/pu=sz%401321_1001/s?word=' + encodeURIComponent(url);
+                        break;
+                    case 'metasosuoAI':
+                        url = 'https://metaso.cn/?s=nyzav&referrer_s=nyzav&q=' + encodeURIComponent(url);
+                        break;
+                    case 'baiduAI':
+                        url = 'https://chat.baidu.com/search?word=' + encodeURIComponent(url);
+                        break;
+                    case '360namisoAI':
+                        url = 'https://www.n.cn/?src=360ai_so&s_type=l&q=' + encodeURIComponent(url);
+                        break;
+                    case 'githubCode':
+                        url = 'https://github.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'baiduTw':
+                        url = 'https://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(url);
+                        break;
+                    case 'biliTv':
+                        url = 'http://search.bilibili.com/all?keyword=' + encodeURIComponent(url);
+                        break;
+                    case 'showCheckbox':
+                        url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+                        break;
+                }
+            } else if(url) {
+                // 如果包含://，直接使用输入的URL
+                // 无需修改
+            }
+            
+            if(url) {
+                // 对于新建标签页选项，如果输入为空则不执行任何操作
+                if (engine === 'newtabpage' && !url) {
+                    return;
+                }
+                window.location.href = url;
+            }
+        });
+        
+        // 监听选择变化并保存
+        document.getElementById('engineSelect').addEventListener('change', function() {
+            localStorage.setItem('selectedEngine', this.value);
+            // 新增：根据选择显示或隐藏 checkbox
+            if (this.value === 'showCheckbox') {
+                document.getElementById('autoFillhttps').style.display = 'block';
+                document.getElementById('autoFillhttpsCheckbox').style.display = 'none';
+                document.getElementById('autoFillhttpsCheckbox').disabled = 'true';
+            } else {
+                document.getElementById('autoFillhttps').style.display = 'none';
+            }
+        });
+        
+        document.getElementById('engineSelect').addEventListener('change', function() {
+            localStorage.setItem('selectedEngine', this.value);
+            // 新增：根据选择显示或隐藏 checkbox
+            if (this.value === 'showCheckbox') {
+                document.getElementById('autoFillhttps').style.display = 'block';
+                const savedLayoutState = localStorage.getItem('layoutChecked');
+                if (savedLayoutState === 'true') {
+                    applyLayoutStyle(true);
+                }
+                // 如果复选框已勾选，自动填充 https://
+                if (document.getElementById('customCheckbox').checked) {
+                    document.getElementById('autoFillhttpsCheckbox').style.display = 'none';
+                    document.getElementById('autoFillhttpsCheckbox').disabled = 'true';
+                }
+            } else {
+                document.getElementById('autoFillhttps').style.display = 'none';
+                document.getElementById('autoFillhttpsCheckbox').disabled = 'true';
+                const savedLayoutState = localStorage.getItem('layoutChecked');
+                if (savedLayoutState !== 'true') {
+                    applyLayoutStyle(false);
+                }
+            }
+        });
+        
+        // 新增：显示/隐藏focusCheckbox
+        document.getElementById('engineSelect').addEventListener('change', function() {
+            localStorage.setItem('selectedEngine', this.value);
+            if (this.value === 'showCheckbox') {
+                document.getElementById('autoFillhttps').style.display = 'block';
+                document.getElementById('autoFillhttpsCheckbox').style.display = 'none';
+                document.getElementById('autoFillhttpsCheckbox').disabled = 'true';
+            } else {
+                document.getElementById('autoFillhttps').style.display = 'none';
+            }
+        });
+        
+        // 新增：保存和加载focusCheckbox状态
+        const savedFocusCheckboxState = localStorage.getItem('focusCheckboxChecked');
+        if (savedFocusCheckboxState === 'true') {
+            document.getElementById('focusCheckbox').checked = true;
+        }
+
+        // 新增：监听focusCheckbox变化
+        document.getElementById('focusCheckbox').addEventListener('change', function() {
+            localStorage.setItem('focusCheckboxChecked', this.checked);
+        });
+        
+        // 新增：只有在focusCheckbox勾选时才添加focus/blur事件
+        if (localStorage.getItem('focusCheckboxChecked') === 'true') {
+            document.getElementById('urlInput').addEventListener('focus', function() {
+                document.body.classList.add('focused');
+                document.querySelector('.search-container').classList.add('focused');
+            });
+            
+            document.getElementById('urlInput').addEventListener('blur', function() {
+            // 添加延迟恢复
+                setTimeout(() => {
+                    document.body.classList.remove('focused');
+                    document.querySelector('.search-container').classList.remove('focused');
+                }, 100);
+            });
+        }
+        
+        // 新增：动态添加CSS样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .search-container.focused {
+                position: fixed;
+                top: 10px;
+                left: 0;
+                right: 0;
+                width: 85%;
+                z-index: 1000;
+                margin: 0 auto;
+                background: white;
+            }
+            
+            body.focused #autoFillhttps,
+            body.focused a {
+                display: none !important;
+            }
+            
+            body.focused #engineSelect {
+                opacity: 0;
+                width: 0;
+                min-width: 0;
+                margin: 0;
+                padding: 0;
+                border: none;
+                overflow: hidden;
+            }`;
+        document.head.appendChild(style);
+        
+        // 新增：监听布局复选框状态变化
+        document.getElementById('layoutCheckbox').addEventListener('change', function() {
+            localStorage.setItem('layoutChecked', this.checked);
+            applyLayoutStyle(this.checked);
+        });
+        
+        // 应用布局样式函数
+        function applyLayoutStyle(checked) {
+            if (checked) {
+                document.body.style.textAlign = 'center';
+                document.body.style.position = 'relative';
+                document.body.style.top = '25%';
+                document.body.style.height = '50%';
+            } else {
+                document.body.style.textAlign = '';
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.height = '';
+            }
+        }
+
+        // 新增：加载保存的布局复选框状态
+        const savedLayoutState = localStorage.getItem('layoutChecked');
+        if (savedLayoutState === 'true') {
+            document.getElementById('layoutCheckbox').checked = true;
+            applyLayoutStyle(true);
+        }
+        
+        // 新增：监听复选框状态变化
+        document.getElementById('customCheckbox').addEventListener('change', function() {
+            localStorage.setItem('autoFillHttpsChecked', this.checked);
+            if (this.checked) {
+                document.getElementById('urlInput').value = 'https://';
+            } else {
+                document.getElementById('urlInput').value = '';
+            }
+        });
+        
+        const savedEngine = localStorage.getItem('selectedEngine');
+            if (savedEngine) {
+            document.getElementById('engineSelect').value = savedEngine;
+        }
+
+        // 新增：加载保存的复选框状态
+        const savedCheckboxState = localStorage.getItem('autoFillHttpsChecked');
+        if (savedCheckboxState === 'true') {
+            document.getElementById('customCheckbox').checked = true;
+            // 如果勾选，自动填充 https:// 到输入框
+            document.getElementById('urlInput').value = 'https://';
+        }
+        
+        document.getElementById('85727544071588039023').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // 检查是否已经点击过
+            if (!localStorage.getItem('36156798756549916136')) {
+                alert('如果你认为这是可以跳转到百度的链接的话那你就错了');
+                localStorage.setItem('36156798756549916136', 'true');
+                document.getElementById('autoFillhttpsCheckbox').disabled = 'true';
+            }
+        });
+        
+        // 支持按Enter键提交
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if(e.key === 'Enter') {
+                document.getElementById('submitBtn').click();
+                if (this.value.trim() !== '') {
+                    this.blur();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

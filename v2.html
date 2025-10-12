@@ -1,0 +1,104 @@
+
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索Easy V2</title>
+    
+<style> 
+body{text-align:center} 
+</style>
+
+<p><strong>
+
+<a href="https://baidu.com"style="font-size: 30px;">Baidu.com</a>
+
+</strong>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex; /* 使用flex布局让输入框和按钮同行 */
+        }
+        
+        #engineSelect {
+            max-width: 72px;
+            margin: 0 auto;
+        }
+        
+        #urlInput {
+            flex: 1; /* 输入框占据剩余空间 */
+        }
+        
+        #submitBtn {
+            margin-left: 3px; /* 按钮与输入框间距 */
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <select id="engineSelect">
+            <option value="baidu">百度</option>
+            <option value="google">谷歌</option>
+            <option value="bing">必应</option>
+            <option value="sogou">搜狗</option>
+            <option value="so">360搜索</option>
+            <option value="yandex">Yandex</option>
+        </select>
+        <input type="search" id="urlInput" placeholder="输入网址">
+        <button id="submitBtn">跳转</button>
+    </div>
+
+    <script>
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            let url = document.getElementById('urlInput').value.trim();
+            const engine = document.getElementById('engineSelect').value;
+            
+            if(url && !url.includes('://')) {
+                // 根据选择的搜索引擎构建搜索URL
+                switch(engine) {
+                    case 'baidu':
+                        url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+                        break;
+                    case 'google':
+                        url = 'https://www.google.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'bing':
+                        url = 'https://www.bing.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'sogou':
+                        url = 'https://www.sogou.com/web?query=' + encodeURIComponent(url);
+                        break;
+                    case 'so':
+                        url = 'https://www.so.com/s?q=' + encodeURIComponent(url);
+                        break;
+                    case 'yandex':
+                        url = 'https://yandex.com/search/?text=' + encodeURIComponent(url);
+                        break;
+                }
+            } else if(url) {
+                // 如果包含://，直接使用输入的URL
+                // 无需修改
+            }
+            
+            if(url) {
+                window.location.href = url;
+            }
+        });
+        
+        // 支持按Enter键提交
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if(e.key === 'Enter') {
+                document.getElementById('submitBtn').click();
+            }
+        });
+    </script>
+</body>
+</html>

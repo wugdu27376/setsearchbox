@@ -1,0 +1,183 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>搜索Easy V4</title>
+    
+<style> 
+body{text-align:center} 
+</style>
+
+<p><strong>
+
+<body>
+<a href="javascript:void(0)"style="font-size: 30px;">Baidu.com</a>
+</body>
+
+</strong>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex; /* 使用flex布局让输入框和按钮同行 */
+        }
+        
+        #engineSelect {
+            max-width: 72px;
+            margin: 0 auto;
+        }
+        
+        #urlInput {
+            flex: 1; /* 输入框占据剩余空间 */
+        }
+        
+        #submitBtn {
+            margin-left: 3px; /* 按钮与输入框间距 */
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <select id="engineSelect">
+        <optgroup label="搜索">
+            <option value="baidu">百度</option>
+            <option value="google">谷歌</option>
+            <option value="bing">必应</option>
+            <option value="sogou">搜狗</option>
+            <option value="so">360搜索</option>
+            <option value="yandex">Yandex</option>
+            <option value="duckduckgo">DuckDuckGo</option>
+            <optgroup label="网页">
+            <option value="autofillHttp1">Http网页</option>
+            <option value="autofillHttps">Https网页</option>
+            <option value="newtabpageHttp1">新建标签页(Http)</option>
+            <option value="newtabpageHttps">新建标签页(Https)</option>
+            <optgroup label="手机搜索">
+            <option value="sodouyinM">抖音搜索</option>
+            <option value="yzmsmM">神马搜索</option>
+            <option value="sotoutiaoM">头条搜索</option>
+            <optgroup label="AI搜索">
+            <option value="metasosuo">秘塔搜索</option>
+        </select>
+        <input type="search" id="urlInput" placeholder="输入网址">
+        <button id="submitBtn">跳转</button>
+    </div>
+
+    <script>
+        // 页面加载时恢复保存的选择
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedEngine = localStorage.getItem('selectedEngine');
+            if (savedEngine) {
+                document.getElementById('engineSelect').value = savedEngine;
+            }
+        });
+
+        // 监听选择变化并保存
+        document.getElementById('engineSelect').addEventListener('change', function() {
+            localStorage.setItem('selectedEngine', this.value);
+        });
+
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            let url = document.getElementById('urlInput').value.trim();
+            const engine = document.getElementById('engineSelect').value;
+            
+            // 保存当前选择
+            localStorage.setItem('selectedEngine', engine);
+            
+            if(url && !url.includes('://')) {
+                // 根据选择的搜索引擎构建搜索URL
+                switch(engine) {
+                    case 'baidu':
+                        url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+                        break;
+                    case 'google':
+                        url = 'https://www.google.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'bing':
+                        url = 'https://www.bing.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'sogou':
+                        url = 'https://www.sogou.com/web?query=' + encodeURIComponent(url);
+                        break;
+                    case 'so':
+                        url = 'https://www.so.com/s?q=' + encodeURIComponent(url);
+                        break;
+                    case 'yandex':
+                        url = 'https://yandex.com/search/?text=' + encodeURIComponent(url);
+                        break;
+                    case 'autofillHttp1':
+                        // 自动填充http://前缀
+                        url = 'http://' + url;
+                        break;
+                    case 'autofillHttps':
+                        // 自动填充https://前缀
+                        url = 'https://' + url;
+                        break;
+                    case 'newtabpageHttp1':
+                        // 新建标签页处理
+                        if (url) {
+                            // 如果没有协议前缀，添加http://
+                            if (!url.includes('://')) {
+                                url = 'http://' + url;
+                            }
+                            window.open(url, '_blank');
+                            return; // 直接返回，不执行下面的跳转
+                        }
+                        break;
+                        case 'newtabpageHttps':
+                        // 新建标签页处理
+                        if (url) {
+                            // 如果没有协议前缀，添加https://
+                            if (!url.includes('://')) {
+                                url = 'https://' + url;
+                            }
+                            window.open(url, '_blank');
+                            return; // 直接返回，不执行下面的跳转
+                        }
+                        break;
+                    case 'duckduckgo':
+                        url = 'https://duckduckgo.com/?q=' + encodeURIComponent(url);
+                        break;
+                    case 'sodouyinM':
+                        url = 'https://so.douyin.com/s?keyword=' + encodeURIComponent(url);
+                        break;
+                    case 'yzmsmM':
+                        url = 'https://yz.m.sm.cn/s?q=' + encodeURIComponent(url);
+                        break;
+                    case 'sotoutiaoM':
+                        url = 'https://so.toutiao.com/search?keyword=' + encodeURIComponent(url);
+                        break;
+                    case 'metasosuo':
+                        url = 'https://metaso.cn/?s=nyzav&referrer_s=nyzav&q=' + encodeURIComponent(url);
+                        break;
+                }
+            } else if(url) {
+                // 如果包含://，直接使用输入的URL
+                // 无需修改
+            }
+            
+            if(url) {
+                // 对于新建标签页选项，如果输入为空则不执行任何操作
+                if (engine === 'newtabpage' && !url) {
+                    return;
+                }
+                window.location.href = url;
+            }
+        });
+        
+        // 支持按Enter键提交
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if(e.key === 'Enter') {
+                document.getElementById('submitBtn').click();
+            }
+        });
+    </script>
+</body>
+</html>

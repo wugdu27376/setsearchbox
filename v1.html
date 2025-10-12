@@ -1,0 +1,70 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索Easy</title>
+    
+<style> 
+body{text-align:center} 
+</style>
+
+<p><strong>
+
+<a href="https://baidu.com"style="font-size: 30px;">Baidu.com</a>
+
+</strong>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .search-container {
+            width: 86%;
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex; /* 使用flex布局让输入框和按钮同行 */
+        }
+        
+        #urlInput {
+            flex: 1; /* 输入框占据剩余空间 */
+        }
+        
+        #submitBtn {
+            margin-left: 5px; /* 按钮与输入框间距 */
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <input type="search" id="urlInput" placeholder="输入网址">
+        <button id="submitBtn">跳转</button>
+    </div>
+
+    <script>
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            let url = document.getElementById('urlInput').value.trim();
+            
+            if(url && !url.includes('://')) {
+                url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+            } else if(url) {
+                // 如果包含://，直接使用输入的URL
+                // 无需修改
+            }
+            
+            if(url) {
+                window.location.href = url;
+            }
+        });
+        
+        // 支持按Enter键提交
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if(e.key === 'Enter') {
+                document.getElementById('submitBtn').click();
+            }
+        });
+    </script>
+</body>
+</html>
