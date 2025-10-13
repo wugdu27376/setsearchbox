@@ -1,1 +1,1 @@
-# seteasy683583sech-github.github.io
+# seteasy683583sech.go.github.io
