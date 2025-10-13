@@ -59,7 +59,7 @@
             margin-bottom: 3px;
         }
         
-        #linkNameValue {
+        #linkNameValue, #linkColorValue {
             display: inline-block;
             max-width: 100px;
             overflow: hidden;
@@ -67,6 +67,14 @@
             white-space: nowrap;
             vertical-align: bottom;
             margin-bottom: 2.3px;
+        }
+        #colorValue {
+            display: inline-block;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: -4.1px;
         }
         
         @media (min-width: 768px) {
@@ -712,7 +720,7 @@
         // 链接颜色控制
         document.querySelector('label[for="linkColorPicker"]').addEventListener('click', function() {
             const currentColor = localStorage.getItem('linkColor') || '#0000ee';
-            const newColor = prompt('请输入链接颜色值（如 #0000ee 或 red）：', currentColor);
+            const newColor = prompt('请输入链接颜色值（如 #0000ee 或 red）\n或者rgba(255,255,255,1.0)，rgb(255,255,255) ：', currentColor);
             
             if (newColor !== null) { // 用户没有点击取消
                 if (newColor === '') {
@@ -722,7 +730,7 @@
                     linkElement.style.color = defaultColor;
                     document.getElementById('linkColorValue').textContent = defaultColor;
                     localStorage.setItem('linkColor', defaultColor);
-                } else if (/^#([0-9A-F]{6})$/i.test(newColor) || /^[a-z]+$/i.test(newColor)) {
+                } else if (/^#([0-9A-F]{3,6})$/i.test(newColor) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newColor) || /^[a-z]+$/i.test(newColor)) {
                     const linkElement = document.getElementById('85727544071588039023');
                     linkElement.style.color = newColor;
                     document.getElementById('linkColorValue').textContent = newColor;
@@ -1072,7 +1080,7 @@
         // 点击label触发颜色输入提示
         document.querySelector('label[for="bgColorPicker"]').addEventListener('click', function() {
             const currentColor = localStorage.getItem('backgroundColor') || '#ffffff';
-            const newColor = prompt('请输入颜色值（如 #ffffff 或 red）：', currentColor);
+            const newColor = prompt('请输入颜色值（如 #ffffff 或 red）\n或者rgba(255,255,255,1.0)，rgb(255,255,255) ：', currentColor);
             
             if (newColor !== null) { // 用户没有点击取消
                 if (newColor === '') {
@@ -1082,7 +1090,7 @@
                     document.getElementById('searchContainer').style.background = defaultColor;
                     document.getElementById('colorValue').textContent = defaultColor;
                     localStorage.setItem('backgroundColor', defaultColor);
-                } else if (/^#([0-9A-F]{6})$/i.test(newColor) || /^[a-z]+$/i.test(newColor)) {
+                } else if (/^#([0-9A-F]{3,6})$/i.test(newColor) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newColor) || /^[a-z]+$/i.test(newColor)) {
                     document.body.style.backgroundColor = newColor;
                     document.getElementById('searchContainer').style.background = newColor;
                     document.getElementById('colorValue').textContent = newColor;
