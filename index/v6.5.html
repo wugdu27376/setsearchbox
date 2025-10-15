@@ -7,7 +7,7 @@
 <p><strong>
 
 <body>
-<a href="javascript:void(0)" id="85727544071588039023" style="font-size: 30px;">Baidu.com</a>
+<a href="javascript:void(0)" id="85727544071588039023" class="link-85727544071588039023" style="font-size: 30px;">Baidu.com</a>
 </body>
 
 </strong>
@@ -310,6 +310,9 @@
                         const previousEngine = localStorage.getItem('previousEngine') || 'baidu';
                         this.value = previousEngine;
                         document.getElementById('linkCreatorPanel').style.display = 'none';
+                        if (document.getElementById('engineSelect').value === 'showCheckbox') {
+                        updateQuickLinks();
+                        }
                         localStorage.setItem('selectedEngine', previousEngine);
                         if (isDesktopMove()) {
                             if (this.value === 'baiduTw' || 
@@ -325,10 +328,22 @@
                         localStorage.setItem('customSearchUrl', newCustomSearchUrl);
                         showCustomSearchButton();
                     } else {
-                        // 网址格式不正确，恢复之前的选择
+                        // 用户点击取消，恢复之前的选择
                         const previousEngine = localStorage.getItem('previousEngine') || 'baidu';
                         this.value = previousEngine;
+                        document.getElementById('linkCreatorPanel').style.display = 'none';
+                        if (document.getElementById('engineSelect').value === 'showCheckbox') {
+                        updateQuickLinks();
+                        }
                         localStorage.setItem('selectedEngine', previousEngine);
+                        if (isDesktopMove()) {
+                            if (this.value === 'baiduTw' || 
+                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
+                            document.getElementById('submitBtn').disabled = true;
+                        } else {
+                            document.getElementById('submitBtn').disabled = false;
+                            }
+                        }
                         return;
                     }
                 } else {
@@ -707,6 +722,10 @@
                     linkElement.style.color = newColor;
                     document.getElementById('linkColorValue').textContent = newColor;
                     localStorage.setItem('linkColor', newColor);
+                    // 添加链接激活状态样式
+                    const linkStyle = document.createElement('style');
+                    linkStyle.textContent = `a:active.link-85727544071588039023 { color: #ff0000 !important; }`;
+                    document.head.appendChild(linkStyle);
                 }
             }
         });
@@ -717,6 +736,10 @@
             const linkElement = document.getElementById('85727544071588039023');
             linkElement.style.color = savedLinkColor;
             document.getElementById('linkColorValue').textContent = savedLinkColor;
+            // 添加链接激活状态样式
+            const linkStyle = document.createElement('style');
+            linkStyle.textContent = `a:active.link-85727544071588039023 { color: #ff0000 !important; }`;
+            document.head.appendChild(linkStyle);
         }
         
         // 添加重命名功能
