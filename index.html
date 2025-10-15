@@ -121,11 +121,12 @@
             <option value="mcTranslator">必应翻译</option>
             <option value="yandexTranslate">Yandex翻译</option>
             <option value="sogouFanyi">搜狗翻译</option>
-            <option value="oldBaiduFanyi" id="baiduFanyi">百度翻译</option>
+            <option value="oldBaiduFanyi" id="baiduFanyiOption">百度翻译</option>
             <option value="fanyiSo">360翻译</option>
             <option value="deeplTranslator">Deepl翻译</option>
             <option value="volcTranslate">火山翻译</option>
             <option value="nowTsAi">在线翻译</option>
+            <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
             <option value="youdaoFanyi">有道词典</option>
             <optgroup label="其他">
             <option value="githubCode">Github</option>
@@ -280,7 +281,7 @@
             }
             if (isDesktopMove()) {
                 if (savedEngine === 'baiduTw' || 
-                    savedEngine === 'biliTv' || savedEngine === 'quarkpcAI' || savedEngine === 'showCheckbox') {
+                    savedEngine === 'biliTv' || savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'showCheckbox') {
                     document.getElementById('submitBtn').disabled = true;
                 }
             }
@@ -313,13 +314,14 @@
                 document.getElementById('shenmaOption').disabled = true;
                 document.getElementById('toutiaoOption').disabled = true;
                 document.getElementById('baidueasyOption').disabled = true;
-                document.getElementById('baiduFanyi').disabled = true;
+                document.getElementById('baiduFanyiOption').disabled = true;
             }
             
             if (isDesktopMove()) {
                 document.getElementById('quarkaiOption').disabled = true;
                 document.getElementById('baidutwOption').disabled = true;
                 document.getElementById('bilibiliOption').disabled = true;
+                document.getElementById('tencentFanyi2').style.display = 'none';
             }
 
         document.getElementById('submitBtn').addEventListener('click', function() {
@@ -449,6 +451,9 @@
                     case 'volcTranslate':
                         url = 'https://translate.volcengine.com/mobile?text=' + encodeURIComponent(url) + '&source_language=detect&target_language=zh&from=douyin';
                         break;
+                    case 'transmartQQTs':
+                        url = 'https://transmart.qq.com/zh-CN/index?sourcelang=auto&targetlang=zh&source=' + encodeURIComponent(url);
+                        break;
                     case 'nowTsAi':
                         url = 'https://www.aitranslatenow.com/zh/translate/en/zh#sourceText=' + encodeURIComponent(url);
                         break;
@@ -548,7 +553,7 @@
             }
             if (isDesktopMove()) {
                 if (this.value === 'baiduTw' || 
-                this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'showCheckbox') {
+                this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
                 document.getElementById('submitBtn').disabled = true;
             } else {
                 document.getElementById('submitBtn').disabled = false;
@@ -561,20 +566,6 @@
             } else {
                 document.getElementById('submitBtn').disabled = false;
                 }
-            }
-            if (this.value === 'showCheckbox') {
-                document.getElementById('autoFillhttps').style.display = 'block';
-                document.querySelector('label[for="bgColorPicker"]').style.display = 'inline-block';
-            } else {
-                document.getElementById('autoFillhttps').style.display = 'none';
-                document.querySelector('label[for="bgColorPicker"]').style.display = 'none';
-            }
-            if (this.value === 'showCheckbox') {
-                document.getElementById('autoFillhttps').style.display = 'block';
-                document.querySelector('label[for="bgColorPicker"]').style.display = 'inline-block';
-            } else {
-                document.getElementById('autoFillhttps').style.display = 'none';
-                document.querySelector('label[for="bgColorPicker"]').style.display = 'none';
             }
             if (this.value === 'showCheckbox') {
                 document.getElementById('autoFillhttps').style.display = 'block';
@@ -600,6 +591,31 @@
                         const previousEngine = localStorage.getItem('previousEngine') || 'baidu';
                         this.value = previousEngine;
                         localStorage.setItem('selectedEngine', previousEngine);
+                        if (document.getElementById('engineSelect').value === 'showCheckbox') {
+                            linkCreatorBtn.style.display = 'inline-block';
+                            document.getElementById('autoFillhttps').style.display = 'block';
+                            submitBtn.disabled = true;
+                            urlInput.disabled = true;
+                        }
+                        if (document.getElementById('engineSelect').value === 'iFrameFree') {
+                            document.getElementById('iframeContainer').style.display = 'block';
+                        }
+                        if (isDesktopMove()) {
+                            if (this.value === 'baiduTw' || 
+                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
+                            document.getElementById('submitBtn').disabled = true;
+                        } else {
+                            document.getElementById('submitBtn').disabled = false;
+                            }
+                        }
+                        if (isDesktop()) {
+                            if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
+                            this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                            document.getElementById('submitBtn').disabled = true;
+                        } else {
+                            document.getElementById('submitBtn').disabled = false;
+                            }
+                        }
                         return;
                     }
                     if (newCustomSearchUrl && newCustomSearchUrl.includes('{keywords}')) {
