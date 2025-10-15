@@ -9,7 +9,7 @@
 <p><strong>
 
 <body>
-<a href="javascript:void(0)" id="85727544071588039023" style="font-size: 30px;">Baidu.com</a>
+<a href="javascript:void(0)" id="85727544071588039023" class="link-85727544071588039023" style="font-size: 30px;">Baidu.com</a>
 </body>
 
 </strong>
@@ -593,6 +593,7 @@
                         localStorage.setItem('selectedEngine', previousEngine);
                         if (document.getElementById('engineSelect').value === 'showCheckbox') {
                             linkCreatorBtn.style.display = 'inline-block';
+                            updateQuickLinks();
                             document.getElementById('autoFillhttps').style.display = 'block';
                             submitBtn.disabled = true;
                             urlInput.disabled = true;
@@ -626,6 +627,32 @@
                         const previousEngine = localStorage.getItem('previousEngine') || 'baidu';
                         this.value = previousEngine;
                         localStorage.setItem('selectedEngine', previousEngine);
+                        if (document.getElementById('engineSelect').value === 'showCheckbox') {
+                            linkCreatorBtn.style.display = 'inline-block';
+                            updateQuickLinks();
+                            document.getElementById('autoFillhttps').style.display = 'block';
+                            submitBtn.disabled = true;
+                            urlInput.disabled = true;
+                        }
+                        if (document.getElementById('engineSelect').value === 'iFrameFree') {
+                            document.getElementById('iframeContainer').style.display = 'block';
+                        }
+                        if (isDesktopMove()) {
+                            if (this.value === 'baiduTw' || 
+                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
+                            document.getElementById('submitBtn').disabled = true;
+                        } else {
+                            document.getElementById('submitBtn').disabled = false;
+                            }
+                        }
+                        if (isDesktop()) {
+                            if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
+                            this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                            document.getElementById('submitBtn').disabled = true;
+                        } else {
+                            document.getElementById('submitBtn').disabled = false;
+                            }
+                        }
                         return;
                     }
                 } else {
@@ -753,6 +780,10 @@
                     linkElement.style.color = newColor;
                     document.getElementById('linkColorValue').textContent = newColor;
                     localStorage.setItem('linkColor', newColor);
+                    // 添加链接激活状态样式
+                    const linkStyle = document.createElement('style');
+                    linkStyle.textContent = `a:active.link-85727544071588039023 { color: #ff0000 !important; }`;
+                    document.head.appendChild(linkStyle);
                 }
             }
         });
@@ -763,6 +794,10 @@
             const linkElement = document.getElementById('85727544071588039023');
             linkElement.style.color = savedLinkColor;
             document.getElementById('linkColorValue').textContent = savedLinkColor;
+            // 添加链接激活状态样式
+            const linkStyle = document.createElement('style');
+            linkStyle.textContent = `a:active.link-85727544071588039023 { color: #ff0000 !important; }`;
+            document.head.appendChild(linkStyle);
         }
         
         // 添加重命名功能
