@@ -309,7 +309,16 @@
                         // 用户点击取消，恢复之前的选择
                         const previousEngine = localStorage.getItem('previousEngine') || 'baidu';
                         this.value = previousEngine;
+                        document.getElementById('linkCreatorPanel').style.display = 'none';
                         localStorage.setItem('selectedEngine', previousEngine);
+                        if (isDesktopMove()) {
+                            if (this.value === 'baiduTw' || 
+                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
+                            document.getElementById('submitBtn').disabled = true;
+                        } else {
+                            document.getElementById('submitBtn').disabled = false;
+                            }
+                        }
                         return;
                     }
                     if (newCustomSearchUrl && newCustomSearchUrl.includes('{keywords}')) {
