@@ -123,11 +123,9 @@
             <option value="sogouFanyi">搜狗翻译</option>
             <option value="oldBaiduFanyi" id="baiduFanyiOption">百度翻译</option>
             <option value="fanyiSo">360翻译</option>
-            <option value="deeplTranslator">Deepl翻译</option>
             <option value="volcTranslate">火山翻译</option>
             <option value="nowTsAi">在线翻译</option>
             <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
-            <option value="youdaoFanyi">有道词典</option>
             <optgroup label="其他">
             <option value="githubCode">Github</option>
             <option value="baiduTw" id="baidutwOption">Baidu</option>
@@ -440,9 +438,6 @@
                     case 'mcTranslator':
                         url = 'https://cn.bing.com/translator?text=' + encodeURIComponent(url) + '&from=en&to=zh-Hans';
                         break;
-                    case 'youdaoFanyi':
-                        url = 'https://youdao.com/result?word=' + encodeURIComponent(url) + '&lang=en';
-                        break;
                     case 'yandexTranslate':
                         url = 'https://translate.yandex.com/?source_lang=en&target_lang=zh&text=' + encodeURIComponent(url);
                         break;
@@ -454,9 +449,6 @@
                         break;
                     case 'fanyiSo':
                         url = 'https://fanyi.so.com/#' + encodeURIComponent(url);
-                        break;
-                    case 'deeplTranslator':
-                        url = 'https://www.deepl.com/translator#en/zh/' + encodeURIComponent(url);
                         break;
                     case 'volcTranslate':
                         url = 'https://translate.volcengine.com/mobile?text=' + encodeURIComponent(url) + '&source_language=detect&target_language=zh&from=douyin';
