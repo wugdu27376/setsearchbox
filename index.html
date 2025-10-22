@@ -1198,11 +1198,42 @@
         // 执行CSS代码功能
         document.querySelector('label[for="executeCssBtn"]').addEventListener('click', function() {
             const currentCss = localStorage.getItem('customCss') || '';
-            showCustomModal('请输入CSS代码（输入为空时恢复默认）：', currentCss, function(newCss) {
-                if (newCss === null) {
+            
+            // 创建自定义textarea弹窗
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            const originalScrollX = window.scrollX || window.pageXOffset;
+            const originalScrollY = window.scrollY || window.pageYOffset;
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = [
+                'position: fixed',
+                'top: 0',
+                'left: 0',
+                'width: 100%',
+                'height: 100%',
+                'background: rgba(0,0,0,0.5)',
+                'z-index: 10000',
+                'display: flex',
+                'justify-content: center',
+                'align-items: center'
+            ].join(';');
+            
+            const callbackName = 'cssCallback_' + Date.now();
+            window[callbackName] = function(cssCode) {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+                window.scrollTo(originalScrollX, originalScrollY);
+        
+                if (cssCode === null) {
                     return;
                 }
-                if (newCss === '') {
+                if (cssCode === '') {
                     // 输入为空时恢复默认，移除自定义样式
                     const existingStyle = document.getElementById('customCssStyle');
                     if (existingStyle) {
@@ -1219,14 +1250,54 @@
                     // 创建新的样式元素
                     const styleElement = document.createElement('style');
                     styleElement.id = 'customCssStyle';
-                    styleElement.textContent = newCss;
+                    styleElement.textContent = cssCode;
                     document.head.appendChild(styleElement);
                     
                     // 保存CSS代码
-                    localStorage.setItem('customCss', newCss);
+                    localStorage.setItem('customCss', cssCode);
                 }
-            });
+                
+                setTimeout(function() {
+                    delete window[callbackName];
+                }, 100);
+            };
+            
+            modal.innerHTML = [
+                '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
+                '<p style="margin-top: 0; user-select: none; text-align: left;">请输入CSS代码（输入为空时恢复默认）：</p>',
+                '<textarea id="cssInput_' + callbackName + '" style="min-height:46px;max-height:110px;overflow-y:auto;width:100%;padding:4px;box-sizing:border-box;border:1px solid #ccc;font-family:inherit;font-size:inherit;resize:none;" placeholder="仅支持CSS代码" oninput="executeCssAutoResize(this)">' + (currentCss || '') + '</textarea>',
+                '<div style="margin-top: 15px; text-align: right;">',
+                '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null)">取消</label>',
+                '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var textarea=document.getElementById(\'cssInput_' + callbackName + '\');window.' + callbackName + '(textarea?textarea.value:null);localStorage.setItem(\'cssTextareaHeight\',textarea.style.height)">确定</label>',
+                '</div>',
+                '</div>'
+            ].join('');
+            
+            document.body.appendChild(modal);
+        
+            var textarea = document.getElementById('cssInput_' + callbackName);
+            var savedHeight = localStorage.getItem('cssTextareaHeight');
+            if (savedHeight && textarea) {
+                textarea.style.height = savedHeight;
+            }
         });
+        
+        function executeCssAutoResize(textarea) {
+            // 重置高度为auto以计算正确的内容高度
+            textarea.style.height = 'auto';
+            
+            // 计算内容高度
+            const contentHeight = textarea.scrollHeight;
+            
+            // 应用高度限制
+            if (contentHeight < 46) {
+                textarea.style.height = '46px';
+            } else if (contentHeight > 110) {
+                textarea.style.height = '110px';
+            } else {
+                textarea.style.height = contentHeight + 'px';
+            }
+        }
         
         // 加载保存的CSS代码
         const savedCss = localStorage.getItem('customCss');
@@ -1541,7 +1612,7 @@
                 savedInputText: localStorage.getItem('savedInputText') || '',
                 iframeWidth: localStorage.getItem('iframeWidth') || '100%',
                 iframeHeight: localStorage.getItem('iframeHeight') || '600px',
-                customSearchUrl: localStorage.getItem('customSearchUrl') || 'https://www.baidu.com/s?wd={keywords}',
+                customSearchUrl: localStorage.getItem('customSearchUrl') || '',
                 quickLinks: localStorage.getItem('quickLinks') || '[]',
                 selectHttpsTextChecked: localStorage.getItem('selectHttpsTextChecked') || 'false',
                 heightPercent: localStorage.getItem('heightPercent') || '25%',
@@ -1553,7 +1624,8 @@
                 linkImage: localStorage.getItem('linkImage'),
                 backgroundImage: localStorage.getItem('backgroundImage'),
                 fontColor: localStorage.getItem('fontColor') || '#000000',
-                customCss: localStorage.getItem('customCss') || ''
+                customCss: localStorage.getItem('customCss') || '',
+                cssTextareaHeight: localStorage.getItem('cssTextareaHeight') || '46px'
             };
             
             const jsonContent = JSON.stringify(settings, null, 2);
