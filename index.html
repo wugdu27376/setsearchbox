@@ -820,7 +820,6 @@
                         localStorage.setItem('linkColor', defaultColor);
                         localStorage.removeItem('linkImage');
                     } else if (newValue.toLowerCase() === 'image url') {
-                        // 输入image时弹出图片链接输入框
                         showCustomModal('请输入图片URL：', '', function(imageUrl) {
                             if (imageUrl && imageUrl.trim() !== '') {
                                 const linkElement = document.getElementById('85727544071588039023');
@@ -859,8 +858,16 @@
             const linkElement = document.getElementById('85727544071588039023');
             const currentName = linkElement.textContent;
             showCustomModal('请输入链接名称：', currentName, function(newName) {
-                if (newName && newName.trim() !== '') {
-                    const linkElement = document.getElementById('85727544071588039023');
+                if (newName === null) {
+                    return;
+                }
+                if (newName === '') {
+                    // 输入为空时恢复默认名称
+                    const defaultName = 'Baidu.com';
+                    linkElement.textContent = defaultName;
+                    document.getElementById('linkNameValue').textContent = defaultName;
+                    localStorage.setItem('linkName', defaultName);
+                } else if (newName.trim() !== '') {
                     linkElement.textContent = newName.trim();
                     document.getElementById('linkNameValue').textContent = newName.trim();
                     localStorage.setItem('linkName', newName.trim());
