@@ -1,0 +1,2192 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>搜索Easy V6.7</title>
+    
+<link rel="icon" href="https://wugdu27376.github.io/setsearchbox/favicon.ico">
+
+<p><strong>
+
+<body>
+<a href="javascript:void(0)" id="85727544071588039023" class="link-85727544071588039023" style="font-size: 30px;">Baidu.com</a>
+</body>
+
+</strong>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex; /* 使用flex布局让输入框和按钮同行 */
+        }
+        
+        #engineSelect {
+            min-width: 75px;
+            width: 15%;
+            max-width: 15%;
+            user-select: none;
+        }
+        
+        #urlInput {
+            flex: 1; /* 输入框占据剩余空间 */
+            min-width: 5%;
+        }
+        
+        #submitBtn {
+            margin-left: 3px; /* 按钮与输入框间距 */
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        #autoFillhttps input[type="checkbox"] {
+            margin: 0; /* 移除默认外边距 */
+            vertical-align: middle; /* 垂直对齐 */
+        }
+
+        #autoFillhttps label {
+            margin: 0; /* 移除默认外边距 */
+            vertical-align: middle; /* 垂直对齐 */
+            margin-right: 7px;
+        }
+        
+        #quickInputBtn button {
+            margin-top: 3px;
+            margin-bottom: 3px;
+        }
+        
+        #linkNameValue, #linkColorValue, #fontColorValue {
+            display: inline-block;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: bottom;
+            margin-bottom: 2.3px;
+        }
+        #colorValue {
+            display: inline-block;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: -4.1px;
+        }
+        
+        @media (min-width: 768px) {
+            #quickLinks {
+                width: 80%;
+                left: 0;
+                right: 0;
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container" id="searchContainer">
+        <select id="engineSelect" style="height: 24px;">
+        <optgroup label="搜索引擎">
+            <option value="baidu">百度</option>
+            <option value="google">谷歌</option>
+            <option value="bing">必应</option>
+            <option value="sogou">搜狗</option>
+            <option value="so">360搜索</option>
+            <option value="yandex">Yandex</option>
+            <option value="duckduckgo">DuckDuckGo</option>
+            <optgroup label="网页">
+            <option value="autofillHttp1">Http网页</option>
+            <option value="autofillHttps">Https网页</option>
+            <option value="newtabpageHttp1">新建标签页(Http)</option>
+            <option value="newtabpageHttps">新建标签页(Https)</option>
+            <optgroup label="手机搜索">
+            <option value="sodouyinM" id="douyinOption">抖音搜索</option>
+            <option value="yzmsmM" id="shenmaOption">神马搜索</option>
+            <option value="sotoutiaoM" id="toutiaoOption">头条搜索</option>
+            <option value="baiduMEasy" id="baidueasyOption">百度精简版</option>
+            <optgroup label="AI搜索">
+            <option value="metasosuoAI">秘塔搜索</option>
+            <option value="baiduAI">百度AI</option>
+            <option value="360namisoAI">360纳米AI</option>
+            <option value="zhihuZhiDaAI">知乎直答(需登录)</option>
+            <option value="quarkpcAI" id="quarkaiOption">夸克AI(需登录)</option>
+            <optgroup label="快捷翻译">
+            <option value="googleTranslate">谷歌翻译</option>
+            <option value="mcTranslator">必应翻译</option>
+            <option value="yandexTranslate">Yandex翻译</option>
+            <option value="sogouFanyi">搜狗翻译</option>
+            <option value="oldBaiduFanyi" id="baiduFanyiOption">百度翻译</option>
+            <option value="fanyiSo">360翻译</option>
+            <option value="volcTranslate">火山翻译</option>
+            <option value="nowTsAi">在线翻译</option>
+            <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
+            <optgroup label="其他">
+            <option value="githubCode">Github</option>
+            <option value="baiduTw" id="baidutwOption">Baidu</option>
+            <option value="biliTv" id="bilibiliOption">BiliBili</option>
+            <option value="kfBaidu">开发者搜索</option>
+            <option value="iFrameFree">IFrame</option>
+            <option value="showCheckbox">工具</option>
+            <option value="customSearch">自定义</option>
+        </select>
+        <input type="search" id="urlInput" placeholder="输入网址" style="height: 24px;">
+        <input type="submit" style="height: 24px;" value="跳转" id="submitBtn">
+    </div>
+    
+    <div id="autoFillhttps" style="display: none; text-align: center; margin-top: 10px;">
+        <input type="checkbox" id="customCheckbox">
+            <label for="customCheckbox" style="user-select: none;">自动填充Https</label>
+        <input type="checkbox" id="focusCheckbox">
+            <label for="focusCheckbox" style="user-select: none;">输入时聚焦</label>
+            <br/>
+        <input type="checkbox" id="layoutCheckbox">
+            <label for="layoutCheckbox" style="user-select: none;">居中布局</label>
+        <input type="checkbox" id="showLinkCheckbox" checked>
+            <label for="showLinkCheckbox" style="user-select: none;">显示推广链接</label>
+            <br/>
+        <input type="checkbox" id="showSendCheckbox" checked>
+            <label for="showSendCheckbox" style="user-select: none;">显示搜索按钮</label>
+        <input type="text" id="bgColorPicker" style="display: none;">
+            <label for="bgColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">背景颜色: <span id="colorValue">#ffffff</span></label>
+            <br/>
+        <input type="checkbox" id="quickInputCheckbox" disabled>
+            <label for="quickInputCheckbox" style="user-select: none;">显示快捷输入</label>
+            <input type="text" id="linkColorPicker" style="display: none;">
+            <label for="linkColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">链接颜色: <span id="linkColorValue">#0000ee</span></label>
+            <br/>
+            <label for="renameLinkBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">链接名称: <span id="linkNameValue">Baidu.com</span></label>
+            <label for="resetLinkColorBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">重置链接样式</label>
+            <input type="submit" id="resetLinkColorBtn" style="display: none;">
+            <br/>
+            <label for="heightPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">搜索框高度: <span id="heightValue">24px</span></label>
+            <label for="widthPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">按钮宽度: <span id="widthValue">Default</span></label>
+            <br/>
+            <label for="redefineSearchBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">重新自定义搜索</label>
+            <input type="checkbox" id="saveInputCheckbox">
+            <label for="saveInputCheckbox" style="user-select: none;">保留输入文本</label>
+            <br/>
+            <span style="margin-left: 3px;">
+            <input type="checkbox" id="selectHttpsText" disabled>
+            <label for="selectHttpsText" style="user-select: none;">自动选择文本</label>
+            </span>
+            <label style="user-select: none; margin-left: -3px;">用户设置: </label>
+            <label for="importSettingsBtn" style="user-select: none; vertical-align: middle; margin-left: -5px; cursor: pointer;">导入</label>
+            <input type="file" id="importSettingsInput" accept=".json" style="display: none;">
+            <label for="exportSettingsBtn" style="user-select: none; vertical-align: middle; margin-left: -7px; cursor: pointer;">导出</label>
+            <br/>
+            <label for="heightAdjustBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">居中高度: <span id="heightPercentValue">25%</span></label>
+            <label for="fontSizePicker" style="user-select: none; vertical-align: middle; cursor: pointer;">字体大小: <span id="fontSizeValue">Default</span></label>
+            <br/>
+            <label for="renameSubmitBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">按钮名称: <span id="submitBtnNameValue">跳转</span></label>
+            <input type="checkbox" id="autoNewTabCheckbox">
+            <label for="autoNewTabCheckbox" style="user-select: none;">自动创建标签页</label>
+            <br/>
+            <label for="linkSizePicker" style="user-select: none; vertical-align: middle; cursor: pointer;">链接大小: <span id="linkSizeValue">30px</span></label>
+            <input type="text" id="fontColorPicker" style="display: none;">
+            <label for="fontColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">字体颜色: <span id="fontColorValue">#000000</span></label>
+            <br/>
+            <label for="executeCssBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">运行CSS代码</label>
+            <input type="submit" id="executeCssBtn" style="display: none;">
+            <label for="clearAllSettingsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">清除所有设置</label>
+            <br/>
+            <label style="user-select: none; margin-right: 0;">超链接:</label>
+            <span id="linkCreatorBtn">
+            <label for="linkCreatorBtn0" style="user-select: none; margin-right: 0; vertical-align: middle; cursor: pointer;">新建</label>
+            </span>
+            <label for="importLinksBtn" style="user-select: none; margin-right: 0; vertical-align: middle; cursor: pointer;">导入</label>
+            <label for="exportLinksBtn" style="user-select: none; margin-right: 0; vertical-align: middle; cursor: pointer;">导出</label>
+            <label for="clearLinksBtn" style="user-select: none; margin-right: 0; vertical-align: middle; cursor: pointer;">清空</label>
+            <input type="file" id="importFileInput" accept=".html" style="display: none;">
+            <div id="linkCreatorPanel" style="display: none; margin-top: 10px; margin-bottom: -20px;">
+        </div>
+        <br/>
+        <div style="margin-top: 10px;">
+            <span id="browserInfo" style="user-select: none;"></span>
+        </div>
+    </div>
+    
+    <div id="quickLinks" style="margin-top: 10px; margin-bottom: 20px;"></div>
+    <div style="height: 5px;"></div>
+    
+    <div id="iframeContainer" style="display: none; width: 100%; height: 600px; margin-top: 10px;">
+        <iframe id="webFrame" src="about:blank" style="width: 100%; height: calc(100% - 30px); border: 1px solid #ccc;"></iframe>
+        <div style="margin-top: 10px; margin-bottom: -20px;">
+            <label for="iframeRefreshBtn" style="user-select: none; vertical-align: middle; margin-left: 0; cursor: pointer; font-size: 17px;">刷新</label>
+            <label for="iframeCloseBtn" style="user-select: none; vertical-align: middle; margin-left: 0; cursor: pointer; font-size: 17px;">关闭</label>
+            <label for="resizeIframeSizeBtn" style="user-select: none; vertical-align: middle; margin-left: 0; cursor: pointer; font-size: 17px;">高度/宽度</label>
+            <br/>
+            <div style="height: 10px;"></div>
+        </div>
+    </div>
+    
+    <div id="quickInputUi" style="display: none;">
+    <div id="quickInputBtn" style="display: none;">
+    <div id="quickInputBtn1Head">
+        <button><span style="user-select: none;">https://</span></button>
+        <button><span style="user-select: none;">blog.</span></button>
+        <button><span style="user-select: none;">m.</span></button>
+        <button><span style="user-select: none;">www.</span></button>
+        <button><span style="user-select: none;">.com</span></button>
+        <button><span style="user-select: none;">.cn</span></button>
+        <button><span style="user-select: none;">.net</span></button>
+        </div>
+        <br/>
+        <div id="quickInputBtn2">
+            <button id="pos_minusInf"><span style="user-select: none;">-Inf</span></button>
+            <button id="pos_minus10"><span style="user-select: none;">-10</span></button>
+            <button id="pos_minus1"><span style="user-select: none;">-1</span></button>
+            <button id="pos_plus1"><span style="user-select: none;">+1</span></button>
+            <button id="pos_plus10"><span style="user-select: none;">+10</span></button>
+            <button id="pos_plusInf"><span style="user-select: none;">+Inf</span></button>
+        </div>
+        <br/>
+        <div id="quickInputBtn3">
+            <button><span style="user-select: none;">/</span></button>
+            <button><span style="user-select: none;">\</span></button>
+            <button><span style="user-select: none;">:</span></button>
+            <button><span style="user-select: none;">@</span></button>
+            <button><span style="user-select: none;">%</span></button>
+            <button><span style="user-select: none;">&</span></button>
+            <button><span style="user-select: none;">?</span></button>
+            <button><span style="user-select: none;">-</span></button>
+            <button><span style="user-select: none;">_</span></button>
+            <button><span style="user-select: none;">=</span></button>
+            <button><span style="user-select: none;">.</span></button>
+            <button><span style="user-select: none;">#</span></button>
+        </div>
+    </div>
+    </div>
+
+    <script>
+    // 检测是否为电脑端
+        function isDesktop() {
+            return !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        function isDesktopMove() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        // 页面加载时恢复保存的选择
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedEngine = localStorage.getItem('selectedEngine');
+            if (savedEngine) {
+                document.getElementById('engineSelect').value = savedEngine;
+            }
+            // 如果保存的选择是customSearch，显示重新自定义按钮
+            if (savedEngine === 'customSearch') {
+                showCustomSearchButton();
+            }
+            // 如果保存的选择是iFrameFree，则显示iframe容器
+            if (savedEngine === 'iFrameFree') {
+                document.getElementById('iframeContainer').style.display = 'block';
+            }
+            if (isDesktopMove()) {
+                if (savedEngine === 'baiduTw' || 
+                    savedEngine === 'biliTv' || savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'showCheckbox') {
+                    document.getElementById('submitBtn').disabled = true;
+                }
+            }
+            if (isDesktop()) {
+                if (savedEngine === 'sodouyinM' || savedEngine === 'yzmsmM' || savedEngine === 'sotoutiaoM' || savedEngine === 'baiduMEasy' || savedEngine === 'oldBaiduFanyi' || savedEngine === 'showCheckbox') {
+                    document.getElementById('submitBtn').disabled = true;
+                }
+            }
+            // 如果保存的选择是showCheckbox，则显示autoFillhttps div
+            if (savedEngine === 'showCheckbox') {
+                document.getElementById('autoFillhttps').style.display = 'block';
+                document.getElementById('submitBtn').disabled = true;
+                document.getElementById('urlInput').disabled = true;
+                
+                // 同时应用保存的布局状态
+                const savedLayoutState = localStorage.getItem('layoutChecked');
+                if (savedLayoutState === 'true') {
+                    applyLayoutStyle(true);
+                }
+            }
+            // 初始化用户输入状态
+            if (document.getElementById('urlInput').value !== 'https://') {
+                document.getElementById('urlInput').dataset.userInput = 'true';
+            }
+        });
+        
+        // 如果是电脑端，禁用移动搜索选项
+            if (isDesktop()) {
+                document.getElementById('douyinOption').disabled = true;
+                document.getElementById('shenmaOption').disabled = true;
+                document.getElementById('toutiaoOption').disabled = true;
+                document.getElementById('baidueasyOption').disabled = true;
+                document.getElementById('baiduFanyiOption').disabled = true;
+            }
+            
+            if (isDesktopMove()) {
+                document.getElementById('quarkaiOption').disabled = true;
+                document.getElementById('baidutwOption').disabled = true;
+                document.getElementById('bilibiliOption').disabled = true;
+                document.getElementById('tencentFanyi2').style.display = 'none';
+            }
+
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            let url = document.getElementById('urlInput').value.trim();
+            const engine = document.getElementById('engineSelect').value;
+            
+            // 保存当前选择
+            localStorage.setItem('selectedEngine', engine);
+            
+            // 如果选择iFrameFree且输入了完整URL，直接在iframe中加载
+            if (engine === 'iFrameFree' && url.includes('://')) {
+                document.getElementById('webFrame').src = url;
+                document.getElementById('iframeContainer').style.display = 'block';
+                return; // 不执行后续跳转
+            }
+            
+            // 如果保存输入文本复选框被勾选，保存当前输入
+            if (document.getElementById('saveInputCheckbox').checked) {
+                localStorage.setItem('savedInputText', document.getElementById('urlInput').value.trim());
+            }
+            
+            if(url && !url.includes('://')) {
+                // 根据选择的搜索引擎构建搜索URL
+                switch(engine) {
+                    case 'baidu':
+                        url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+                        break;
+                    case 'google':
+                        url = 'https://www.google.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'bing':
+                        url = 'https://www.bing.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'sogou':
+                        url = 'https://www.sogou.com/web?query=' + encodeURIComponent(url);
+                        break;
+                    case 'so':
+                        url = 'https://www.so.com/s?q=' + encodeURIComponent(url);
+                        break;
+                    case 'yandex':
+                        url = 'https://yandex.com/search/?text=' + encodeURIComponent(url);
+                        break;
+                    case 'autofillHttp1':
+                        // 自动填充http://前缀
+                        url = 'http://' + url;
+                        break;
+                    case 'autofillHttps':
+                        // 自动填充https://前缀
+                        url = 'https://' + url;
+                        break;
+                    case 'newtabpageHttp1':
+                        // 新建标签页处理
+                        if (url) {
+                            // 如果没有协议前缀，添加http://
+                            if (!url.includes('://')) {
+                                url = 'http://' + url;
+                            }
+                            window.open(url, '_blank');
+                            return; // 直接返回，不执行下面的跳转
+                        }
+                        break;
+                        case 'newtabpageHttps':
+                        // 新建标签页处理
+                        if (url) {
+                            // 如果没有协议前缀，添加https://
+                            if (!url.includes('://')) {
+                                url = 'https://' + url;
+                            }
+                            window.open(url, '_blank');
+                            return; // 直接返回，不执行下面的跳转
+                        }
+                        break;
+                    case 'duckduckgo':
+                        url = 'https://duckduckgo.com/?q=' + encodeURIComponent(url);
+                        break;
+                    case 'sodouyinM':
+                        url = 'https://so.douyin.com/s?keyword=' + encodeURIComponent(url);
+                        break;
+                    case 'yzmsmM':
+                        url = 'https://yz.m.sm.cn/s?q=' + encodeURIComponent(url);
+                        break;
+                    case 'sotoutiaoM':
+                        url = 'https://so.toutiao.com/search?keyword=' + encodeURIComponent(url);
+                        break;
+                    case 'baiduMEasy':
+                        url = 'https://m.baidu.com/from=1030335w/pu=sz%401321_1001/s?word=' + encodeURIComponent(url);
+                        break;
+                    case 'metasosuoAI':
+                        url = 'https://metaso.cn/?s=nyzav&referrer_s=nyzav&q=' + encodeURIComponent(url);
+                        break;
+                    case 'baiduAI':
+                        url = 'https://chat.baidu.com/search?word=' + encodeURIComponent(url);
+                        break;
+                    case '360namisoAI':
+                        url = 'https://www.n.cn/?src=360ai_so&s_type=l&q=' + encodeURIComponent(url);
+                        break;
+                    case 'zhihuZhiDaAI':
+                        url = 'https://zhida.zhihu.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'quarkpcAI':
+                        url = 'https://ai.quark.cn/s?ch=pcquark%40homepage_quarkweb&q=' + encodeURIComponent(url) + '&frame_scene=deep_think_light_r1lite&by=deepthink_light';
+                        break;
+                    case 'googleTranslate':
+                        url = 'https://translate.google.com/?sl=auto&tl=zh-CN&text=' + encodeURIComponent(url);
+                        break;
+                    case 'mcTranslator':
+                        url = 'https://cn.bing.com/translator?text=' + encodeURIComponent(url) + '&from=en&to=zh-Hans';
+                        break;
+                    case 'yandexTranslate':
+                        url = 'https://translate.yandex.com/?source_lang=en&target_lang=zh&text=' + encodeURIComponent(url);
+                        break;
+                    case 'sogouFanyi':
+                        url = 'https://fanyi.sogou.com/text?fr=default&keyword=' + encodeURIComponent(url);
+                        break;
+                    case 'oldBaiduFanyi':
+                        url = 'https://fanyi.baidu.com/translate#auto/zh/' + encodeURIComponent(url);
+                        break;
+                    case 'fanyiSo':
+                        url = 'https://fanyi.so.com/#' + encodeURIComponent(url);
+                        break;
+                    case 'volcTranslate':
+                        url = 'https://translate.volcengine.com/mobile?text=' + encodeURIComponent(url) + '&source_language=detect&target_language=zh&from=douyin';
+                        break;
+                    case 'transmartQQTs':
+                        url = 'https://transmart.qq.com/zh-CN/index?sourcelang=auto&targetlang=zh&source=' + encodeURIComponent(url);
+                        break;
+                    case 'nowTsAi':
+                        url = 'https://www.aitranslatenow.com/zh/translate/en/zh#sourceText=' + encodeURIComponent(url);
+                        break;
+                    case 'githubCode':
+                        url = 'https://github.com/search?q=' + encodeURIComponent(url);
+                        break;
+                    case 'baiduTw':
+                        url = 'https://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(url);
+                        break;
+                    case 'biliTv':
+                        url = 'http://search.bilibili.com/all?keyword=' + encodeURIComponent(url);
+                        break;
+                    case 'showCheckbox':
+                        url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+                        break;
+                    case 'kfBaidu':
+                        url = 'https://kaifa.baidu.com/searchPage?wd=' + encodeURIComponent(url);
+                        break;
+                    case 'customSearch':
+                        const customSearchUrl = localStorage.getItem('customSearchUrl');
+                        if (customSearchUrl) {
+                            url = customSearchUrl.replace('{keywords}', encodeURIComponent(url));
+                        } else {
+                            // 如果没有设置自定义搜索网址，使用默认的百度搜索
+                            url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+                        }
+                        break;
+                    case 'iFrameFree':
+                        // 在iframe中加载网页
+                        if(url && !url.includes('://')) {
+                            url = 'https://' + url;
+                        }
+                        if(url) {
+                            document.getElementById('webFrame').src = url;
+                            document.getElementById('iframeContainer').style.display = 'block';
+                        }
+                        return; // 不执行页面跳转
+                }
+            } else if(url) {
+                // 如果包含://，直接使用输入的URL
+                // 无需修改
+            }
+            
+            // 在submitBtn点击事件开始处添加：
+            const isAutoNewTabChecked = document.getElementById('autoNewTabCheckbox').checked;
+            const excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'iFrameFree'];
+            const shouldOpenNewTab = isAutoNewTabChecked && !excludedEngines.includes(engine);
+            
+            // 在最后的跳转逻辑处修改：
+            if(url) {
+                // 对于新建标签页选项，如果输入为空则不执行任何操作
+                if (engine === 'newtabpage' && !url) {
+                    return;
+                }
+                
+                // 根据设置决定是否在新标签页打开
+                if (shouldOpenNewTab) {
+                    window.open(url, '_blank');
+                } else {
+                    window.location.href = url;
+                }
+            }
+        });
+        // 重新自定义搜索网址文字点击事件
+        document.querySelector('label[for="redefineSearchBtn"]').addEventListener('click', function() {
+            const currentUrl = localStorage.getItem('customSearchUrl') || 'https://www.baidu.com/s?wd={keywords}';
+            showCustomModal('请输入新的自定义搜索网址（使用{keywords}作为搜索词占位符）：', currentUrl, function(newCustomSearchUrl) {
+                if (newCustomSearchUrl && newCustomSearchUrl.includes('{keywords}')) {
+                    localStorage.setItem('customSearchUrl', newCustomSearchUrl);
+                }
+            });
+        });
+        
+        // 监听选择变化并保存
+        document.getElementById('engineSelect').addEventListener('change', function() {
+            localStorage.setItem('selectedEngine', this.value);
+            // 根据选择显示或隐藏 checkbox
+            if (this.value === 'showCheckbox') {
+                document.getElementById('autoFillhttps').style.display = 'block';
+                submitBtn.disabled = true;
+                urlInput.disabled = true;
+            } else {
+                document.getElementById('autoFillhttps').style.display = 'none';
+                submitBtn.disabled = false;
+                urlInput.disabled = false;
+            }
+            // 控制iframe显示
+            if (this.value === 'iFrameFree') {
+                document.getElementById('iframeContainer').style.display = 'block';
+            } else {
+                document.getElementById('iframeContainer').style.display = 'none';
+            }
+            // 根据选择显示或隐藏 checkbox
+            if (this.value === 'showCheckbox') {
+                document.getElementById('autoFillhttps').style.display = 'block';
+                const savedLayoutState = localStorage.getItem('layoutChecked');
+                if (savedLayoutState === 'true') {
+                    applyLayoutStyle(true);
+                }
+            } else {
+                document.getElementById('autoFillhttps').style.display = 'none';
+                const savedLayoutState = localStorage.getItem('layoutChecked');
+                if (savedLayoutState !== 'true') {
+                    applyLayoutStyle(false);
+                }
+            }
+            if (isDesktopMove()) {
+                if (this.value === 'baiduTw' || 
+                this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
+                document.getElementById('submitBtn').disabled = true;
+            } else {
+                document.getElementById('submitBtn').disabled = false;
+                }
+            }
+            if (isDesktop()) {
+                if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
+                this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                document.getElementById('submitBtn').disabled = true;
+            } else {
+                document.getElementById('submitBtn').disabled = false;
+                }
+            }
+            if (this.value === 'showCheckbox') {
+                document.getElementById('autoFillhttps').style.display = 'block';
+                linkCreatorBtn.style.display = 'inline-block';
+            } else {
+                document.getElementById('autoFillhttps').style.display = 'none';
+                linkCreatorBtn.style.display = 'none';
+                document.getElementById('linkCreatorPanel').style.display = 'none';
+            }
+            // 无论选择什么，都更新快捷链接显示
+            updateQuickLinks();
+            const currentValue = this.value;
+            localStorage.setItem('selectedEngine', currentValue);
+            
+            // 如果选择customSearch，检查是否已设置自定义搜索网址
+            if (currentValue === 'customSearch') {
+                const customSearchUrl = localStorage.getItem('customSearchUrl');
+                if (!customSearchUrl) {
+                    // 首次选择，提示输入自定义搜索网址
+                    const newCustomSearchUrl = prompt('请输入自定义搜索网址（使用{keywords}作为搜索词占位符）：', 'https://www.baidu.com/s?wd={keywords}');
+                    if (newCustomSearchUrl === null) {
+                        // 用户点击取消，恢复之前的选择
+                        const previousEngine = localStorage.getItem('previousEngine') || 'baidu';
+                        this.value = previousEngine;
+                        localStorage.setItem('selectedEngine', previousEngine);
+                        if (document.getElementById('engineSelect').value === 'showCheckbox') {
+                            linkCreatorBtn.style.display = 'inline-block';
+                            updateQuickLinks();
+                            document.getElementById('autoFillhttps').style.display = 'block';
+                            submitBtn.disabled = true;
+                            urlInput.disabled = true;
+                        }
+                        if (document.getElementById('engineSelect').value === 'iFrameFree') {
+                            document.getElementById('iframeContainer').style.display = 'block';
+                        }
+                        if (isDesktopMove()) {
+                            if (this.value === 'baiduTw' || 
+                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
+                            document.getElementById('submitBtn').disabled = true;
+                        } else {
+                            document.getElementById('submitBtn').disabled = false;
+                            }
+                        }
+                        if (isDesktop()) {
+                            if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
+                            this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                            document.getElementById('submitBtn').disabled = true;
+                        } else {
+                            document.getElementById('submitBtn').disabled = false;
+                            }
+                        }
+                        return;
+                    }
+                    if (newCustomSearchUrl && newCustomSearchUrl.includes('{keywords}')) {
+                        localStorage.setItem('customSearchUrl', newCustomSearchUrl);
+                        showCustomSearchButton();
+                    } else {
+                        // 网址格式不正确，恢复之前的选择
+                        const previousEngine = localStorage.getItem('previousEngine') || 'baidu';
+                        this.value = previousEngine;
+                        localStorage.setItem('selectedEngine', previousEngine);
+                        if (document.getElementById('engineSelect').value === 'showCheckbox') {
+                            linkCreatorBtn.style.display = 'inline-block';
+                            updateQuickLinks();
+                            document.getElementById('autoFillhttps').style.display = 'block';
+                            submitBtn.disabled = true;
+                            urlInput.disabled = true;
+                        }
+                        if (document.getElementById('engineSelect').value === 'iFrameFree') {
+                            document.getElementById('iframeContainer').style.display = 'block';
+                        }
+                        if (isDesktopMove()) {
+                            if (this.value === 'baiduTw' || 
+                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
+                            document.getElementById('submitBtn').disabled = true;
+                        } else {
+                            document.getElementById('submitBtn').disabled = false;
+                            }
+                        }
+                        if (isDesktop()) {
+                            if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
+                            this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                            document.getElementById('submitBtn').disabled = true;
+                        } else {
+                            document.getElementById('submitBtn').disabled = false;
+                            }
+                        }
+                        return;
+                    }
+                } else {
+                    showCustomSearchButton();
+                }
+            } else {
+                // 保存当前选择作为previousEngine，用于customSearch取消时恢复
+                localStorage.setItem('previousEngine', currentValue);
+                hideCustomSearchButton();
+            }
+        });
+        
+        // 保存和加载focusCheckbox状态
+        const savedFocusCheckboxState = localStorage.getItem('focusCheckboxChecked');
+        if (savedFocusCheckboxState === 'true') {
+            document.getElementById('focusCheckbox').checked = true;
+            document.getElementById('quickInputCheckbox').disabled = false;
+            // 监听输入框聚焦时的高度变化，调整quickInputUi位置
+            document.getElementById('urlInput').addEventListener('focus', function() {
+                adjustQuickInputPosition();
+                document.body.classList.add('focused');
+                document.querySelector('.search-container').classList.add('focused');
+                document.getElementById('quickInputBtn').style.display = 'block';
+                document.getElementById('iframeContainer').style.display = 'none';
+                
+                // 添加高度检测和间距调整
+                const inputHeight = parseInt(getComputedStyle(this).height);
+                const submitBtnHeight = parseInt(getComputedStyle(document.getElementById('submitBtn')).height);
+                const maxHeight = Math.max(inputHeight, submitBtnHeight);
+                
+                if (maxHeight > 24) {
+                    const extraSpace = maxHeight - 24;
+                    document.getElementById('quickInputBtn').style.marginTop = (0 + extraSpace) + 'px';
+                } else {
+                    document.getElementById('quickInputBtn').style.marginTop = '0px';
+                }
+                
+                // 检查是否启用了自动选择https文本功能
+                const isSelectHttpsTextChecked = localStorage.getItem('selectHttpsTextChecked') === 'true';
+                const isAutoFillHttpsChecked = localStorage.getItem('autoFillHttpsChecked') === 'true';
+                
+                // 只有当所有条件满足且用户没有手动输入时才自动选择
+                if (isSelectHttpsTextChecked && isAutoFillHttpsChecked && 
+                    this.value === 'https://' && !this.dataset.userInput) {
+                    this.select(); // 自动选择所有文本
+                }
+            });
+        }
+
+        // 监听focusCheckbox变化
+        document.getElementById('focusCheckbox').addEventListener('change', function() {
+            localStorage.setItem('focusCheckboxChecked', this.checked);
+            document.getElementById('quickInputCheckbox').disabled = !this.checked;
+        });
+        
+        const urlInput = document.getElementById('urlInput');
+        const quickInputBtn = document.getElementById('quickInputBtn');
+        const buttons = quickInputBtn.querySelectorAll('button');
+        
+        // 为所有键盘按钮添加点击事件
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                const id = button.id; // 改为获取id
+                
+                // 处理光标位置按钮
+                if (id.startsWith('pos_')) { // 改为判断id前缀
+                    const currentPos = urlInput.selectionStart;
+                    let newPos = currentPos;
+            
+                    if (id === 'pos_plus1') newPos = currentPos + 1; // 改为使用id判断
+                    else if (id === 'pos_minus1') newPos = Math.max(0, currentPos - 1); // 改为使用id判断
+                    else if (id === 'pos_plus10') newPos = currentPos + 10; // 改为使用id判断
+                    else if (id === 'pos_minus10') newPos = Math.max(0, currentPos - 10); // 改为使用id判断
+                    else if (id === 'pos_plusInf') newPos = urlInput.value.length; // 改为使用id判断
+                    else if (id === 'pos_minusInf') newPos = 0; // 改为使用id判断
+                    
+                    // 设置新的光标位置
+                    urlInput.setSelectionRange(newPos, newPos);
+                } else {
+                    const text = button.textContent; // 其他按钮仍然使用文本
+                    
+                    // 标记用户已经开始输入
+                    urlInput.dataset.userInput = 'true';
+                    
+                    // 替换选中文本的逻辑
+                    const selectionStart = urlInput.selectionStart;
+                    const selectionEnd = urlInput.selectionEnd;
+                    const currentValue = urlInput.value;
+                    
+                    // 如果有选中文本，则替换选中部分
+                    if (selectionStart !== selectionEnd) {
+                        urlInput.value = currentValue.substring(0, selectionStart) + text + currentValue.substring(selectionEnd);
+                        // 将光标移动到插入文本之后
+                        urlInput.setSelectionRange(selectionStart + text.length, selectionStart + text.length);
+                    } else {
+                        // 原有逻辑：在当前位置插入文本
+                        urlInput.value = currentValue.substring(0, selectionStart) + text + currentValue.substring(selectionStart);
+                        // 将光标移动到插入文本之后
+                        urlInput.setSelectionRange(selectionStart + text.length, selectionStart + text.length);
+                    }
+                }
+                urlInput.focus();
+                // 如果保存输入文本复选框被勾选，保存当前输入
+                if (document.getElementById('saveInputCheckbox').checked) {
+                    localStorage.setItem('savedInputText', urlInput.value);
+                }
+            });
+        });
+        
+        // 保存和加载autoNewTabCheckbox状态
+        const savedAutoNewTabState = localStorage.getItem('autoNewTabChecked');
+        if (savedAutoNewTabState === 'true') {
+            document.getElementById('autoNewTabCheckbox').checked = true;
+        }
+        
+        // 监听autoNewTabCheckbox变化
+        document.getElementById('autoNewTabCheckbox').addEventListener('change', function() {
+            localStorage.setItem('autoNewTabChecked', this.checked);
+        });
+        
+        // 链接颜色控制
+        document.querySelector('label[for="linkColorPicker"]').addEventListener('click', function() {
+            const currentColor = localStorage.getItem('linkColor') || '#0000ee';
+            showCustomModal('请输入链接颜色值（如 #0000ee 或 red）\n或者rgba(255,255,255,1.0)，rgb(255,255,255) ：', currentColor, function(newValue) {
+                if (newValue !== null) {
+                    if (newValue === '') {
+                        // 输入为空时恢复默认颜色
+                        const defaultColor = '#0000ee';
+                        const linkElement = document.getElementById('85727544071588039023');
+                        linkElement.style.color = defaultColor;
+                        linkElement.innerHTML = 'Baidu.com';
+                        document.getElementById('linkColorValue').textContent = defaultColor;
+                        localStorage.setItem('linkColor', defaultColor);
+                        localStorage.removeItem('linkImage');
+                    } else if (newValue.toLowerCase() === 'image url') {
+                        // 输入image时弹出图片链接输入框
+                        showCustomModal('请输入图片URL：', '', function(imageUrl) {
+                            if (imageUrl && imageUrl.trim() !== '') {
+                                const linkElement = document.getElementById('85727544071588039023');
+                                const linkSize = localStorage.getItem('linkSize') || '30px';
+                                linkElement.innerHTML = `<img src="${imageUrl}" style="width: auto; height: auto; max-width: ${linkSize}; max-height: ${linkSize}; display: block; left: 0; right: 0; margin: 0 auto;">`;
+                                document.getElementById('linkColorValue').textContent = 'Image';
+                                localStorage.setItem('linkImage', imageUrl);
+                            }
+                        });
+                    } else if (/^#([0-9A-F]{3,6})$/i.test(newValue) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newValue) || /^[a-z]+$/i.test(newValue)) {
+                        const linkElement = document.getElementById('85727544071588039023');
+                        linkElement.style.color = newValue;
+                        linkElement.innerHTML = 'Baidu.com';
+                        document.getElementById('linkColorValue').textContent = newValue;
+                        localStorage.setItem('linkColor', newValue);
+                        localStorage.removeItem('linkImage');
+                    }
+                }
+            });
+        });
+        
+        // 加载保存的链接颜色
+        const savedLinkColor = localStorage.getItem('linkColor');
+        if (savedLinkColor) {
+            const linkElement = document.getElementById('85727544071588039023');
+            linkElement.style.color = savedLinkColor;
+            document.getElementById('linkColorValue').textContent = savedLinkColor;
+            // 添加链接激活状态样式
+            const linkStyle = document.createElement('style');
+            linkStyle.textContent = `a:active.link-85727544071588039023 { color: #ff0000 !important; }`;
+            document.head.appendChild(linkStyle);
+        }
+        
+        // 添加重命名功能
+        document.querySelector('label[for="renameLinkBtn"]').addEventListener('click', function() {
+            const linkElement = document.getElementById('85727544071588039023');
+            const currentName = linkElement.textContent;
+            showCustomModal('请输入链接名称：', currentName, function(newName) {
+                if (newName && newName.trim() !== '') {
+                    const linkElement = document.getElementById('85727544071588039023');
+                    linkElement.textContent = newName.trim();
+                    document.getElementById('linkNameValue').textContent = newName.trim();
+                    localStorage.setItem('linkName', newName.trim());
+                }
+            });
+        });
+        
+        // 重置链接颜色和名称
+        document.getElementById('resetLinkColorBtn').addEventListener('click', function() {
+        showCustomConfirm('确定要重置链接样式吗？', function(result) {
+                if (result) {
+                    // 重置链接颜色
+                    const linkElement = document.getElementById('85727544071588039023');
+                    linkElement.style.color = '#0000ee';
+                    document.getElementById('linkColorValue').textContent = '#0000ee';
+                    localStorage.setItem('linkColor', '#0000ee');
+                    
+                    // 重置链接名称
+                    linkElement.textContent = 'Baidu.com';
+                    document.getElementById('linkNameValue').textContent = 'Baidu.com';
+                    localStorage.setItem('linkName', 'Baidu.com');
+                    // 重置链接字体大小
+                    linkElement.style.fontSize = '30px';
+                    document.getElementById('linkSizeValue').textContent = '30px';
+                    localStorage.setItem('linkSize', '30px');
+                    // 重置图片链接
+                    localStorage.removeItem('linkImage');
+                }
+            });
+        });
+        
+        // 加载保存的图片链接
+        const savedLinkImage = localStorage.getItem('linkImage');
+        if (savedLinkImage) {
+            const linkElement = document.getElementById('85727544071588039023');
+            const linkSize = localStorage.getItem('linkSize') || '30px';
+                linkElement.innerHTML = `<img src="${savedLinkImage}" style="max-width: ${linkSize}; height: auto; display: block; left: 0; right: 0; margin: 0 auto;">`;
+            document.getElementById('linkColorValue').textContent = 'Image';
+        }
+        
+        // 加载保存的链接名称
+        const savedLinkName = localStorage.getItem('linkName');
+        if (savedLinkName) {
+            const linkElement = document.getElementById('85727544071588039023');
+            linkElement.textContent = savedLinkName;
+            document.getElementById('linkNameValue').textContent = savedLinkName;
+        }
+
+        // submitBtn重命名功能
+        document.querySelector('label[for="renameSubmitBtn"]').addEventListener('click', function() {
+            // 检查 showSendCheckbox 是否勾选，如果未勾选则不执行任何操作
+            if (!document.getElementById('showSendCheckbox').checked) {
+                return;
+            }
+            const currentName = document.getElementById('submitBtn').value;
+            showCustomModal('请输入按钮名称（六字以内，输入为空时恢复默认）：', currentName, function(newName) {
+                // 当点击取消时，newName 为 null，不执行任何操作
+                if (newName === null) {
+                    return;
+                }
+                if (newName === '') {
+                    // 输入为空时恢复默认名称
+                    const defaultName = '跳转';
+                    document.getElementById('submitBtn').value = defaultName;
+                    document.getElementById('submitBtnNameValue').textContent = defaultName;
+                    localStorage.setItem('submitBtnName', defaultName);
+                } else if (newName.length <= 6) { //>
+                    document.getElementById('submitBtn').value = newName;
+                    document.getElementById('submitBtnNameValue').textContent = newName;
+                    localStorage.setItem('submitBtnName', newName);
+                }
+            });
+        });
+        
+        // 加载保存的submitBtn名称
+        const savedSubmitBtnName = localStorage.getItem('submitBtnName');
+        if (savedSubmitBtnName) {
+            document.getElementById('submitBtn').value = savedSubmitBtnName;
+            document.getElementById('submitBtnNameValue').textContent = savedSubmitBtnName;
+        }
+        
+        // 链接大小控制
+        document.querySelector('label[for="linkSizePicker"]').addEventListener('click', function() {
+            const currentSize = localStorage.getItem('linkSize') || '30px';
+            showCustomModal('请输入链接大小（如 30px，输入为空时恢复默认）：', currentSize, function(newSize) {
+                if (newSize === null) {
+                    return;
+                }
+                if (newSize === '') {
+                    // 输入为空时恢复默认大小
+                    const defaultSize = '30px';
+                    const linkElement = document.getElementById('85727544071588039023');
+                    const linkImage = localStorage.getItem('linkImage');
+                    if (linkImage) {
+                        linkElement.innerHTML = `<img src="${linkImage}" style="width: auto; height: auto; max-width: ${defaultSize}; max-height: ${defaultSize}; display: block; left: 0; right: 0; margin: 0 auto;">`;
+                    } else {
+                        linkElement.style.fontSize = defaultSize;
+                    }
+                    document.getElementById('linkSizeValue').textContent = defaultSize;
+                    localStorage.setItem('linkSize', defaultSize);
+                } else if (/^\d+(\.\d+)?(px|in|mm|pt)$/.test(newSize)) {
+                    const linkElement = document.getElementById('85727544071588039023');
+                    const linkImage = localStorage.getItem('linkImage');
+                    if (linkImage) {
+                        linkElement.innerHTML = `<img src="${linkImage}" style="width: auto; height: auto; max-width: ${newSize}; max-height: ${newSize}; display: block; left: 0; right: 0; margin: 0 auto;">`;
+                    } else {
+                        linkElement.style.fontSize = newSize;
+                    }
+                    document.getElementById('linkSizeValue').textContent = newSize;
+                    localStorage.setItem('linkSize', newSize);
+                }
+            });
+        });
+        
+        // 加载保存的链接大小
+        const savedLinkSize = localStorage.getItem('linkSize');
+        if (savedLinkSize) {
+            const linkElement = document.getElementById('85727544071588039023');
+            linkElement.style.fontSize = savedLinkSize;
+            document.getElementById('linkSizeValue').textContent = savedLinkSize;
+            // 加载保存的图片链接
+        const savedLinkImage = localStorage.getItem('linkImage');
+            if (savedLinkImage) {
+                const linkElement = document.getElementById('85727544071588039023');
+                const linkSize = localStorage.getItem('linkSize') || '30px';
+                linkElement.innerHTML = `<img src="${savedLinkImage}" style="width: auto; height: auto; max-width: ${linkSize}; max-height: ${linkSize}; display: block; left: 0; right: 0; margin: 0 auto;">`;
+                document.getElementById('linkColorValue').textContent = 'Image';
+            }
+        }
+        
+        // 保存和加载quickInputCheckbox状态
+        const savedQuickInputState = localStorage.getItem('quickInputChecked');
+        if (savedQuickInputState === 'true') {
+            document.getElementById('quickInputCheckbox').checked = true;
+            document.getElementById('quickInputUi').style.display = 'block';
+        }
+        
+        // 监听quickInputCheckbox变化
+        document.getElementById('quickInputCheckbox').addEventListener('change', function() {
+            localStorage.setItem('quickInputChecked', this.checked);
+            if (this.checked) {
+                document.getElementById('quickInputUi').style.display = 'block';
+            } else {
+                document.getElementById('quickInputUi').style.display = 'none';
+            }
+        });
+        
+        // 只有在focusCheckbox勾选时才添加focus/blur事件
+        if (localStorage.getItem('focusCheckboxChecked') === 'true') {
+            document.getElementById('urlInput').addEventListener('focus', function() {
+                document.body.classList.add('focused');
+                document.querySelector('.search-container').classList.add('focused');
+                document.getElementById('quickInputBtn').style.display = 'block';
+                document.getElementById('iframeContainer').style.display = 'none';
+            });
+            
+            // 添加延迟恢复
+            document.getElementById('urlInput').addEventListener('blur', function(e) {
+                // 检查相关目标是否是quickInputBtn内的按钮
+                var relatedTarget = e.relatedTarget;
+                var isQuickInputBtnTarget = relatedTarget && 
+                    (relatedTarget.parentNode && 
+                     (relatedTarget.parentNode.id === 'quickInputBtn' || 
+                     relatedTarget.parentNode.id === 'quickInputBtn1Head' ||
+                      relatedTarget.parentNode.id === 'quickInputBtn2' || 
+                      relatedTarget.parentNode.id === 'quickInputBtn3' ||
+                      relatedTarget.parentNode.id === 'quickInputBtn4'));
+                
+                // 如果不是quickInputBtn内的按钮，才执行恢复操作
+                if (!isQuickInputBtnTarget) {
+                    // 添加延迟恢复
+                    setTimeout(() => {
+                        document.body.classList.remove('focused');
+                        document.querySelector('.search-container').classList.remove('focused');
+                        document.getElementById('quickInputBtn').style.display = 'none';
+                        // 恢复iframe显示（仅在iFrameFree选中时）
+                        if (document.getElementById('engineSelect').value === 'iFrameFree') {
+                            document.getElementById('iframeContainer').style.display = 'block';
+                        }
+                    }, 100);
+                }
+            });
+        }
+        
+        // 动态添加CSS样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .search-container.focused {
+                position: fixed;
+                top: 10px;
+                left: 0;
+                right: 0;
+                width: 85%;
+                z-index: 1000;
+                margin: 0 auto;
+                background: white;
+            }
+            
+            body.focused #autoFillhttps,
+            body.focused a {
+                display: none !important;
+            }
+            
+            body.focused #quickInputBtn {
+                display: block !important;
+                position: fixed;
+                left: 0;
+                right: 0;
+                text-align: center;
+                z-index: 1001;
+                top: 60px;
+            }
+            
+            /* 新增子容器横向排列样式 */
+            body.focused #quickInputBtn > div {
+                display: inline-block;
+                white-space: nowrap;
+            }
+            
+            body.focused #quickInputBtn1Head, #quickInputBtn2, #quickInputBtn3 {
+                overflow-x: auto;
+                white-space: nowrap;
+                width: 95%;
+            }
+            
+            body.focused #engineSelect {
+                opacity: 0;
+                width: 0;
+                min-width: 0;
+                margin: 0;
+                padding: 0;
+                border: none;
+                overflow: hidden;
+            }`;
+        document.head.appendChild(style);
+        
+        // 监听布局复选框状态变化
+        document.getElementById('layoutCheckbox').addEventListener('change', function() {
+            localStorage.setItem('layoutChecked', this.checked);
+            applyLayoutStyle(this.checked);
+            
+            // 添加：当重复勾选时恢复当前调节的高度
+            if (this.checked) {
+                const savedHeightPercent = localStorage.getItem('heightPercent') || '25%';
+                document.body.style.top = savedHeightPercent;
+            }
+        });
+        
+        // 应用布局样式函数
+        function applyLayoutStyle(checked) {
+            if (checked) {
+                document.body.style.textAlign = 'center';
+                document.body.style.position = 'relative';
+                // 修改：使用保存的高度值而不是固定值
+                const savedHeightPercent = localStorage.getItem('heightPercent') || '25%';
+                document.body.style.top = savedHeightPercent;
+                document.body.style.height = '50%';
+            } else {
+                document.body.style.textAlign = '';
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.height = '';
+            }
+        }
+        
+        // 添加urlInput的mousedown事件处理，用于取消自动选择
+        document.getElementById('urlInput').addEventListener('mousedown', function() {
+            // 检查是否启用了自动选择https文本功能
+            const isSelectHttpsTextChecked = localStorage.getItem('selectHttpsTextChecked') === 'true';
+            const isAutoFillHttpsChecked = localStorage.getItem('autoFillHttpsChecked') === 'true';
+            
+            // 只有当所有条件满足且用户没有手动输入时才处理
+            if (isSelectHttpsTextChecked && isAutoFillHttpsChecked && 
+                this.value === 'https://' && !this.dataset.userInput) {
+                
+                // 检查是否已经选择了文本
+                const selectionStart = this.selectionStart;
+                const selectionEnd = this.selectionEnd;
+                
+                if (selectionStart === 0 && selectionEnd === this.value.length) {
+                    // 如果文本已经被全选，阻止默认的focus行为，取消选择
+                    this.setSelectionRange(this.value.length, this.value.length);
+                }
+            }
+        });
+
+        // 加载保存的布局复选框状态
+        const savedLayoutState = localStorage.getItem('layoutChecked');
+        if (savedLayoutState === 'true') {
+            document.getElementById('layoutCheckbox').checked = true;
+            applyLayoutStyle(true);
+        }
+        
+        // 保存和加载saveInputCheckbox状态
+        const savedInputState = localStorage.getItem('saveInputChecked');
+        if (savedInputState === 'true') {
+            document.getElementById('saveInputCheckbox').checked = true;
+            const savedInputText = localStorage.getItem('savedInputText');
+            if (savedInputText) {
+                document.getElementById('urlInput').value = savedInputText;
+            }
+        }
+        
+        // 监听saveInputCheckbox变化
+        document.getElementById('saveInputCheckbox').addEventListener('change', function() {
+            localStorage.setItem('saveInputChecked', this.checked);
+            if (!this.checked) {
+                localStorage.removeItem('savedInputText');
+            }
+        });
+        
+        // 监听复选框状态变化
+        document.getElementById('customCheckbox').addEventListener('change', function() {
+            localStorage.setItem('autoFillHttpsChecked', this.checked);
+            
+            // 控制selectHttpsText的disabled状态
+            document.getElementById('selectHttpsText').disabled = !this.checked;
+            
+            if (this.checked) {
+                // 只有当输入框为空时才自动填充
+                if (!document.getElementById('urlInput').value.trim()) {
+                    document.getElementById('urlInput').value = 'https://';
+                    // 重置用户输入状态
+                    document.getElementById('urlInput').dataset.userInput = '';
+                }
+            } else {
+                document.getElementById('urlInput').value = '';
+                // 重置用户输入状态
+                document.getElementById('urlInput').dataset.userInput = '';
+            }
+        }); 
+        // 监听selectHttpsText变化
+        document.getElementById('selectHttpsText').addEventListener('change', function() {
+            localStorage.setItem('selectHttpsTextChecked', this.checked);
+        });
+        
+        // 加载保存的selectHttpsText状态
+        const savedSelectHttpsTextState = localStorage.getItem('selectHttpsTextChecked');
+        if (savedSelectHttpsTextState === 'true') {
+            document.getElementById('selectHttpsText').checked = true;
+        }
+        
+        // 添加urlInput的focus事件处理，用于自动选择https文本
+        document.getElementById('urlInput').addEventListener('focus', function() {
+            // 检查是否启用了自动选择https文本功能
+            const isSelectHttpsTextChecked = localStorage.getItem('selectHttpsTextChecked') === 'true';
+            const isAutoFillHttpsChecked = localStorage.getItem('autoFillHttpsChecked') === 'true';
+            
+            // 只有当所有条件满足且用户没有手动输入时才自动选择
+            if (isSelectHttpsTextChecked && isAutoFillHttpsChecked && 
+                this.value === 'https://' && !this.dataset.userInput) {
+                this.select(); // 自动选择所有文本
+            }
+        });
+        
+        // 执行CSS代码功能
+        document.querySelector('label[for="executeCssBtn"]').addEventListener('click', function() {
+            const currentCss = localStorage.getItem('customCss') || '';
+            
+            // 创建自定义textarea弹窗
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            const originalScrollX = window.scrollX || window.pageXOffset;
+            const originalScrollY = window.scrollY || window.pageYOffset;
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = [
+                'position: fixed',
+                'top: 0',
+                'left: 0',
+                'width: 100%',
+                'height: 100%',
+                'background: rgba(0,0,0,0.5)',
+                'z-index: 10000',
+                'display: flex',
+                'justify-content: center',
+                'align-items: center'
+            ].join(';');
+            
+            const callbackName = 'cssCallback_' + Date.now();
+            window[callbackName] = function(cssCode) {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+                window.scrollTo(originalScrollX, originalScrollY);
+        
+                if (cssCode === null) {
+                    return;
+                }
+                if (cssCode === '') {
+                    // 输入为空时恢复默认，移除自定义样式
+                    const existingStyle = document.getElementById('customCssStyle');
+                    if (existingStyle) {
+                        existingStyle.remove();
+                    }
+                    localStorage.removeItem('customCss');
+                } else {
+                    // 移除现有自定义样式
+                    const existingStyle = document.getElementById('customCssStyle');
+                    if (existingStyle) {
+                        existingStyle.remove();
+                    }
+                    
+                    // 创建新的样式元素
+                    const styleElement = document.createElement('style');
+                    styleElement.id = 'customCssStyle';
+                    styleElement.textContent = cssCode;
+                    document.head.appendChild(styleElement);
+                    
+                    // 保存CSS代码
+                    localStorage.setItem('customCss', cssCode);
+                }
+                
+                setTimeout(function() {
+                    delete window[callbackName];
+                }, 100);
+            };
+            
+            modal.innerHTML = [
+                '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
+                '<p style="margin-top: 0; user-select: none; text-align: left;">请输入CSS代码（输入为空时恢复默认）：</p>',
+                '<textarea id="cssInput_' + callbackName + '" style="min-height:46px;max-height:110px;overflow-y:auto;width:100%;padding:4px;box-sizing:border-box;border:1px solid #ccc;font-family:inherit;font-size:inherit;resize:none;" placeholder="仅支持CSS代码" oninput="executeCssAutoResize(this)">' + (currentCss || '') + '</textarea>',
+                '<div style="margin-top: 15px; text-align: right;">',
+                '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null)">取消</label>',
+                '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var textarea=document.getElementById(\'cssInput_' + callbackName + '\');window.' + callbackName + '(textarea?textarea.value:null);localStorage.setItem(\'cssTextareaHeight\',textarea.style.height)">确定</label>',
+                '</div>',
+                '</div>'
+            ].join('');
+            
+            document.body.appendChild(modal);
+        
+            var textarea = document.getElementById('cssInput_' + callbackName);
+            var savedHeight = localStorage.getItem('cssTextareaHeight');
+            if (savedHeight && textarea) {
+                textarea.style.height = savedHeight;
+            }
+        });
+        
+        function executeCssAutoResize(textarea) {
+            // 重置高度为auto以计算正确的内容高度
+            textarea.style.height = 'auto';
+            
+            // 计算内容高度
+            const contentHeight = textarea.scrollHeight;
+            
+            // 应用高度限制
+            if (contentHeight < 46) {
+                textarea.style.height = '46px';
+            } else if (contentHeight > 110) {
+                textarea.style.height = '110px';
+            } else {
+                textarea.style.height = contentHeight + 'px';
+            }
+        }
+        
+        // 加载保存的CSS代码
+        const savedCss = localStorage.getItem('customCss');
+        if (savedCss) {
+            const styleElement = document.createElement('style');
+            styleElement.id = 'customCssStyle';
+            styleElement.textContent = savedCss;
+            document.head.appendChild(styleElement);
+        }
+        
+        // 监听urlInput输入事件，当用户开始输入时记录状态
+        document.getElementById('urlInput').addEventListener('input', function() {
+            // 记录用户已经开始输入，禁用自动选择
+            if (this.value !== 'https://') {
+                this.dataset.userInput = 'true';
+            }
+            
+            if (document.getElementById('saveInputCheckbox').checked) {
+                localStorage.setItem('savedInputText', this.value);
+            }
+        });
+        
+        const savedEngine = localStorage.getItem('selectedEngine');
+            if (savedEngine) {
+            document.getElementById('engineSelect').value = savedEngine;
+        }
+        
+        // 显示/隐藏链接的checkbox
+        document.getElementById('showLinkCheckbox').addEventListener('change', function() {
+            localStorage.setItem('showLinkChecked', this.checked);
+            toggleLinkDisplay(this.checked);
+        });
+        
+        // 加载保存的显示链接复选框状态
+        const savedShowLinkState = localStorage.getItem('showLinkChecked');
+        if (savedShowLinkState === 'true') {
+            document.getElementById('showLinkCheckbox').checked = true;
+            toggleLinkDisplay(true);
+        } else if (savedShowLinkState === 'false') {
+            document.getElementById('showLinkCheckbox').checked = false;
+            toggleLinkDisplay(false);
+        }
+        
+        // 切换链接显示状态的函数
+        function toggleLinkDisplay(show) {
+            const linkElement = document.getElementById('85727544071588039023');
+            if (linkElement) {
+                linkElement.style.display = show ? 'inline-block' : 'none';
+            }
+        }
+        
+        // 保存和加载showSendCheckbox状态
+        const savedShowSendCheckboxState = localStorage.getItem('showSendCheckboxChecked');
+        if (savedShowSendCheckboxState === 'true') {
+            document.getElementById('showSendCheckbox').checked = true;
+            document.getElementById('submitBtn').style.display = 'inline-block';
+        } else if (savedShowSendCheckboxState === 'false') {
+            document.getElementById('showSendCheckbox').checked = false;
+            document.getElementById('submitBtn').style.display = 'none';
+        }
+        
+        // 监听showSendCheckbox变化
+        document.getElementById('showSendCheckbox').addEventListener('change', function() {
+            localStorage.setItem('showSendCheckboxChecked', this.checked);
+            if (this.checked) {
+                document.getElementById('submitBtn').style.display = 'inline-block';
+            } else {
+                document.getElementById('submitBtn').style.display = 'none';
+            }
+        });
+        
+        // 保存和加载背景颜色
+        const savedBgColor = localStorage.getItem('backgroundColor') || '#ffffff';
+        document.body.style.backgroundColor = savedBgColor;
+        document.getElementById('searchContainer').style.background = savedBgColor;
+        document.getElementById('bgColorPicker').value = savedBgColor;
+        document.getElementById('colorValue').textContent = savedBgColor;
+        
+        // 监听背景颜色变化
+        document.getElementById('bgColorPicker').addEventListener('input', function() {
+            const color = this.value;
+            document.body.style.backgroundColor = color;
+            document.getElementById('searchContainer').style.background = color;
+            localStorage.setItem('backgroundColor', color);
+        });
+        
+        // 点击label触发颜色输入提示
+        document.querySelector('label[for="bgColorPicker"]').addEventListener('click', function() {
+            const currentColor = localStorage.getItem('backgroundColor') || '#ffffff';
+            showCustomModal('请输入颜色值（如 #ffffff 或 red）\n或者rgba(255,255,255,1.0)，rgb(255,255,255) ：', currentColor, function(newValue) {
+                if (newValue === null) {
+                    return;
+                }
+                if (newValue === '') {
+                    // 输入为空时恢复默认颜色
+                    const defaultColor = '#ffffff';
+                    document.body.style.backgroundColor = defaultColor;
+                    document.body.style.backgroundImage = '';
+                    document.getElementById('searchContainer').style.background = defaultColor;
+                    document.getElementById('colorValue').textContent = defaultColor;
+                    localStorage.setItem('backgroundColor', defaultColor);
+                    localStorage.removeItem('backgroundImage');
+                } else if (newValue.toLowerCase() === 'image url') {
+                    // 输入image时弹出背景图片链接输入框
+                    showCustomModal('请输入图片URL：', '', function(imageUrl) {
+                        if (imageUrl && imageUrl.trim() !== '') {
+                            document.body.style.backgroundColor = '';
+                            document.body.style.backgroundImage = `url("${imageUrl}")`;
+                            document.body.style.backgroundSize = 'cover';
+                            document.body.style.backgroundRepeat = 'no-repeat';
+                            document.body.style.backgroundAttachment = 'fixed';
+                            document.getElementById('searchContainer').style.background = '';
+                            document.getElementById('colorValue').textContent = 'Image';
+                            localStorage.setItem('backgroundImage', imageUrl);
+                        }
+                    });
+                } else if (/^#([0-9A-F]{3,6})$/i.test(newValue) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newValue) || /^[a-z]+$/i.test(newValue)) {
+                    document.body.style.backgroundColor = newValue;
+                    document.body.style.backgroundImage = '';
+                    document.getElementById('searchContainer').style.background = newValue;
+                    document.getElementById('colorValue').textContent = newValue;
+                    localStorage.setItem('backgroundColor', newValue);
+                    localStorage.removeItem('backgroundImage');
+                }
+            });
+        });
+        
+        // 加载保存的复选框状态
+        const savedCheckboxState = localStorage.getItem('autoFillHttpsChecked');
+        if (savedCheckboxState === 'true') {
+            document.getElementById('customCheckbox').checked = true;
+            // 如果勾选，自动填充 https:// 到输入框
+            // 只有当输入框为空时才自动填充
+            if (!document.getElementById('urlInput').value.trim()) {
+                document.getElementById('urlInput').value = 'https://';
+            }
+            if (savedCheckboxState === 'true') {
+                document.getElementById('selectHttpsText').disabled = false;
+            }
+        }
+        
+        // 加载保存的背景图片
+        const savedBackgroundImage = localStorage.getItem('backgroundImage');
+        if (savedBackgroundImage) {
+            document.body.style.backgroundColor = '';
+            document.body.style.backgroundImage = `url("${savedBackgroundImage}")`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+            document.getElementById('searchContainer').style.background = '';
+            document.getElementById('colorValue').textContent = 'Image';
+        }
+        
+        // 字体颜色控制
+        document.querySelector('label[for="fontColorPicker"]').addEventListener('click', function() {
+            const currentColor = localStorage.getItem('fontColor') || '#000000';
+            showCustomModal('请输入字体颜色值（如 #000000 或 black）\n或者rgba(255,255,255,1.0)，rgb(255,255,255) ：', currentColor, function(newColor) {
+                if (newColor === null) {
+                    return;
+                }
+                if (newColor === '') {
+                    // 输入为空时恢复默认颜色
+                    const defaultColor = '#000000';
+                    document.getElementById('autoFillhttps').style.color = defaultColor;
+                    document.getElementById('iframeContainer').style.color = defaultColor;
+                    document.getElementById('fontColorValue').textContent = defaultColor;
+                    localStorage.setItem('fontColor', defaultColor);
+                } else if (/^#([0-9A-F]{3,6})$/i.test(newColor) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newColor) || /^[a-z]+$/i.test(newColor)) {
+                    document.getElementById('autoFillhttps').style.color = newColor;
+                    document.getElementById('iframeContainer').style.color = newColor;
+                    document.getElementById('fontColorValue').textContent = newColor;
+                    localStorage.setItem('fontColor', newColor);
+                }
+            });
+        });
+        
+        // 加载保存的字体颜色
+        const savedFontColor = localStorage.getItem('fontColor');
+        if (savedFontColor) {
+            document.getElementById('autoFillhttps').style.color = savedFontColor;
+            document.getElementById('iframeContainer').style.color = savedFontColor;
+            document.getElementById('fontColorValue').textContent = savedFontColor;
+        }
+        
+        // 超链接快捷跳转功能
+        document.querySelector('label[for="linkCreatorBtn0"]').addEventListener('click', function() {
+            showCustomDoubleInput(
+                '创建快捷链接', 
+                '输入链接显示文本', 
+                '输入URL地址（必须以 https://、http:// 开头）', 
+                '快捷方式', 
+                'https://baidu.com', 
+                function(text, url) {
+                    if (text && url) {
+                        // 验证格式
+                        if (!url.startsWith('https://') && !url.startsWith('http://') && !url.startsWith('#')) {
+                            return;
+                        }
+                        
+                        // 保存链接
+                        const links = JSON.parse(localStorage.getItem('quickLinks') || '[]');
+                        links.push({ url: url, text: text });
+                        localStorage.setItem('quickLinks', JSON.stringify(links));
+                        
+                        // 更新显示
+                        updateQuickLinks();
+                    }
+                }
+            );
+        });
+               
+        // 字体大小调整功能
+        document.querySelector('label[for="fontSizePicker"]').addEventListener('click', function() {
+            const currentSize = localStorage.getItem('urlInputFontSize') || 'Default';
+            showCustomModal('请输入字体大小（如 14px，输入为空时恢复默认）：', currentSize === 'Default' ? '' : currentSize, function(newSize) {
+                if (newSize === '') {
+                    // 输入为空时恢复默认大小
+                    document.getElementById('urlInput').style.fontSize = '';
+                    document.getElementById('engineSelect').style.fontSize = '';
+                    document.getElementById('submitBtn').style.fontSize = '';
+                    document.getElementById('fontSizeValue').textContent = 'Default';
+                    localStorage.removeItem('urlInputFontSize');
+                } else if (/^\d+(\.\d+)?%$/.test(newSize) || /^\d+(\.\d+)?(px|in|mm|pt)$/.test(newSize)) {
+                    document.getElementById('urlInput').style.fontSize = newSize;
+                    document.getElementById('engineSelect').style.fontSize = newSize;
+                    document.getElementById('submitBtn').style.fontSize = newSize;
+                    document.getElementById('fontSizeValue').textContent = newSize;
+                    localStorage.setItem('urlInputFontSize', newSize);
+                }
+            });
+        });
+        
+        // 加载保存的字体大小设置
+        const savedFontSize = localStorage.getItem('urlInputFontSize');
+        if (savedFontSize) {
+            document.getElementById('urlInput').style.fontSize = savedFontSize;
+            document.getElementById('engineSelect').style.fontSize = savedFontSize;
+            document.getElementById('submitBtn').style.fontSize = savedFontSize;
+            document.getElementById('fontSizeValue').textContent = savedFontSize;
+        }
+        
+        // 高度调整功能
+        document.querySelector('label[for="heightPicker"]').addEventListener('click', function() {
+            const currentHeight = localStorage.getItem('elementHeight') || '24px';
+            showCustomModal('请输入高度值（如 24px，输入为空时恢复默认）：', currentHeight, function(newHeight) {
+                if (newHeight === '') {
+                    // 输入为空时恢复默认高度
+                    const defaultHeight = '24px';
+                    document.getElementById('engineSelect').style.height = defaultHeight;
+                    document.getElementById('urlInput').style.height = defaultHeight;
+                    document.getElementById('submitBtn').style.height = defaultHeight;
+                    document.getElementById('heightValue').textContent = defaultHeight;
+                    localStorage.setItem('elementHeight', defaultHeight);
+                } else if (/^\d+(\.\d+)?(px|in|mm|pt)$/.test(newHeight)) {
+                    document.getElementById('engineSelect').style.height = newHeight;
+                    document.getElementById('urlInput').style.height = newHeight;
+                    document.getElementById('submitBtn').style.height = newHeight;
+                    document.getElementById('heightValue').textContent = newHeight;
+                    localStorage.setItem('elementHeight', newHeight);
+                }
+            });
+        });
+        
+        // 宽度调整功能
+        document.querySelector('label[for="widthPicker"]').addEventListener('click', function() {
+            const currentWidth = localStorage.getItem('buttonWidth') || 'Default';
+            showCustomModal('请输入按钮宽度值（如 50px，输入空值恢复默认）：', currentWidth === 'Default' ? '' : currentWidth, function(newWidth) {
+                if (newWidth === '') {
+                    // 输入为空时恢复默认宽度
+                    document.getElementById('submitBtn').style.width = '';
+                    document.getElementById('widthValue').textContent = 'Default';
+                    localStorage.setItem('buttonWidth', 'Default');
+                } else if (/^\d+(\.\d+)?(px|in|mm|pt)$/.test(newWidth)) {
+                    document.getElementById('submitBtn').style.width = newWidth;
+                    document.getElementById('widthValue').textContent = newWidth;
+                    localStorage.setItem('buttonWidth', newWidth);
+                }
+            });
+        });
+        
+        // 加载保存的高度设置
+        const savedHeight = localStorage.getItem('elementHeight');
+        if (savedHeight) {
+            document.getElementById('engineSelect').style.height = savedHeight;
+            document.getElementById('urlInput').style.height = savedHeight;
+            document.getElementById('submitBtn').style.height = savedHeight;
+            document.getElementById('heightValue').textContent = savedHeight;
+        }
+        
+        // 加载保存的宽度设置
+        const savedWidth = localStorage.getItem('buttonWidth');
+        if (savedWidth && savedWidth !== 'Default') {
+            document.getElementById('submitBtn').style.width = savedWidth;
+            document.getElementById('widthValue').textContent = savedWidth;
+        }
+        
+        // 导出设置功能
+        document.querySelector('label[for="exportSettingsBtn"]').addEventListener('click', function() {
+            const settings = {
+                autoFillHttpsChecked: localStorage.getItem('autoFillHttpsChecked') || 'false',
+                focusCheckboxChecked: localStorage.getItem('focusCheckboxChecked') || 'false',
+                layoutChecked: localStorage.getItem('layoutChecked') || 'false',
+                showLinkChecked: localStorage.getItem('showLinkChecked') || 'true',
+                showSendCheckboxChecked: localStorage.getItem('showSendCheckboxChecked') || 'true',
+                backgroundColor: localStorage.getItem('backgroundColor') || '#ffffff',
+                quickInputChecked: localStorage.getItem('quickInputChecked') || 'false',
+                linkColor: localStorage.getItem('linkColor') || '#0000ee',
+                linkName: localStorage.getItem('linkName') || 'Baidu.com',
+                elementHeight: localStorage.getItem('elementHeight') || '24px',
+                buttonWidth: localStorage.getItem('buttonWidth') || 'Default',
+                saveInputChecked: localStorage.getItem('saveInputChecked') || 'false',
+                savedInputText: localStorage.getItem('savedInputText') || '',
+                iframeWidth: localStorage.getItem('iframeWidth') || '100%',
+                iframeHeight: localStorage.getItem('iframeHeight') || '600px',
+                customSearchUrl: localStorage.getItem('customSearchUrl') || '',
+                quickLinks: localStorage.getItem('quickLinks') || '[]',
+                selectHttpsTextChecked: localStorage.getItem('selectHttpsTextChecked') || 'false',
+                heightPercent: localStorage.getItem('heightPercent') || '25%',
+                urlInputFontSize: localStorage.getItem('urlInputFontSize') || 'Default',
+                selectedEngine: localStorage.getItem('selectedEngine') || 'baidu',
+                submitBtnName: localStorage.getItem('submitBtnName') || '跳转',
+                linkSize: localStorage.getItem('linkSize') || '30px',
+                autoNewTabChecked: localStorage.getItem('autoNewTabChecked') || 'false',
+                linkImage: localStorage.getItem('linkImage'),
+                backgroundImage: localStorage.getItem('backgroundImage'),
+                fontColor: localStorage.getItem('fontColor') || '#000000',
+                customCss: localStorage.getItem('customCss') || '',
+                cssTextareaHeight: localStorage.getItem('cssTextareaHeight') || '46px'
+            };
+            
+            const jsonContent = JSON.stringify(settings, null, 2);
+            const base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
+            const dataUrl = 'data:application/json;base64,' + base64Content;
+            
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = 'search_settings.json';
+            a.click();
+        });
+        
+        // 导入设置功能
+        document.querySelector('label[for="importSettingsBtn"]').addEventListener('click', function() {
+            document.getElementById('importSettingsInput').click();
+        });
+        
+        document.getElementById('importSettingsInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const content = event.target.result;
+                    const settings = JSON.parse(content);
+                    
+                    // 恢复所有设置到localStorage
+                    Object.keys(settings).forEach(key => {
+                if (settings[key] !== null) {
+                            localStorage.setItem(key, settings[key]);
+                        }
+                    });
+                    
+                    // 重新加载页面应用设置
+                    location.reload();
+                } catch (error) {
+                }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        });
+        
+        // 在 layoutCheckbox 事件监听器附近添加以下代码
+        document.querySelector('label[for="heightAdjustBtn"]').addEventListener('click', function() {
+            // 只有当layoutCheckbox勾选时才弹出提示
+            if (!document.getElementById('layoutCheckbox').checked) {
+                return;
+            }
+            
+            const currentPercent = localStorage.getItem('heightPercent') || '25%';
+            showCustomModal('请输入居中高度百分比 (7%-40%，输入为空时恢复默认25%) ：', currentPercent, function(newPercent) {
+                if (newPercent === '') {
+                    // 输入为空时恢复默认高度
+                    const defaultPercent = '25%';
+                    document.body.style.top = defaultPercent;
+                    document.getElementById('heightPercentValue').textContent = defaultPercent;
+                    localStorage.setItem('heightPercent', defaultPercent);
+                } else if (/^([7-9](\.[0-9]+)?|[1-3][0-9](\.[0-9]+)?|40(\.[0]+)?)%$/.test(newPercent)) {
+                    // 验证输入是否在7%-40%范围内（支持小数点）
+                    const percentValue = parseFloat(newPercent);
+                    if (percentValue >= 7 && percentValue <= 40) { //>
+                        document.body.style.top = newPercent;
+                        document.getElementById('heightPercentValue').textContent = newPercent;
+                        localStorage.setItem('heightPercent', newPercent);
+                    }
+                }
+            });
+        });
+        
+        // 在加载保存的布局复选框状态部分添加以下代码
+        const savedHeightPercent = localStorage.getItem('heightPercent');
+        if (savedHeightPercent) {
+            document.getElementById('heightPercentValue').textContent = savedHeightPercent;
+            // 只有当布局居中启用时才应用保存的高度
+            if (document.getElementById('layoutCheckbox').checked) {
+                document.body.style.top = savedHeightPercent;
+            }
+        }
+
+        // 更新快捷链接显示
+        function updateQuickLinks() {
+            const quickLinksDiv = document.getElementById('quickLinks');
+            const links = JSON.parse(localStorage.getItem('quickLinks') || '[]');
+            const isShowCheckbox = document.getElementById('engineSelect').value === 'showCheckbox';
+            
+            quickLinksDiv.innerHTML = '';
+            
+            // 添加防止链接变紫色的样式
+            const style = document.createElement('style');
+            style.textContent = `
+                #quickLinks a:visited {
+                    color: #0000ee !important;
+                }
+                #quickLinks a:active {
+                    color: #ff0000 !important;
+                }
+            `;
+            document.head.appendChild(style);
+            
+            if (links.length === 0) {
+                quickLinksDiv.style.display = 'none';
+                return;
+            }
+            
+            quickLinksDiv.style.display = 'block';
+            quickLinksDiv.style.textAlign = 'center';
+            
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.width = '100%';
+            container.style.justifyContent = 'center';
+            container.style.flexWrap = 'wrap';
+            container.style.margin = '10px';
+            container.style.left = '0';
+            container.style.right = '0';
+            container.style.margin = '0 auto';
+            
+            links.forEach((link, index) => {
+                const linkElement = document.createElement('a');
+                linkElement.href = link.url.startsWith('http') ? link.url : '#';
+                linkElement.textContent = link.text;
+                linkElement.style.margin = '0 5px';
+                linkElement.target = '_blank';
+                
+                const linkContainer = document.createElement('div');
+                linkContainer.style.display = 'flex';
+                linkContainer.style.alignItems = 'center';
+                
+                // 只在showCheckbox时显示删除按钮
+                if (isShowCheckbox) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '×';
+                    deleteBtn.style.marginLeft = '5px';
+                    deleteBtn.onclick = function(e) {
+                        e.preventDefault();
+                        const updatedLinks = links.filter((_, i) => i !== index);
+                        localStorage.setItem('quickLinks', JSON.stringify(updatedLinks));
+                        updateQuickLinks();
+                    };
+                    linkContainer.appendChild(linkElement);
+                    linkContainer.appendChild(deleteBtn);
+                } else {
+                    linkContainer.appendChild(linkElement);
+                }
+                
+                container.appendChild(linkContainer);
+            });
+            
+            quickLinksDiv.appendChild(container);
+        }
+        
+        // 通用弹窗函数（兼容所有浏览器版本）
+        function showCustomModal(title, currentValue, callback) {
+            // 禁止页面滚动（兼容所有浏览器）
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            const originalScrollX = window.scrollX || window.pageXOffset;
+            const originalScrollY = window.scrollY || window.pageYOffset;
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = [
+                'position: fixed',
+                'top: 0',
+                'left: 0',
+                'width: 100%',
+                'height: 100%',
+                'background: rgba(0,0,0,0.5)',
+                'z-index: 10000',
+                'display: flex',
+                'justify-content: center',
+                'align-items: center'
+            ].join(';');
+            
+            // 创建唯一的回调函数名称以避免冲突
+            const callbackName = 'modalCallback_' + Date.now();
+            window[callbackName] = function(value) {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+                // 恢复页面滚动（兼容所有浏览器）
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+                window.scrollTo(originalScrollX, originalScrollY);
+                if (typeof callback === 'function') {
+                    callback(value);
+                }
+                // 清理全局函数
+                setTimeout(function() {
+                    delete window[callbackName];
+                }, 100);
+            };
+            
+            modal.innerHTML = [
+                '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
+                '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
+                '<input type="search" id="modalInput_' + callbackName + '" value="' + (currentValue || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+                '<div style="margin-top: 15px; text-align: right;">',
+                '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null)">取消</label>',
+                '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input=document.getElementById(\'modalInput_' + callbackName + '\');window.' + callbackName + '(input?input.value:null)">确定</label>',
+                '</div>',
+                '</div>'
+            ].join('');
+            
+            document.body.appendChild(modal);
+        }
+        
+        // 修改后的通用确认对话框函数（兼容所有浏览器）
+        function showCustomConfirm(title, callback) {
+            // 禁止页面滚动（兼容所有浏览器）
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            const originalScrollX = window.scrollX || window.pageXOffset;
+            const originalScrollY = window.scrollY || window.pageYOffset;
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = [
+                'position: fixed',
+                'top: 0',
+                'left: 0',
+                'width: 100%',
+                'height: 100%',
+                'background: rgba(0,0,0,0.5)',
+                'z-index: 10000',
+                'display: flex',
+                'justify-content: center',
+                'align-items: center'
+            ].join(';');
+            
+            // 创建唯一的回调函数名称以避免冲突
+            const callbackName = 'confirmCallback_' + Date.now();
+            window[callbackName] = function(result) {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+                // 恢复页面滚动（兼容所有浏览器）
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+                window.scrollTo(originalScrollX, originalScrollY);
+                if (typeof callback === 'function') {
+                    callback(result);
+                }
+                // 清理全局函数
+                setTimeout(function() {
+                    delete window[callbackName];
+                }, 100);
+            };
+            
+            modal.innerHTML = `
+                <div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">
+                    <p style="margin-top: 0; user-select: none; text-align: left;">${title}</p>
+                    <div style="margin-top: 15px; text-align: right;">
+                        <label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.${callbackName}(false)">取消</label>
+                        <label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="window.${callbackName}(true)">确定</label>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        // 双输入框通用弹窗函数（兼容所有浏览器版本）
+        function showCustomDoubleInput(title, label1, label2, currentValue1, currentValue2, callback) {
+            // 禁止页面滚动（兼容所有浏览器）
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            const originalScrollX = window.scrollX || window.pageXOffset;
+            const originalScrollY = window.scrollY || window.pageYOffset;
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+    
+            const modal = document.createElement('div');
+            modal.style.cssText = [
+                'position: fixed',
+                'top: 0',
+                'left: 0',
+                'width: 100%',
+                'height: 100%',
+                'background: rgba(0,0,0,0.5)',
+                'z-index: 10000',
+                'display: flex',
+                'justify-content: center',
+                'align-items: center'
+            ].join(';');
+            
+            // 创建唯一的回调函数名称以避免冲突
+            const callbackName = 'doubleInputCallback_' + Date.now();
+            window[callbackName] = function(value1, value2) {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+                // 恢复页面滚动（兼容所有浏览器）
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+                window.scrollTo(originalScrollX, originalScrollY);
+                if (typeof callback === 'function') {
+                    callback(value1, value2);
+                }
+                // 清理全局函数
+                setTimeout(function() {
+                    delete window[callbackName];
+                }, 100);
+            };
+            
+            modal.innerHTML = [
+                        '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
+                        '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
+                        '<div style="text-align: left; margin-bottom: 10px;">',
+                        '<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' + label1 + '</div>',
+                        '<input type="text" id="doubleInput1_' + callbackName + '" value="' + (currentValue1 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+                        '</div>',
+                        '<div style="text-align: left; margin-bottom: 15px;">',
+                        '<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' + label2 + '</div>',
+                        '<input type="text" id="doubleInput2_' + callbackName + '" value="' + (currentValue2 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+                        '</div>',
+                        '<div style="margin-top: 15px; text-align: right;">',
+                        '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null, null)">取消</label>',
+                        '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input1=document.getElementById(\'doubleInput1_' + callbackName + '\'),input2=document.getElementById(\'doubleInput2_' + callbackName + '\');window.' + callbackName + '(input1?input1.value:null,input2?input2.value:null)">确定</label>',
+                        '</div>',
+                        '</div>'
+                    ].join('');
+            
+            document.body.appendChild(modal);
+        }
+        
+        // 清除所有设置功能
+        document.querySelector('label[for="clearAllSettingsBtn"]').addEventListener('click', function() {
+            showCustomConfirm('警告：此操作将清除所有设置和快捷链接，并重置为默认状态！\n确定要继续吗？', function(result) {
+                if (result) {
+                    // 第一个确认框点击确定后，保持滚动禁止状态，直接显示第二个输入框
+                    showCustomModal('请输入 "Clear All" 确认操作：', '', function(inputText) {
+                        // 验证输入内容（不区分大小写）
+                        if (inputText && inputText.toLowerCase() === 'clear all') {
+                            // 清除所有localStorage设置
+                            localStorage.clear();
+                            
+                            // 重置engineSelect为默认选择（百度）
+                            document.getElementById('engineSelect').value = 'baidu';
+                            
+                            // 清除所有快捷链接
+                            updateQuickLinks();
+                        
+                            // 自动关闭标签页
+                            setTimeout(function() {
+                                window.close();
+                            }, 100);
+                            setTimeout(function() {
+                                window.location.reload(true);
+                            }, 110);
+                        }
+                    });
+                }
+            });
+        });
+        
+        // 导出链接功能
+        document.querySelector('label[for="exportLinksBtn"]').addEventListener('click', function() {
+            const links = JSON.parse(localStorage.getItem('quickLinks') || '[]');
+            if (links.length === 0) {
+                return;
+            }
+            
+            let htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>快捷链接备份</title></head><body><ul>';
+            links.forEach(link => {
+                htmlContent += `<li><a href="${link.url}" target="_blank">${link.text}</a></li>`;
+            });
+            htmlContent += '</ul></body></html>';
+            
+            // 使用 data URL base64 替换 Blob
+            const base64Content = btoa(unescape(encodeURIComponent(htmlContent)));
+            const dataUrl = 'data:text/html;base64,' + base64Content;
+            
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = 'quick_links_backup.html';
+            a.click();
+        });
+        
+        // 导入链接功能
+        document.querySelector('label[for="importLinksBtn"]').addEventListener('click', function() {
+            document.getElementById('importFileInput').click();
+        });
+        
+        document.getElementById('importFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const content = event.target.result;
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(content, 'text/html');
+                const links = Array.from(doc.querySelectorAll('a')).map(a => ({
+                    url: a.href,
+                    text: a.textContent
+                }));
+                
+                if (links.length > 0) {
+                    const existingLinks = JSON.parse(localStorage.getItem('quickLinks') || '[]');
+                    const mergedLinks = existingLinks.concat(links);
+                    localStorage.setItem('quickLinks', JSON.stringify(mergedLinks));
+                    updateQuickLinks();
+                }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        });
+        
+        // 清除所有快捷链接
+        document.querySelector('label[for="clearLinksBtn"]').addEventListener('click', function() {
+            showCustomConfirm('确定要清空所有快捷链接吗？', function(result) {
+                if (result) {
+                    localStorage.removeItem('quickLinks');
+                    updateQuickLinks();
+                }
+            });
+        });
+           
+        // 页面加载时更新快捷链接
+        document.addEventListener('DOMContentLoaded', function() {
+            updateQuickLinks();
+        });
+        
+        document.getElementById('85727544071588039023').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // 检查是否已经点击过
+            if (!localStorage.getItem('36156798756549916136')) {
+                showCustomConfirm('即将跳转到百度，确定要跳转吗？', function(result) {
+                if (result) {
+                    window.location.href = 'https://www.baidu.com';
+                    localStorage.setItem('36156798756549916136', 'true');
+                }
+            });
+                localStorage.setItem('36156798756549916136', 'true');
+            }
+        });
+        
+        document.querySelector('label[for="iframeRefreshBtn"]').addEventListener('click', function() {
+            const iframe = document.getElementById('webFrame');
+            iframe.src = iframe.src;
+        });
+
+        document.querySelector('label[for="iframeCloseBtn"]').addEventListener('click', function() {
+            showCustomConfirm('确定要关闭窗口吗？', function(result) {
+                if (result) {
+                    document.getElementById('webFrame').src = 'about:blank';
+                }
+            });
+        });
+        
+        // iframe控制功能
+        let iframeCount = 1;
+        
+        // iframe控制功能 - 修改后的代码
+
+        // 删除旧的单独宽度和高度按钮事件，添加统一的高度/宽度按钮事件
+        document.querySelector('label[for="resizeIframeSizeBtn"]').addEventListener('click', function() {
+            const currentWidth = localStorage.getItem('iframeWidth') || '100%';
+            const currentHeight = localStorage.getItem('iframeHeight') || '600px';
+            
+            showCustomDoubleInput(
+                '设置 iframe 尺寸', 
+                '输入窗口宽度（如 100% 或 800px）', 
+                '输入窗口高度（如 600px 或 80%）', 
+                currentWidth, 
+                currentHeight, 
+                function(width, height) {
+                    if (width !== null && height !== null) {
+                        if (width === '') {
+                            // 输入为空时恢复默认宽度
+                            const defaultWidth = '100%';
+                            document.getElementById('webFrame').style.width = defaultWidth;
+                            localStorage.setItem('iframeWidth', defaultWidth);
+                        } else {
+                            document.getElementById('webFrame').style.width = width;
+                            localStorage.setItem('iframeWidth', width);
+                        }
+                        
+                        if (height === '') {
+                            // 输入为空时恢复默认高度
+                            const defaultHeight = '600px';
+                            document.getElementById('webFrame').style.height = defaultHeight;
+                            document.getElementById('iframeContainer').style.height = defaultHeight;
+                            localStorage.setItem('iframeHeight', defaultHeight);
+                        } else {
+                            document.getElementById('webFrame').style.height = height;
+                            document.getElementById('iframeContainer').style.height = height;
+                            localStorage.setItem('iframeHeight', height);
+                        }
+                    }
+                }
+            );
+        });
+        
+        // 加载保存的iframe大小
+        const savedIframeWidth = localStorage.getItem('iframeWidth');
+        const savedIframeHeight = localStorage.getItem('iframeHeight');
+        if (savedIframeWidth && savedIframeHeight) {
+            document.getElementById('webFrame').style.width = savedIframeWidth;
+            document.getElementById('webFrame').style.height = savedIframeHeight;
+        }
+        
+        function getBrowserInfo() {
+            var userAgent = navigator.userAgent;
+            var browserName;
+            var version;
+            
+            // 检测浏览器类型和版本
+            if (userAgent.indexOf("Firefox") > -1) {
+                browserName = "Firefox";
+                version = userAgent.match(/Firefox\/([0-9.]+)/)[1];
+            } else if (userAgent.indexOf("Chrome") > -1) {
+                browserName = "Chrome";
+                version = userAgent.match(/Chrome\/([0-9.]+)/)[1];
+            } else if (userAgent.indexOf("Safari") > -1) {
+                browserName = "Safari";
+                version = userAgent.match(/Version\/([0-9.]+)/)[1];
+            } else if (userAgent.indexOf("Edge") > -1) {
+                browserName = "Edge";
+                version = userAgent.match(/Edge\/([0-9.]+)/)[1];
+            } else if (userAgent.indexOf("MSIE") > -1 || userAgent.indexOf("Trident") > -1) {
+                browserName = "Internet Explorer";
+                version = userAgent.match(/(MSIE |rv:)([0-9.]+)/)[2];
+            } else {
+                browserName = "Unknown";
+                version = "Unknown";
+            }
+            
+            return {
+                name: browserName,
+                version: version
+            };
+        }
+        
+        // 页面加载完成后显示浏览器信息
+        window.onload = function() {
+            var browserInfo = getBrowserInfo();
+            var displayElement = document.getElementById("browserInfo");
+            // 确保browserInfo元素存在且没有被图片覆盖
+            if (displayElement) {
+                displayElement.innerHTML = "浏览器: " + browserInfo.name + "<br>版本号: " + browserInfo.version;
+                // 兼容所有浏览器的z-index设置
+                displayElement.style.position = 'relative';
+                displayElement.style.zIndex = '9999';
+            }
+        };
+        
+        // 支持按Enter键提交
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if(e.key === 'Enter') {
+                document.getElementById('submitBtn').click();
+                if (this.value.trim() !== '') {
+                    this.blur();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
