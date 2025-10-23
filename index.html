@@ -1398,7 +1398,7 @@
                         if (imageUrl && imageUrl.trim() !== '') {
                             document.body.style.backgroundColor = '';
                             document.body.style.backgroundImage = `url("${imageUrl}")`;
-                            document.body.style.backgroundSize = '100%';
+                            document.body.style.backgroundSize = 'cover';
                             document.body.style.backgroundRepeat = 'no-repeat';
                             document.body.style.backgroundAttachment = 'fixed';
                             document.getElementById('searchContainer').style.background = '';
@@ -1436,7 +1436,7 @@
         if (savedBackgroundImage) {
             document.body.style.backgroundColor = '';
             document.body.style.backgroundImage = `url("${savedBackgroundImage}")`;
-            document.body.style.backgroundSize = '100%';
+            document.body.style.backgroundSize = 'cover';
             document.body.style.backgroundRepeat = 'no-repeat';
             document.body.style.backgroundAttachment = 'fixed';
             document.getElementById('searchContainer').style.background = '';
