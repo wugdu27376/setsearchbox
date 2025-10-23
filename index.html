@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>搜索Easy V6.7</title>
+    <title>搜索Easy V6.8</title>
     
 <link rel="icon" href="https://wugdu27376.github.io/setsearchbox/favicon.ico">
 
@@ -192,7 +192,10 @@
             <label for="fontColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">字体颜色: <span id="fontColorValue">#000000</span></label>
             <br/>
             <label for="executeCssBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">运行CSS代码</label>
+            <input type="checkbox" id="searchHistoryCheckbox">
+            <label for="searchHistoryCheckbox" style="user-select: none;">显示历史记录</label>
             <input type="submit" id="executeCssBtn" style="display: none;">
+            <br/>
             <label for="clearAllSettingsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">清除所有设置</label>
             <br/>
             <label style="user-select: none; margin-right: 0;">超链接:</label>
@@ -209,6 +212,11 @@
         <div style="margin-top: 10px;">
             <span id="browserInfo" style="user-select: none;"></span>
         </div>
+    </div>
+    
+    <div id="searchHistory" style="display: none; margin-top: 10px; margin-bottom: 5px;"></div>
+    <div id="clearHistoryBtn" style="display: none; text-align: center; margin-bottom: 5px;">
+    <label style="user-select: none; vertical-align: middle; cursor: pointer;">清空历史记录</label>
     </div>
     
     <div id="quickLinks" style="margin-top: 10px; margin-bottom: 20px;"></div>
@@ -344,6 +352,19 @@
                 document.getElementById('webFrame').src = url;
                 document.getElementById('iframeContainer').style.display = 'block';
                 return; // 不执行后续跳转
+            }
+            
+            const searchText = document.getElementById('urlInput').value.trim();
+            if (searchText && document.getElementById('searchHistoryCheckbox').checked) {
+                const history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                // 移除重复项
+                const filteredHistory = history.filter(item => item.text !== searchText);
+                // 添加到开头
+                filteredHistory.unshift({ text: searchText });
+                // 限制最多10条记录
+                const limitedHistory = filteredHistory.slice(0, 10);
+                localStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
+                updateSearchHistory();
             }
             
             // 如果保存输入文本复选框被勾选，保存当前输入
@@ -879,6 +900,14 @@
                 linkElement.innerHTML = `<img src="${savedLinkImage}" style="max-width: ${linkSize}; height: auto; display: block; left: 0; right: 0; margin: 0 auto;">`;
             document.getElementById('linkColorValue').textContent = 'Image';
         }
+        
+        // 加载保存的链接名称
+        const savedLinkName = localStorage.getItem('linkName');
+        if (savedLinkName) {
+            const linkElement = document.getElementById('85727544071588039023');
+            linkElement.textContent = savedLinkName;
+            document.getElementById('linkNameValue').textContent = savedLinkName;
+        }
 
         // submitBtn重命名功能
         document.querySelector('label[for="renameSubmitBtn"]').addEventListener('click', function() {
@@ -960,6 +989,131 @@
                 linkElement.innerHTML = `<img src="${savedLinkImage}" style="width: auto; height: auto; max-width: ${linkSize}; max-height: ${linkSize}; display: block; left: 0; right: 0; margin: 0 auto;">`;
                 document.getElementById('linkColorValue').textContent = 'Image';
             }
+        }
+        
+        // 保存和加载搜索历史记录checkbox状态
+        const savedSearchHistoryState = localStorage.getItem('searchHistoryChecked');
+        if (savedSearchHistoryState === 'true') {
+            document.getElementById('searchHistoryCheckbox').checked = true;
+            document.getElementById('searchHistory').style.display = 'block';
+            updateSearchHistory();
+        }
+        
+        // 监听搜索历史记录checkbox变化
+        document.getElementById('searchHistoryCheckbox').addEventListener('change', function() {
+            if (this.checked) {
+                localStorage.setItem('searchHistoryChecked', this.checked);
+                document.getElementById('searchHistory').style.display = 'block';
+                updateSearchHistory();
+            } else {
+                const history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                if (history.length > 0) {
+                    showCustomConfirm('确定要清除搜索历史记录并关闭此功能吗？', function(result) {
+                        if (result) {
+                            localStorage.removeItem('searchHistory');
+                            document.getElementById('searchHistory').style.display = 'none';
+                            document.getElementById('clearHistoryBtn').style.display = 'none';
+                            localStorage.setItem('searchHistoryChecked', false);
+                        } else {
+                            // 用户点击取消，恢复checkbox选中状态
+                            document.getElementById('searchHistoryCheckbox').checked = true;
+                        }
+                    });
+                } else {
+                    // 没有搜索记录时直接取消选择
+                    localStorage.setItem('searchHistoryChecked', this.checked);
+                    document.getElementById('searchHistory').style.display = 'none';
+                    document.getElementById('clearHistoryBtn').style.display = 'none';
+                }
+            }
+        });
+        
+        // 清空搜索历史记录功能
+        document.querySelector('#clearHistoryBtn label').addEventListener('click', function() {
+            showCustomConfirm('确定要清空搜索历史记录吗？', function(result) {
+                if (result) {
+                    localStorage.removeItem('searchHistory');
+                    document.getElementById('searchHistory').innerHTML = '';
+                    document.getElementById('clearHistoryBtn').style.display = 'none';
+                }
+            });
+        });
+        
+        // 更新搜索历史记录显示
+        function updateSearchHistory() {
+            const searchHistoryDiv = document.getElementById('searchHistory');
+            const history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            
+            searchHistoryDiv.innerHTML = '';
+            
+            if (history.length === 0) {
+                searchHistoryDiv.style.display = 'none';
+                document.getElementById('clearHistoryBtn').style.display = 'none';
+                return;
+            }
+            
+            searchHistoryDiv.style.display = 'block';
+            document.getElementById('clearHistoryBtn').style.display = 'block';
+            searchHistoryDiv.style.textAlign = 'center';
+            
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.width = '100%';
+            container.style.justifyContent = 'center';
+            container.style.flexWrap = 'wrap';
+            container.style.margin = '10px';
+            container.style.left = '0';
+            container.style.right = '0';
+            container.style.margin = '0 auto';
+            
+            history.forEach((item, index) => {
+            const linkElement = document.createElement('a');
+            linkElement.href = '#';
+                    
+            // 处理显示文本，超过100px时显示...
+            let displayText = item.text;
+            const tempSpan = document.createElement('span');
+            tempSpan.style.visibility = 'hidden';
+            tempSpan.style.position = 'absolute';
+            tempSpan.style.whiteSpace = 'nowrap';
+            tempSpan.style.font = getComputedStyle(linkElement).font;
+            tempSpan.textContent = displayText;
+            document.body.appendChild(tempSpan);
+            
+            if (tempSpan.offsetWidth > 100) {
+                while (tempSpan.offsetWidth > 100 && displayText.length > 3) {
+                    displayText = displayText.substring(0, displayText.length - 1);
+                    tempSpan.textContent = displayText + '...';
+                }
+                displayText = displayText + '...';
+            }
+            
+            document.body.removeChild(tempSpan);
+            linkElement.textContent = displayText;
+            linkElement.title = item.text; // 添加title显示完整内容
+            
+            linkElement.style.margin = '0 5px';
+            linkElement.style.maxWidth = '100px';
+            linkElement.style.overflow = 'hidden';
+            linkElement.style.textOverflow = 'ellipsis';
+            linkElement.style.whiteSpace = 'nowrap';
+            linkElement.style.display = 'inline-block';
+            linkElement.style.verticalAlign = 'bottom';
+            linkElement.onclick = function(e) {
+                e.preventDefault();
+                document.getElementById('urlInput').value = item.text;
+                document.getElementById('submitBtn').click();
+            };
+            
+            const linkContainer = document.createElement('div');
+            linkContainer.style.display = 'flex';
+            linkContainer.style.alignItems = 'center';
+            linkContainer.appendChild(linkElement);
+            
+            container.appendChild(linkContainer);
+        });
+            
+            searchHistoryDiv.appendChild(container);
         }
         
         // 保存和加载quickInputCheckbox状态
@@ -1617,7 +1771,9 @@
                 backgroundImage: localStorage.getItem('backgroundImage'),
                 fontColor: localStorage.getItem('fontColor') || '#000000',
                 customCss: localStorage.getItem('customCss') || '',
-                cssTextareaHeight: localStorage.getItem('cssTextareaHeight') || '46px'
+                cssTextareaHeight: localStorage.getItem('cssTextareaHeight') || '46px',
+                searchHistory: localStorage.getItem('searchHistory') || '[]',
+                searchHistoryChecked: localStorage.getItem('searchHistoryChecked') || 'false'
             };
             
             const jsonContent = JSON.stringify(settings, null, 2);
