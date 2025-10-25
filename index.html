@@ -128,12 +128,12 @@
             <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
             <optgroup label="其他">
             <option value="githubCode">Github</option>
-            <option value="baiduTw" id="baidutwOption">Baidu</option>
+            <option value="baiduTw" id="baidutwOption">Baidu (繁体)</option>
             <option value="biliTv" id="bilibiliOption">BiliBili</option>
             <option value="kfBaidu">开发者搜索</option>
             <option value="iFrameFree">IFrame</option>
             <option value="showCheckbox">工具</option>
-            <option value="customSearch">自定义</option>
+            <option value="customSearch" id="customSearchOption">自定义</option>
         </select>
         <input type="search" id="urlInput" placeholder="输入网址" style="height: 24px;">
         <input type="submit" style="height: 24px;" value="跳转" id="submitBtn">
@@ -167,7 +167,7 @@
             <label for="heightPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">搜索框高度: <span id="heightValue">24px</span></label>
             <label for="widthPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">按钮宽度: <span id="widthValue">Default</span></label>
             <br/>
-            <label for="redefineSearchBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">重新自定义搜索</label>
+            <label for="redefineSearchBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">编辑自定义搜索</label>
             <input type="checkbox" id="saveInputCheckbox">
             <label for="saveInputCheckbox" style="user-select: none;">保留输入文本</label>
             <br/>
@@ -286,10 +286,6 @@
             const savedEngine = localStorage.getItem('selectedEngine');
             if (savedEngine) {
                 document.getElementById('engineSelect').value = savedEngine;
-            }
-            // 如果保存的选择是customSearch，显示重新自定义按钮
-            if (savedEngine === 'customSearch') {
-                showCustomSearchButton();
             }
             // 如果保存的选择是iFrameFree，则显示iframe容器
             if (savedEngine === 'iFrameFree') {
@@ -500,8 +496,19 @@
                         if (customSearchUrl) {
                             url = customSearchUrl.replace('{keywords}', encodeURIComponent(url));
                         } else {
-                            // 如果没有设置自定义搜索网址，使用默认的百度搜索
                             url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+                        }
+                        break;
+                    default:
+                        if (engine.startsWith('customSearch_')) {
+                            const order = parseInt(engine.split('_')[1]);
+                            const customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]');
+                            const customSearch = customSearches.find(item => item.order === order);
+                            if (customSearch) {
+                                url = customSearch.url.replace('{keywords}', encodeURIComponent(url));
+                            } else {
+                                url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+                            }
                         }
                         break;
                     case 'iFrameFree':
@@ -542,12 +549,136 @@
         });
         // 重新自定义搜索网址文字点击事件
         document.querySelector('label[for="redefineSearchBtn"]').addEventListener('click', function() {
-            const currentUrl = localStorage.getItem('customSearchUrl') || 'https://www.baidu.com/s?wd={keywords}';
-            showCustomModal('请输入新的自定义搜索网址（使用{keywords}作为搜索词占位符）：', currentUrl, function(newCustomSearchUrl) {
-                if (newCustomSearchUrl && newCustomSearchUrl.includes('{keywords}')) {
-                    localStorage.setItem('customSearchUrl', newCustomSearchUrl);
+            const customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]');
+            const savedCustomSearchName = localStorage.getItem('customSearchName') || '自定义';
+            const defaultSearch = customSearches.find(item => item.order === 0) || { name: savedCustomSearchName, url: 'https://www.baidu.com/s?wd={keywords}', order: 0 };
+            
+            showCustomDoubleInput(
+                '创建/修改自定义搜索', 
+                '输入选项名称 {数值}（数值0为默认，但输入数值，但输入选项名称为空时删除当前新建自定义搜索选项）', 
+                '输入搜索网址（使用{keywords}作为占位符）', 
+                defaultSearch.name + ' {' + defaultSearch.order + '}', 
+                defaultSearch.url, 
+                function(nameInput, urlInput) {
+                    if (nameInput === null || urlInput === null) return;
+                    
+                    // 解析名称和排序数值
+                    const nameMatch = nameInput.match(/^(.*)\s*\{(\d+)\}$/);
+                    let name = nameMatch ? nameMatch[1].trim() : nameInput.trim();
+                    const order = nameMatch ? parseInt(nameMatch[2]) : 0;
+                    
+                    // 检查是否只有{0}时恢复默认名称
+                    if (name === '' && order === 0) {
+                        name = '自定义';
+                    }
+                    
+                    if (name === '' || urlInput === '') {
+                        // 输入为空时移除该选项
+                        const updatedSearches = customSearches.filter(item => item.order !== order);
+                        localStorage.setItem('customSearches', JSON.stringify(updatedSearches));
+                        // 如果是order为0，同时清除customSearchUrl
+                        if (order === 0) {
+                            localStorage.removeItem('customSearchUrl');
+                        }
+                        updateCustomSearchOptions();
+                    } else if (order === 0) {
+                        // order为0时只更新customSearchUrl和选项名称，不创建新选项
+                        localStorage.setItem('customSearchUrl', urlInput);
+                        // 保存customSearch选项名称
+                        localStorage.setItem('customSearchName', name);
+                        updateCustomSearchOptions();
+                    } else if (urlInput.includes('{keywords}')) {
+                        // 更新或添加自定义搜索
+                        const existingIndex = customSearches.findIndex(item => item.order === order);
+                        if (existingIndex !== -1) {
+                            customSearches[existingIndex] = { name: name, url: urlInput, order: order };
+                        } else {
+                            customSearches.push({ name: name, url: urlInput, order: order });
+                        }
+                        
+                        // 按order数值从小到大排序
+                        customSearches.sort((a, b) => a.order - b.order);
+                        localStorage.setItem('customSearches', JSON.stringify(customSearches));
+                        updateCustomSearchOptions();
+                    }
+                    // 检查数字是否已存在（除了当前编辑的order为0的情况）
+                    if (order !== 0) {
+                        const existingWithSameOrder = customSearches.find(item => item.order === order);
+                        if (existingWithSameOrder) {
+                            if (name === '' || urlInput === '') {
+                                // 输入为空时移除该选项
+                                const updatedSearches = customSearches.filter(item => item.order !== order);
+                                localStorage.setItem('customSearches', JSON.stringify(updatedSearches));
+                                updateCustomSearchOptions();
+                                return;
+                            } else if (urlInput.includes('{keywords}')) {
+                                // 替换已存在选项
+                                const existingIndex = customSearches.findIndex(item => item.order === order);
+                                customSearches[existingIndex] = { name: name, url: urlInput, order: order };
+                                
+                                // 按order数字从小到大排序
+                                customSearches.sort((a, b) => a.order - b.order);
+                                localStorage.setItem('customSearches', JSON.stringify(customSearches));
+                                updateCustomSearchOptions();
+                                return;
+                            }
+                        }
+                    }
+                }
+            );
+        });
+        
+        // 更新自定义搜索选项
+        function updateCustomSearchOptions() {
+            const customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]');
+            const engineSelect = document.getElementById('engineSelect');
+            
+            // 移除所有自定义搜索选项（除了默认的customSearch）
+            const optionsToRemove = [];
+            for (let i = 0; i < engineSelect.options.length; i++) {
+                if (engineSelect.options[i].value.startsWith('customSearch_')) {
+                    optionsToRemove.push(i);
+                }
+            }
+            // 更新customSearch选项名称
+            const savedCustomSearchName = localStorage.getItem('customSearchName');
+            if (savedCustomSearchName) {
+                const customSearchOption = document.getElementById('customSearchOption');
+                if (customSearchOption) {
+                    customSearchOption.textContent = savedCustomSearchName;
+                }
+            }
+            // 从后往前移除避免索引变化
+            optionsToRemove.reverse().forEach(index => {
+                engineSelect.remove(index);
+            });
+            
+            // 添加自定义搜索选项
+            customSearches.forEach(item => {
+                const option = document.createElement('option');
+                option.value = 'customSearch_' + item.order;
+                option.textContent = item.name;
+                // 插入到customSearch选项后面
+                const customSearchOption = engineSelect.querySelector('option[value="customSearch"]');
+                if (customSearchOption) {
+                    customSearchOption.parentNode.insertBefore(option, customSearchOption.nextSibling);
                 }
             });
+        }
+        
+        // 在页面加载时更新自定义搜索选项
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCustomSearchOptions();
+            // 恢复自定义搜索选项的选择状态
+            const savedCustomSearch = localStorage.getItem('selectedCustomSearch');
+            if (savedCustomSearch) {
+                document.getElementById('engineSelect').value = savedCustomSearch;
+            }
+            // 加载customSearch选项名称
+            const savedCustomSearchName = localStorage.getItem('customSearchName');
+            if (savedCustomSearchName) {
+                document.getElementById('customSearchOption').textContent = savedCustomSearchName;
+            }
         });
         
         // 监听选择变化并保存
@@ -606,6 +737,12 @@
                 document.getElementById('autoFillhttps').style.display = 'none';
                 linkCreatorBtn.style.display = 'none';
                 document.getElementById('linkCreatorPanel').style.display = 'none';
+            }
+            // 保存自定义搜索选项的选择状态
+            if (this.value.startsWith('customSearch_') || this.value === 'customSearch') {
+                localStorage.setItem('selectedCustomSearch', this.value);
+            } else {
+                localStorage.removeItem('selectedCustomSearch');
             }
             // 无论选择什么，都更新快捷链接显示
             updateQuickLinks();
@@ -1784,6 +1921,8 @@
                 customCss: localStorage.getItem('customCss') || '',
                 cssTextareaHeight: localStorage.getItem('cssTextareaHeight') || '46px',
                 searchHistory: localStorage.getItem('searchHistory') || '[]',
+                customSearches: localStorage.getItem('customSearches') || '[]',
+                selectedCustomSearch: localStorage.getItem('selectedCustomSearch') || '',
                 searchHistoryChecked: localStorage.getItem('searchHistoryChecked') || 'false'
             };
             
@@ -2151,19 +2290,13 @@
                 return;
             }
             
-            let htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>快捷链接备份</title></head><body><ul>';
-            links.forEach(link => {
-                htmlContent += `<li><a href="${link.url}" target="_blank">${link.text}</a></li>`;
-            });
-            htmlContent += '</ul></body></html>';
-            
-            // 使用 data URL base64 替换 Blob
-            const base64Content = btoa(unescape(encodeURIComponent(htmlContent)));
-            const dataUrl = 'data:text/html;base64,' + base64Content;
+            const jsonContent = JSON.stringify(links, null, 2);
+            const base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
+            const dataUrl = 'data:application/json;base64,' + base64Content;
             
             const a = document.createElement('a');
             a.href = dataUrl;
-            a.download = 'quick_links_backup.html';
+            a.download = 'quick_links_backup.json';
             a.click();
         });
         
@@ -2178,19 +2311,18 @@
             
             const reader = new FileReader();
             reader.onload = function(event) {
-                const content = event.target.result;
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(content, 'text/html');
-                const links = Array.from(doc.querySelectorAll('a')).map(a => ({
-                    url: a.href,
-                    text: a.textContent
-                }));
-                
-                if (links.length > 0) {
-                    const existingLinks = JSON.parse(localStorage.getItem('quickLinks') || '[]');
-                    const mergedLinks = existingLinks.concat(links);
-                    localStorage.setItem('quickLinks', JSON.stringify(mergedLinks));
-                    updateQuickLinks();
+                try {
+                    const content = event.target.result;
+                    const links = JSON.parse(content);
+                    
+                    if (links.length > 0) {
+                        const existingLinks = JSON.parse(localStorage.getItem('quickLinks') || '[]');
+                        const mergedLinks = existingLinks.concat(links);
+                        localStorage.setItem('quickLinks', JSON.stringify(mergedLinks));
+                        updateQuickLinks();
+                    }
+                } catch (error) {
+                    // JSON解析失败
                 }
                 e.target.value = '';
             };
