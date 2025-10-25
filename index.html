@@ -760,6 +760,12 @@
                         const previousEngine = localStorage.getItem('previousEngine') || 'baidu';
                         this.value = previousEngine;
                         localStorage.setItem('selectedEngine', previousEngine);
+                        if (previousEngine.startsWith('customSearch_')) {
+                            localStorage.setItem('selectedCustomSearch', previousEngine);
+                        }
+                        if (!previousEngine.startsWith('customSearch_')) {
+                            localStorage.removeItem('selectedCustomSearch');
+                        }
                         if (document.getElementById('engineSelect').value === 'showCheckbox') {
                             linkCreatorBtn.style.display = 'inline-block';
                             updateQuickLinks();
@@ -796,6 +802,12 @@
                         const previousEngine = localStorage.getItem('previousEngine') || 'baidu';
                         this.value = previousEngine;
                         localStorage.setItem('selectedEngine', previousEngine);
+                        if (previousEngine.startsWith('customSearch_')) {
+                        localStorage.setItem('selectedCustomSearch', previousEngine);
+                        }
+                        if (!previousEngine.startsWith('customSearch_')) {
+                            localStorage.removeItem('selectedCustomSearch');
+                        }
                         if (document.getElementById('engineSelect').value === 'showCheckbox') {
                             linkCreatorBtn.style.display = 'inline-block';
                             updateQuickLinks();
