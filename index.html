@@ -2021,7 +2021,8 @@
                 searchHistory: localStorage.getItem('searchHistory') || '[]',
                 customSearches: localStorage.getItem('customSearches') || '[]',
                 selectedCustomSearch: localStorage.getItem('selectedCustomSearch') || '',
-                searchHistoryChecked: localStorage.getItem('searchHistoryChecked') || 'false'
+                searchHistoryChecked: localStorage.getItem('searchHistoryChecked') || 'false',
+                urlInputPlaceholder: localStorage.getItem('urlInputPlaceholder') || '输入网址'
             };
             
             const jsonContent = JSON.stringify(settings, null, 2);
