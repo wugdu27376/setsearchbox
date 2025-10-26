@@ -1113,7 +1113,7 @@
         // 在placeholder重命名功能中使用
         document.querySelector('label[for="renamePlaceholderBtn"]').addEventListener('click', function() {
             const currentPlaceholder = localStorage.getItem('urlInputPlaceholder') || '输入网址';
-            showCustomModal('请输入输入框提示文字（输入{empty}时显示空白，输入为空时恢复默认）：', currentPlaceholder === '输入网址' ? '' : currentPlaceholder, function(newPlaceholder) {
+            showCustomModal('请输入输入框提示文字（输入{empty}时显示空白，输入为空时恢复默认）：', currentPlaceholder, function(newPlaceholder) {
                 if (newPlaceholder === null) {
                     return;
                 }
