@@ -61,24 +61,6 @@
             margin-bottom: 3px;
         }
         
-        #linkNameValue, #linkColorValue, #fontColorValue {
-            display: inline-block;
-            max-width: 100px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            vertical-align: bottom;
-            margin-bottom: 2.3px;
-        }
-        #colorValue {
-            display: inline-block;
-            max-width: 80px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            margin-bottom: -4.1px;
-        }
-        
         @media (min-width: 768px) {
             #quickLinks {
                 width: 80%;
@@ -196,6 +178,7 @@
             <label for="searchHistoryCheckbox" style="user-select: none;">显示历史记录</label>
             <input type="submit" id="executeCssBtn" style="display: none;">
             <br/>
+            <label for="renamePlaceholderBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">输入框提示: <span id="placeholderValue">输入网址</span></label>
             <label for="clearAllSettingsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">清除所有设置</label>
             <br/>
             <label style="user-select: none; margin-right: 0;">超链接:</label>
@@ -985,6 +968,7 @@
                         document.getElementById('linkColorValue').textContent = newValue;
                         localStorage.setItem('linkColor', newValue);
                         localStorage.removeItem('linkImage');
+                        truncateText('linkColorValue', newValue, 80);
                     }
                 }
             });
@@ -1020,6 +1004,7 @@
                     linkElement.textContent = newName.trim();
                     document.getElementById('linkNameValue').textContent = newName.trim();
                     localStorage.setItem('linkName', newName.trim());
+                    truncateText('linkNameValue', newName.trim(), 100);
                 }
             });
         });
@@ -1097,6 +1082,105 @@
             document.getElementById('submitBtn').value = savedSubmitBtnName;
             document.getElementById('submitBtnNameValue').textContent = savedSubmitBtnName;
         }
+        
+        // 通用文本截断函数
+        function truncateText(elementId, text, maxWidth) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const tempSpan = document.createElement('span');
+            tempSpan.style.visibility = 'hidden';
+            tempSpan.style.position = 'absolute';
+            tempSpan.style.whiteSpace = 'nowrap';
+            tempSpan.style.font = getComputedStyle(element).font;
+            tempSpan.textContent = text;
+            document.body.appendChild(tempSpan);
+            
+            let displayText = text;
+            if (tempSpan.offsetWidth > maxWidth) {
+                while (tempSpan.offsetWidth > maxWidth && displayText.length > 3) {
+                    displayText = displayText.substring(0, displayText.length - 1);
+                    tempSpan.textContent = displayText + '...';
+                }
+                displayText = displayText + '...';
+            }
+            
+            document.body.removeChild(tempSpan);
+            element.textContent = displayText;
+            element.title = text; // 添加title显示完整内容
+        }
+        
+        // 在placeholder重命名功能中使用
+        document.querySelector('label[for="renamePlaceholderBtn"]').addEventListener('click', function() {
+            const currentPlaceholder = localStorage.getItem('urlInputPlaceholder') || '输入网址';
+            showCustomModal('请输入输入框提示文字（输入{empty}时显示空白，输入为空时恢复默认）：', currentPlaceholder === '输入网址' ? '' : currentPlaceholder, function(newPlaceholder) {
+                if (newPlaceholder === null) {
+                    return;
+                }
+                if (newPlaceholder === '') {
+                    // 输入为空时恢复默认
+                    const defaultPlaceholder = '输入网址';
+                    document.getElementById('urlInput').placeholder = defaultPlaceholder;
+                    truncateText('placeholderValue', defaultPlaceholder, 100);
+                    localStorage.setItem('urlInputPlaceholder', defaultPlaceholder);
+                } else if (newPlaceholder === '{empty}') {
+                    // 输入{empty}时显示空白
+                    document.getElementById('urlInput').placeholder = '';
+                    truncateText('placeholderValue', '{empty}', 100);
+                    localStorage.setItem('urlInputPlaceholder', '{empty}');
+                } else {
+                    document.getElementById('urlInput').placeholder = newPlaceholder;
+                    truncateText('placeholderValue', newPlaceholder, 100);
+                    localStorage.setItem('urlInputPlaceholder', newPlaceholder);
+                }
+            });
+        });
+        
+        // 加载保存的placeholder设置时也使用截断函数
+        const savedPlaceholder = localStorage.getItem('urlInputPlaceholder');
+        if (savedPlaceholder) {
+            if (savedPlaceholder === '{empty}') {
+                document.getElementById('urlInput').placeholder = '';
+                truncateText('placeholderValue', '{empty}', 100);
+            } else {
+                document.getElementById('urlInput').placeholder = savedPlaceholder;
+                truncateText('placeholderValue', savedPlaceholder, 100);
+            }
+        }
+        
+        // 对其他需要截断的元素也应用此函数
+        // 在页面加载时对已有元素应用截断
+        document.addEventListener('DOMContentLoaded', function() {
+            // linkNameValue
+            const savedLinkName = localStorage.getItem('linkName');
+            if (savedLinkName) {
+                truncateText('linkNameValue', savedLinkName, 100);
+            }
+            
+            // linkColorValue
+            const savedLinkColor = localStorage.getItem('linkColor');
+            if (savedLinkColor) {
+                truncateText('linkColorValue', savedLinkColor, 80);
+            }
+            
+            // colorValue
+            const savedBgColor = localStorage.getItem('backgroundColor');
+            if (savedBgColor) {
+                truncateText('colorValue', savedBgColor, 80);
+            }
+            
+            // placeholderValue
+            const savedPlaceholder = localStorage.getItem('urlInputPlaceholder');
+            if (savedPlaceholder) {
+                truncateText('placeholderValue', savedPlaceholder === '{empty}' ? '{empty}' : savedPlaceholder, 100);
+            }
+            
+            // fontColorValue
+            const savedFontColor = localStorage.getItem('fontColor');
+            if (savedFontColor) {
+                truncateText('fontColorValue', savedFontColor, 80);
+            }
+        });
         
         // 链接大小控制
         document.querySelector('label[for="linkSizePicker"]').addEventListener('click', function() {
@@ -1727,6 +1811,7 @@
                     document.getElementById('colorValue').textContent = newValue;
                     localStorage.setItem('backgroundColor', newValue);
                     localStorage.removeItem('backgroundImage');
+                    truncateText('colorValue', newValue, 80);
                 }
             });
         });
@@ -1776,6 +1861,7 @@
                     document.getElementById('iframeContainer').style.color = newColor;
                     document.getElementById('fontColorValue').textContent = newColor;
                     localStorage.setItem('fontColor', newColor);
+                    truncateText('fontColorValue', newColor, 80);
                 }
             });
         });
