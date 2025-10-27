@@ -6,13 +6,10 @@
     
 <link rel="icon" href="https://wugdu27376.github.io/setsearchbox/favicon.ico">
 
-<p><strong>
-
 <body>
-<a href="javascript:void(0)" id="85727544071588039023" class="link-85727544071588039023" style="font-size: 30px;">Baidu.com</a>
+<p><strong><a href="javascript:void(0)" id="85727544071588039023" class="link-85727544071588039023" style="font-size: 30px;">Baidu.com</a></strong></p>
 </body>
 
-</strong>
     <style>
         body {
             margin: 0;
@@ -74,54 +71,60 @@
 <body>
     <div class="search-container" id="searchContainer">
         <select id="engineSelect" style="height: 24px;">
-        <optgroup label="搜索引擎">
-            <option value="baidu">百度</option>
-            <option value="google">谷歌</option>
-            <option value="bing">必应</option>
-            <option value="sogou">搜狗</option>
-            <option value="so">360搜索</option>
-            <option value="yandex">Yandex</option>
-            <option value="duckduckgo">DuckDuckGo</option>
+            <optgroup label="搜索引擎">
+                <option value="baidu">百度</option>
+                <option value="google">谷歌</option>
+                <option value="bing">必应</option>
+                <option value="sogou">搜狗</option>
+                <option value="so">360搜索</option>
+                <option value="yandex">Yandex</option>
+                <option value="duckduckgo">DuckDuckGo</option>
+            </optgroup>
             <optgroup label="网页">
-            <option value="autofillHttp1">Http网页</option>
-            <option value="autofillHttps">Https网页</option>
-            <option value="newtabpageHttp1">新建标签页(Http)</option>
-            <option value="newtabpageHttps">新建标签页(Https)</option>
+                <option value="autofillHttp1">Http网页</option>
+                <option value="autofillHttps">Https网页</option>
+                <option value="newtabpageHttp1">新建标签页(Http)</option>
+                <option value="newtabpageHttps">新建标签页(Https)</option>
+            </optgroup>
             <optgroup label="手机搜索">
-            <option value="sodouyinM" id="douyinOption">抖音搜索</option>
-            <option value="yzmsmM" id="shenmaOption">神马搜索</option>
-            <option value="sotoutiaoM" id="toutiaoOption">头条搜索</option>
-            <option value="baiduMEasy" id="baidueasyOption">百度精简版</option>
+                <option value="sodouyinM" id="douyinOption">抖音搜索</option>
+                <option value="yzmsmM" id="shenmaOption">神马搜索</option>
+                <option value="sotoutiaoM" id="toutiaoOption">头条搜索</option>
+                <option value="baiduMEasy" id="baidueasyOption">百度精简版</option>
+            </optgroup>
             <optgroup label="AI搜索">
-            <option value="metasosuoAI">秘塔搜索</option>
-            <option value="baiduAI">百度AI</option>
-            <option value="360namisoAI">360纳米AI</option>
-            <option value="zhihuZhiDaAI">知乎直答(需登录)</option>
-            <option value="quarkpcAI" id="quarkaiOption">夸克AI(需登录)</option>
+                <option value="metasosuoAI">秘塔搜索</option>
+                <option value="baiduAI">百度AI</option>
+                <option value="360namisoAI">360纳米AI</option>
+                <option value="zhihuZhiDaAI">知乎直答(需登录)</option>
+                <option value="quarkpcAI" id="quarkaiOption">夸克AI(需登录)</option>
+            </optgroup>
             <optgroup label="快捷翻译">
-            <option value="googleTranslate">谷歌翻译</option>
-            <option value="mcTranslator">必应翻译</option>
-            <option value="yandexTranslate">Yandex翻译</option>
-            <option value="sogouFanyi">搜狗翻译</option>
-            <option value="oldBaiduFanyi" id="baiduFanyiOption">百度翻译</option>
-            <option value="fanyiSo">360翻译</option>
-            <option value="volcTranslate">火山翻译</option>
-            <option value="nowTsAi">在线翻译</option>
-            <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
+                <option value="googleTranslate">谷歌翻译</option>
+                <option value="mcTranslator">必应翻译</option>
+                <option value="yandexTranslate">Yandex翻译</option>
+                <option value="sogouFanyi">搜狗翻译</option>
+                <option value="oldBaiduFanyi" id="baiduFanyiOption">百度翻译</option>
+                <option value="fanyiSo">360翻译</option>
+                <option value="volcTranslate">火山翻译</option>
+                <option value="nowTsAi">在线翻译</option>
+                <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
+            </optgroup>
             <optgroup label="其他">
-            <option value="githubCode">Github</option>
-            <option value="baiduTw" id="baidutwOption">Baidu (繁体)</option>
-            <option value="biliTv" id="bilibiliOption">BiliBili</option>
-            <option value="kfBaidu">开发者搜索</option>
-            <option value="iFrameFree">IFrame</option>
-            <option value="showCheckbox">工具</option>
-            <option value="customSearch" id="customSearchOption">自定义</option>
+                <option value="githubCode">Github</option>
+                <option value="baiduTw" id="baidutwOption">Baidu (繁体)</option>
+                <option value="biliTv" id="bilibiliOption">BiliBili</option>
+                <option value="kfBaidu">开发者搜索</option>
+                <option value="iFrameFree">IFrame</option>
+                <option value="showCheckbox">工具</option>
+                <option value="customSearch" id="customSearchOption">自定义</option>
+            </optgroup>
         </select>
         <input type="search" id="urlInput" placeholder="输入网址" style="height: 24px;">
         <input type="submit" style="height: 24px;" value="跳转" id="submitBtn">
     </div>
     
-    <div id="autoFillhttps" style="display: none; text-align: center; margin-top: 10px;">
+    <div id="autoFillhttps" style="display: none; text-align: center; margin-top: 10px;" aria-hidden="true">
         <input type="checkbox" id="customCheckbox">
             <label for="customCheckbox" style="user-select: none;">自动填充Https</label>
         <input type="checkbox" id="focusCheckbox">
