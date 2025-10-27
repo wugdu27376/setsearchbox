@@ -1345,7 +1345,7 @@
             linkElement.onclick = function(e) {
                 e.preventDefault();
                 document.getElementById('urlInput').value = item.text;
-                document.getElementById('submitBtn').click();
+                document.getElementById('urlInput').focus();
             };
             
             const linkContainer = document.createElement('div');
