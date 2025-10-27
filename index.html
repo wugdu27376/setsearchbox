@@ -339,6 +339,9 @@
             const searchText = document.getElementById('urlInput').value.trim();
             if (searchText && document.getElementById('searchHistoryCheckbox').checked) {
                 const history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                if (searchText === 'https://' || searchText === 'http://') {
+                    return;
+                }
                 // 移除重复项
                 const filteredHistory = history.filter(item => item.text !== searchText);
                 // 添加到开头
@@ -511,6 +514,13 @@
             } else if(url) {
                 // 如果包含://，直接使用输入的URL
                 // 无需修改
+            }
+            
+            if (localStorage.getItem('focusCheckboxChecked') === 'true') {
+                document.body.classList.remove('focused');
+                document.querySelector('.search-container').classList.remove('focused');
+                document.getElementById('quickInputBtn').style.display = 'none';
+                document.getElementById('urlInput').blur();
             }
             
             // 在submitBtn点击事件开始处添加：
@@ -1588,6 +1598,31 @@
             }
         });
         
+        // 右键控制
+        document.getElementById('urlInput').addEventListener('contextmenu', function(e) {
+            const isSelectHttpsTextChecked = localStorage.getItem('selectHttpsTextChecked') === 'true';
+            const isAutoFillHttpsChecked = localStorage.getItem('autoFillHttpsChecked') === 'true';
+            
+            // 当启用自动选择https文本且当前值为https://且用户没有手动输入时，禁用右键菜单
+            if (isSelectHttpsTextChecked && isAutoFillHttpsChecked && 
+                this.value === 'https://' && !this.dataset.userInput) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 监听urlInput的keydown事件来检测手动输入https://
+        document.getElementById('urlInput').addEventListener('keydown', function(e) {
+            if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete') {
+                this.dataset.manualHttps = 'true';
+            }
+        });
+        
+        // 监听urlInput的focus事件，重置manualHttps标记
+        document.getElementById('urlInput').addEventListener('focus', function() {
+            this.dataset.manualHttps = '';
+        });
+        
         // 执行CSS代码功能
         document.querySelector('label[for="executeCssBtn"]').addEventListener('click', function() {
             const currentCss = localStorage.getItem('customCss') || '';
@@ -1706,6 +1741,11 @@
             // 记录用户已经开始输入，禁用自动选择
             if (this.value !== 'https://') {
                 this.dataset.userInput = 'true';
+            } else {
+                // 当值恢复为https://时，重置用户输入状态（除非是手动输入的）
+                if (!this.dataset.manualHttps) {
+                    this.dataset.userInput = '';
+                }
             }
             
             if (document.getElementById('saveInputCheckbox').checked) {
