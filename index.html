@@ -1313,7 +1313,7 @@
             const linkElement = document.createElement('a');
             linkElement.href = '#';
                     
-            // 处理显示文本，超过100px时显示...
+            // 处理显示文本，超过150px时显示...
             let displayText = item.text;
             const tempSpan = document.createElement('span');
             tempSpan.style.visibility = 'hidden';
@@ -1323,8 +1323,8 @@
             tempSpan.textContent = displayText;
             document.body.appendChild(tempSpan);
             
-            if (tempSpan.offsetWidth > 100) {
-                while (tempSpan.offsetWidth > 100 && displayText.length > 3) {
+            if (tempSpan.offsetWidth > 150) {
+                while (tempSpan.offsetWidth > 150 && displayText.length > 3) {
                     displayText = displayText.substring(0, displayText.length - 1);
                     tempSpan.textContent = displayText + '...';
                 }
@@ -1336,7 +1336,7 @@
             linkElement.title = item.text; // 添加title显示完整内容
             
             linkElement.style.margin = '0 5px';
-            linkElement.style.maxWidth = '100px';
+            linkElement.style.maxWidth = '150px';
             linkElement.style.overflow = 'hidden';
             linkElement.style.textOverflow = 'ellipsis';
             linkElement.style.whiteSpace = 'nowrap';
