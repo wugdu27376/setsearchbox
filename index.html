@@ -114,6 +114,7 @@
                 <option value="githubCode">Github</option>
                 <option value="baiduTw" id="baidutwOption">Baidu (繁体)</option>
                 <option value="biliTv" id="bilibiliOption">BiliBili</option>
+                <option value="dyIsWindows" id="douyinpcOption">Douyin (PC)</option>
                 <option value="kfBaidu">开发者搜索</option>
                 <option value="iFrameFree">IFrame</option>
                 <option value="showCheckbox">工具</option>
@@ -263,7 +264,7 @@
             return !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
         
-        function isDesktopMove() {
+        function isDesktopMobile() {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
         
@@ -277,15 +278,17 @@
             if (savedEngine === 'iFrameFree') {
                 document.getElementById('iframeContainer').style.display = 'block';
             }
-            if (isDesktopMove()) {
+            if (isDesktopMobile()) {
                 if (savedEngine === 'baiduTw' || 
-                    savedEngine === 'biliTv' || savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'showCheckbox') {
+                    savedEngine === 'biliTv' || savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'dyIsWindows' || savedEngine === 'showCheckbox') {
                     document.getElementById('submitBtn').disabled = true;
+                    document.getElementById('urlInput').disabled = true;
                 }
             }
             if (isDesktop()) {
                 if (savedEngine === 'sodouyinM' || savedEngine === 'yzmsmM' || savedEngine === 'sotoutiaoM' || savedEngine === 'baiduMEasy' || savedEngine === 'oldBaiduFanyi' || savedEngine === 'showCheckbox') {
                     document.getElementById('submitBtn').disabled = true;
+                    document.getElementById('urlInput').disabled = true;
                 }
             }
             // 如果保存的选择是showCheckbox，则显示autoFillhttps div
@@ -315,10 +318,11 @@
                 document.getElementById('baiduFanyiOption').disabled = true;
             }
             
-            if (isDesktopMove()) {
+            if (isDesktopMobile()) {
                 document.getElementById('quarkaiOption').disabled = true;
                 document.getElementById('baidutwOption').disabled = true;
                 document.getElementById('bilibiliOption').disabled = true;
+                document.getElementById('douyinpcOption').disabled = true;
                 document.getElementById('tencentFanyi2').style.display = 'none';
             }
 
@@ -473,6 +477,9 @@
                         break;
                     case 'biliTv':
                         url = 'http://search.bilibili.com/all?keyword=' + encodeURIComponent(url);
+                        break;
+                    case 'dyIsWindows':
+                        url = 'https://www.douyin.com/root/search/' + encodeURIComponent(url);
                         break;
                     case 'showCheckbox':
                         url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
@@ -710,20 +717,24 @@
                     applyLayoutStyle(false);
                 }
             }
-            if (isDesktopMove()) {
+            if (isDesktopMobile()) {
                 if (this.value === 'baiduTw' || 
-                this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
+                this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
                 document.getElementById('submitBtn').disabled = true;
+                document.getElementById('urlInput').disabled = true;
             } else {
                 document.getElementById('submitBtn').disabled = false;
+                document.getElementById('urlInput').disabled = false;
                 }
             }
             if (isDesktop()) {
                 if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
                 this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
                 document.getElementById('submitBtn').disabled = true;
+                document.getElementById('urlInput').disabled = true;
             } else {
                 document.getElementById('submitBtn').disabled = false;
+                document.getElementById('urlInput').disabled = false;
                 }
             }
             if (this.value === 'showCheckbox') {
@@ -772,20 +783,24 @@
                         if (document.getElementById('engineSelect').value === 'iFrameFree') {
                             document.getElementById('iframeContainer').style.display = 'block';
                         }
-                        if (isDesktopMove()) {
+                        if (isDesktopMobile()) {
                             if (this.value === 'baiduTw' || 
-                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
+                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
+                            document.getElementById('urlInput').disabled = true;
                         } else {
                             document.getElementById('submitBtn').disabled = false;
+                            document.getElementById('urlInput').disabled = false;
                             }
                         }
                         if (isDesktop()) {
                             if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
                             this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
+                             document.getElementById('urlInput').disabled = true;
                         } else {
                             document.getElementById('submitBtn').disabled = false;
+                            document.getElementById('urlInput').disabled = false;
                             }
                         }
                         return;
@@ -814,20 +829,24 @@
                         if (document.getElementById('engineSelect').value === 'iFrameFree') {
                             document.getElementById('iframeContainer').style.display = 'block';
                         }
-                        if (isDesktopMove()) {
+                        if (isDesktopMobile()) {
                             if (this.value === 'baiduTw' || 
-                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'showCheckbox') {
+                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
+                            document.getElementById('urlInput').disabled = true;
                         } else {
                             document.getElementById('submitBtn').disabled = false;
+                            document.getElementById('urlInput').disabled = false;
                             }
                         }
                         if (isDesktop()) {
                             if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
                             this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
+                            document.getElementById('urlInput').disabled = true;
                         } else {
                             document.getElementById('submitBtn').disabled = false;
+                            document.getElementById('urlInput').disabled = false;
                             }
                         }
                         return;
