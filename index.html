@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>搜索Easy V6.8</title>
+    <title>搜索Easy V6.9</title>
     
 <link rel="icon" href="https://wugdu27376.github.io/setsearchbox/favicon.ico">
 
@@ -48,9 +48,22 @@
         }
 
         #autoFillhttps label {
-            margin: 0; /* 移除默认外边距 */
-            vertical-align: middle; /* 垂直对齐 */
+            margin: 0;
+            vertical-align: middle;
             margin-right: 7px;
+            white-space: nowrap;
+            display: inline-block;
+        }
+        
+        #autoFillhttps {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+            max-width: 560px;
+            margin-left: auto;
+            margin-right: auto;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         
         #quickInputBtn button {
@@ -90,6 +103,7 @@
                 <option value="sodouyinM" id="douyinOption">抖音搜索</option>
                 <option value="yzmsmM" id="shenmaOption">神马搜索</option>
                 <option value="sotoutiaoM" id="toutiaoOption">头条搜索</option>
+                <option value="qksmSearch" id="quarksoOption">夸克搜索</option>
                 <option value="baiduMEasy" id="baidueasyOption">百度精简版</option>
             </optgroup>
             <optgroup label="AI搜索">
@@ -110,14 +124,20 @@
                 <option value="nowTsAi">在线翻译</option>
                 <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
             </optgroup>
+            <optgroup label="视频">
+                <option value="biliTv">哔哩哔哩</option>
+                <option value="dyIsWindows" id="douyinpcOption">抖音电脑版</option>
+                <option value="haokanVideoM" id="haokanmovOption">好看视频 (手机)</option>
+                <option value="haokanVideoPC" id="haokanwinOption">好看视频 (电脑)</option>
+            </optgroup>
             <optgroup label="其他">
                 <option value="githubCode">Github</option>
                 <option value="baiduTw" id="baidutwOption">Baidu (繁体)</option>
-                <option value="biliTv" id="bilibiliOption">BiliBili</option>
-                <option value="dyIsWindows" id="douyinpcOption">Douyin (PC)</option>
                 <option value="kfBaidu">开发者搜索</option>
                 <option value="iFrameFree">IFrame</option>
                 <option value="showCheckbox">工具</option>
+            </optgroup>
+            <optgroup label="我的搜索引擎">
                 <option value="customSearch" id="customSearchOption">自定义</option>
             </optgroup>
         </select>
@@ -126,63 +146,73 @@
     </div>
     
     <div id="autoFillhttps" style="display: none; text-align: center; margin-top: 10px;" aria-hidden="true">
-        <input type="checkbox" id="customCheckbox">
-            <label for="customCheckbox" style="user-select: none;">自动填充Https</label>
-        <input type="checkbox" id="focusCheckbox">
-            <label for="focusCheckbox" style="user-select: none;">输入时聚焦</label>
-            <br/>
-        <input type="checkbox" id="layoutCheckbox">
-            <label for="layoutCheckbox" style="user-select: none;">居中布局</label>
-        <input type="checkbox" id="showLinkCheckbox" checked>
-            <label for="showLinkCheckbox" style="user-select: none;">显示推广链接</label>
-            <br/>
-        <input type="checkbox" id="showSendCheckbox" checked>
-            <label for="showSendCheckbox" style="user-select: none;">显示搜索按钮</label>
-        <input type="text" id="bgColorPicker" style="display: none;">
-            <label for="bgColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">背景颜色: <span id="colorValue">#ffffff</span></label>
-            <br/>
-        <input type="checkbox" id="quickInputCheckbox" disabled>
-            <label for="quickInputCheckbox" style="user-select: none;">显示快捷输入</label>
+        <div style="display: inline-block;">
+            <input type="checkbox" id="customCheckbox">
+                <label for="customCheckbox" style="user-select: none;">自动填充Https</label>
+            </div>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="focusCheckbox">
+                <label for="focusCheckbox" style="user-select: none;">输入时聚焦</label>
+            </div>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="layoutCheckbox">
+                <label for="layoutCheckbox" style="user-select: none;">居中布局</label>
+            </div>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="showLinkCheckbox" checked>
+                <label for="showLinkCheckbox" style="user-select: none;">显示推广链接</label>
+            </div>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="showSendCheckbox" checked>
+                <label for="showSendCheckbox" style="user-select: none;">显示搜索按钮</label>
+            </div>
+            <input type="text" id="bgColorPicker" style="display: none;">
+                <label for="bgColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">背景颜色: <span id="colorValue">#ffffff</span></label>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="quickInputCheckbox" disabled>
+                <label for="quickInputCheckbox" style="user-select: none;">显示快捷输入</label>
+            </div>
             <input type="text" id="linkColorPicker" style="display: none;">
             <label for="linkColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">链接颜色: <span id="linkColorValue">#0000ee</span></label>
-            <br/>
             <label for="renameLinkBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">链接名称: <span id="linkNameValue">Baidu.com</span></label>
             <label for="resetLinkColorBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">重置链接样式</label>
             <input type="submit" id="resetLinkColorBtn" style="display: none;">
-            <br/>
             <label for="heightPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">搜索框高度: <span id="heightValue">24px</span></label>
             <label for="widthPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">按钮宽度: <span id="widthValue">Default</span></label>
-            <br/>
             <label for="redefineSearchBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">编辑自定义搜索</label>
-            <input type="checkbox" id="saveInputCheckbox">
-            <label for="saveInputCheckbox" style="user-select: none;">保留输入文本</label>
-            <br/>
-            <span style="margin-left: 3px;">
-            <input type="checkbox" id="selectHttpsText" disabled>
-            <label for="selectHttpsText" style="user-select: none;">自动选择文本</label>
-            </span>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="saveInputCheckbox">
+                <label for="saveInputCheckbox" style="user-select: none;">保留输入文本</label>
+            </div>
+            <div style="display: inline-block; margin-left: 3px;">
+                <input type="checkbox" id="selectHttpsText" disabled>
+                <label for="selectHttpsText" style="user-select: none;">自动选择文本</label>
+            </div>
             <label style="user-select: none; margin-left: -3px;">用户设置: </label>
             <label for="importSettingsBtn" style="user-select: none; vertical-align: middle; margin-left: -5px; cursor: pointer;">导入</label>
             <input type="file" id="importSettingsInput" accept=".json" style="display: none;">
             <label for="exportSettingsBtn" style="user-select: none; vertical-align: middle; margin-left: -7px; cursor: pointer;">导出</label>
-            <br/>
             <label for="heightAdjustBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">居中高度: <span id="heightPercentValue">25%</span></label>
             <label for="fontSizePicker" style="user-select: none; vertical-align: middle; cursor: pointer;">字体大小: <span id="fontSizeValue">Default</span></label>
-            <br/>
             <label for="renameSubmitBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">按钮名称: <span id="submitBtnNameValue">跳转</span></label>
-            <input type="checkbox" id="autoNewTabCheckbox">
-            <label for="autoNewTabCheckbox" style="user-select: none;">自动创建标签页</label>
-            <br/>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="autoNewTabCheckbox">
+                <label for="autoNewTabCheckbox" style="user-select: none;">自动创建标签页</label>
+            </div>
             <label for="linkSizePicker" style="user-select: none; vertical-align: middle; cursor: pointer;">链接大小: <span id="linkSizeValue">30px</span></label>
             <input type="text" id="fontColorPicker" style="display: none;">
             <label for="fontColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">字体颜色: <span id="fontColorValue">#000000</span></label>
-            <br/>
             <label for="executeCssBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">运行CSS代码</label>
-            <input type="checkbox" id="searchHistoryCheckbox">
-            <label for="searchHistoryCheckbox" style="user-select: none;">显示历史记录</label>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="searchHistoryCheckbox">
+                <label for="searchHistoryCheckbox" style="user-select: none;">显示历史记录</label>
+            </div>
             <input type="submit" id="executeCssBtn" style="display: none;">
-            <br/>
-            <label for="renamePlaceholderBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">输入框提示: <span id="placeholderValue">输入网址</span></label>
+            <label for="renamePlaceholderBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">输入提示: <span id="placeholderValue">输入网址</span></label>
+            <label for="clearCustomSearchesBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">清除自定义搜索</label>
+            <input type="submit" id="clearCustomSearchesBtn" style="display: none;">
+            <label for="quickLinksColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">超链接颜色: <span id="quickLinksColorValue">#0000ee</span></label>
+            <input type="text" id="quickLinksColorPicker" style="display: none;">
             <label for="clearAllSettingsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">清除所有设置</label>
             <br/>
             <label style="user-select: none; margin-right: 0;">超链接:</label>
@@ -198,12 +228,13 @@
         <br/>
         <div style="margin-top: 10px;">
             <span id="browserInfo" style="user-select: none;"></span>
+            <span id="fullUserAgent" style="display: none; user-select: none; margin-top: 5px; font-size: 12px; word-break: break-all;"></span>
         </div>
     </div>
     
     <div id="searchHistory" style="display: none; margin-top: 15px; margin-bottom: 5px;"></div>
-    <div id="clearHistoryBtn" style="display: none; text-align: center; margin-bottom: 5px;">
-    <label style="user-select: none; vertical-align: middle; cursor: pointer;">清空历史记录</label>
+        <div id="clearHistoryBtn" style="display: none; text-align: center; margin-bottom: 5px;">
+        <label style="user-select: none; vertical-align: middle; cursor: pointer;">清空历史记录</label>
     </div>
     
     <div id="quickLinks" style="margin-top: 10px; margin-bottom: 20px;"></div>
@@ -259,13 +290,13 @@
     </div>
 
     <script>
-    // 检测是否为电脑端
+        // 检测是否为电脑端
         function isDesktop() {
-            return !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            return !/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
         
         function isDesktopMobile() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            return /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
         
         // 页面加载时恢复保存的选择
@@ -280,13 +311,13 @@
             }
             if (isDesktopMobile()) {
                 if (savedEngine === 'baiduTw' || 
-                    savedEngine === 'biliTv' || savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'dyIsWindows' || savedEngine === 'showCheckbox') {
+                    savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'dyIsWindows' || savedEngine === 'haokanVideoPC' || savedEngine === 'showCheckbox') {
                     document.getElementById('submitBtn').disabled = true;
                     document.getElementById('urlInput').disabled = true;
                 }
             }
             if (isDesktop()) {
-                if (savedEngine === 'sodouyinM' || savedEngine === 'yzmsmM' || savedEngine === 'sotoutiaoM' || savedEngine === 'baiduMEasy' || savedEngine === 'oldBaiduFanyi' || savedEngine === 'showCheckbox') {
+                if (savedEngine === 'sodouyinM' || savedEngine === 'yzmsmM' || savedEngine === 'sotoutiaoM' || savedEngine === 'qksmSearch' || savedEngine === 'haokanVideoM' || savedEngine === 'baiduMEasy' || savedEngine === 'oldBaiduFanyi' || savedEngine === 'showCheckbox') {
                     document.getElementById('submitBtn').disabled = true;
                     document.getElementById('urlInput').disabled = true;
                 }
@@ -314,15 +345,17 @@
                 document.getElementById('douyinOption').disabled = true;
                 document.getElementById('shenmaOption').disabled = true;
                 document.getElementById('toutiaoOption').disabled = true;
+                document.getElementById('quarksoOption').disabled = true;
                 document.getElementById('baidueasyOption').disabled = true;
+                document.getElementById('haokanmovOption').style.display = 'none';
                 document.getElementById('baiduFanyiOption').disabled = true;
             }
             
             if (isDesktopMobile()) {
                 document.getElementById('quarkaiOption').disabled = true;
                 document.getElementById('baidutwOption').disabled = true;
-                document.getElementById('bilibiliOption').disabled = true;
                 document.getElementById('douyinpcOption').disabled = true;
+                document.getElementById('haokanwinOption').style.display = 'none';
                 document.getElementById('tencentFanyi2').style.display = 'none';
             }
 
@@ -424,6 +457,9 @@
                     case 'sotoutiaoM':
                         url = 'https://so.toutiao.com/search?keyword=' + encodeURIComponent(url);
                         break;
+                    case 'qksmSearch':
+                        url = 'https://quark.sm.cn/s?q=' + encodeURIComponent(url);
+                        break;
                     case 'baiduMEasy':
                         url = 'https://m.baidu.com/from=1030335w/pu=sz%401321_1001/s?word=' + encodeURIComponent(url);
                         break;
@@ -480,6 +516,12 @@
                         break;
                     case 'dyIsWindows':
                         url = 'https://www.douyin.com/root/search/' + encodeURIComponent(url);
+                        break;
+                    case 'haokanVideoM':
+                        url = 'https://haokan.baidu.com/videoui/page/search/result?searchword=' + encodeURIComponent(url);
+                        break;
+                    case 'haokanVideoPC':
+                        url = 'https://haokan.baidu.com/web/search/page?query=' + encodeURIComponent(url);
                         break;
                     case 'showCheckbox':
                         url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
@@ -661,10 +703,17 @@
                 const option = document.createElement('option');
                 option.value = 'customSearch_' + item.order;
                 option.textContent = item.name;
-                // 插入到customSearch选项后面
-                const customSearchOption = engineSelect.querySelector('option[value="customSearch"]');
-                if (customSearchOption) {
-                    customSearchOption.parentNode.insertBefore(option, customSearchOption.nextSibling);
+                // 插入到最后一个自定义搜索选项后面
+                const existingCustomOptions = engineSelect.querySelectorAll('option[value^="customSearch_"]');
+                if (existingCustomOptions.length > 0) {
+                    const lastCustomOption = existingCustomOptions[existingCustomOptions.length - 1];
+                    lastCustomOption.parentNode.insertBefore(option, lastCustomOption.nextSibling);
+                } else {
+                    // 如果没有自定义选项，插入到customSearch选项后面
+                    const customSearchOption = engineSelect.querySelector('option[value="customSearch"]');
+                    if (customSearchOption) {
+                        customSearchOption.parentNode.insertBefore(option, customSearchOption.nextSibling);
+                    }
                 }
             });
         }
@@ -682,6 +731,19 @@
             if (savedCustomSearchName) {
                 document.getElementById('customSearchOption').textContent = savedCustomSearchName;
             }
+        });
+        
+        // 清除所有自定义搜索功能
+        document.querySelector('label[for="clearCustomSearchesBtn"]').addEventListener('click', function() {
+            showCustomConfirm('确定要清除所有自定义搜索吗？', function(result) {
+                if (result) {
+                    localStorage.removeItem('customSearches');
+                    localStorage.removeItem('customSearchUrl');
+                    localStorage.removeItem('customSearchName');
+                    localStorage.removeItem('selectedCustomSearch');
+                    updateCustomSearchOptions();
+                }
+            });
         });
         
         // 监听选择变化并保存
@@ -719,7 +781,7 @@
             }
             if (isDesktopMobile()) {
                 if (this.value === 'baiduTw' || 
-                this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
+                this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'haokanVideoPC' || this.value === 'showCheckbox') {
                 document.getElementById('submitBtn').disabled = true;
                 document.getElementById('urlInput').disabled = true;
             } else {
@@ -729,7 +791,7 @@
             }
             if (isDesktop()) {
                 if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
-                this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'haokanVideoM' || this.value === 'showCheckbox') {
                 document.getElementById('submitBtn').disabled = true;
                 document.getElementById('urlInput').disabled = true;
             } else {
@@ -785,7 +847,7 @@
                         }
                         if (isDesktopMobile()) {
                             if (this.value === 'baiduTw' || 
-                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
+                            this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'haokanVideoPC' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
                             document.getElementById('urlInput').disabled = true;
                         } else {
@@ -795,7 +857,7 @@
                         }
                         if (isDesktop()) {
                             if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
-                            this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'haokanVideoM' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
                              document.getElementById('urlInput').disabled = true;
                         } else {
@@ -831,7 +893,7 @@
                         }
                         if (isDesktopMobile()) {
                             if (this.value === 'baiduTw' || 
-                            this.value === 'biliTv' || this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
+                            this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'haokanVideoPC' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
                             document.getElementById('urlInput').disabled = true;
                         } else {
@@ -841,7 +903,7 @@
                         }
                         if (isDesktop()) {
                             if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
-                            this.value === 'sotoutiaoM' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'haokanVideoM' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
                             document.getElementById('urlInput').disabled = true;
                         } else {
@@ -1001,6 +1063,14 @@
                         localStorage.setItem('linkColor', newValue);
                         localStorage.removeItem('linkImage');
                         truncateText('linkColorValue', newValue, 80);
+                        
+                        // 首次修改链接颜色时添加active样式
+                        if (!localStorage.getItem('linkActiveStyleAdded')) {
+                            const linkStyle = document.createElement('style');
+                            linkStyle.textContent = `a:active.link-85727544071588039023 { color: #ff0000 !important; }`;
+                            document.head.appendChild(linkStyle);
+                            localStorage.setItem('linkActiveStyleAdded', 'true');
+                        }
                     }
                 }
             });
@@ -1211,6 +1281,11 @@
             const savedFontColor = localStorage.getItem('fontColor');
             if (savedFontColor) {
                 truncateText('fontColorValue', savedFontColor, 80);
+            }
+            
+            const savedQuickLinksColor = localStorage.getItem('quickLinksColor');
+            if (savedQuickLinksColor) {
+                truncateText('quickLinksColorValue', savedQuickLinksColor, 80);
             }
         });
         
@@ -2173,11 +2248,18 @@
             
             quickLinksDiv.innerHTML = '';
             
+            setTimeout(function() {
+                const savedColor = localStorage.getItem('quickLinksColor');
+                    if (savedColor) {
+                        updateQuickLinksColor(savedColor);
+                    }
+                }, 0);
+            
             // 添加防止链接变紫色的样式
             const style = document.createElement('style');
             style.textContent = `
                 #quickLinks a:visited {
-                    color: #0000ee !important;
+                    color: ${localStorage.getItem('quickLinksColor') || '#0000ee'} !important;
                 }
                 #quickLinks a:active {
                     color: #ff0000 !important;
@@ -2210,6 +2292,38 @@
                 linkElement.style.margin = '0 5px';
                 linkElement.target = '_blank';
                 
+                // 在这里添加点击事件处理
+                linkElement.addEventListener('click', function(e) {
+                    // 当选择showCheckbox时，阻止默认跳转并显示编辑对话框
+                    if (document.getElementById('engineSelect').value === 'showCheckbox') {
+                        e.preventDefault();
+                        
+                        showCustomDoubleInput(
+                            '编辑快捷链接', 
+                            '输入链接显示文本', 
+                            '输入URL地址（必须以 https://、http:// 开头）', 
+                            link.text, 
+                                        link.url, 
+                            function(text, url) {
+                                if (text && url) {
+                                    // 验证格式
+                                    if (!url.startsWith('https://') && !url.startsWith('http://') && !url.startsWith('#')) {
+                                        return;
+                                    }
+                                    
+                                    // 更新链接
+                                    const updatedLinks = JSON.parse(localStorage.getItem('quickLinks') || '[]');
+                                    updatedLinks[index] = { url: url, text: text };
+                                    localStorage.setItem('quickLinks', JSON.stringify(updatedLinks));
+                                    
+                                    // 更新显示
+                                    updateQuickLinks();
+                                }
+                            }
+                        );
+                    }
+                });
+                
                 const linkContainer = document.createElement('div');
                 linkContainer.style.display = 'flex';
                 linkContainer.style.alignItems = 'center';
@@ -2235,6 +2349,43 @@
             });
             
             quickLinksDiv.appendChild(container);
+        }
+        
+        document.querySelector('label[for="quickLinksColorPicker"]').addEventListener('click', function() {
+            const currentColor = localStorage.getItem('quickLinksColor') || '#0000ee';
+            showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）\n或者rgba(255,255,255,1.0)，rgb(255,255,255) ：', currentColor, function(newValue) {
+                if (newValue !== null) {
+                    if (newValue === '') {
+                        // 输入为空时恢复默认颜色
+                        const defaultColor = '#0000ee';
+                        updateQuickLinksColor(defaultColor);
+                        document.getElementById('quickLinksColorValue').textContent = defaultColor;
+                        localStorage.setItem('quickLinksColor', defaultColor);
+                        updateQuickLinks(); // 添加此行
+                    } else if (/^#([0-9A-F]{3,6})$/i.test(newValue) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newValue) || /^[a-z]+$/i.test(newValue)) {
+                        updateQuickLinksColor(newValue);
+                        document.getElementById('quickLinksColorValue').textContent = newValue;
+                        localStorage.setItem('quickLinksColor', newValue);
+                        truncateText('quickLinksColorValue', newValue, 80);
+                        updateQuickLinks(); // 添加此行
+                    }
+                }
+            });
+        });
+        
+        // 更新快捷链接颜色的函数
+        function updateQuickLinksColor(color) {
+            const quickLinks = document.getElementById('quickLinks').getElementsByTagName('a');
+            for (let i = 0; i < quickLinks.length; i++) {
+                quickLinks[i].style.color = color;
+            }
+        }
+        
+        // 加载保存的快捷链接颜色
+        const savedQuickLinksColor = localStorage.getItem('quickLinksColor');
+        if (savedQuickLinksColor) {
+            document.getElementById('quickLinksColorValue').textContent = savedQuickLinksColor;
+            updateQuickLinksColor(savedQuickLinksColor);
         }
         
         // 通用弹窗函数（兼容所有浏览器版本）
@@ -2437,7 +2588,7 @@
                             }, 100);
                             setTimeout(function() {
                                 window.location.reload(true);
-                            }, 110);
+                            }, 200);
                         }
                     });
                 }
@@ -2617,7 +2768,7 @@
             };
         }
         
-        // 页面加载完成后显示浏览器信息
+        // 修改browserInfo的显示代码，将innerHTML赋值改为textContent，并添加点击事件
         window.onload = function() {
             var browserInfo = getBrowserInfo();
             var displayElement = document.getElementById("browserInfo");
@@ -2627,6 +2778,18 @@
                 // 兼容所有浏览器的z-index设置
                 displayElement.style.position = 'relative';
                 displayElement.style.zIndex = '9999';
+                displayElement.style.userSelect = 'none';
+                
+                // 添加点击事件
+                displayElement.addEventListener('click', function() {
+                    var fullUaElement = document.getElementById('fullUserAgent');
+                    if (fullUaElement.style.display === 'none') {
+                        fullUaElement.textContent = navigator.userAgent;
+                        fullUaElement.style.display = 'block';
+                    } else {
+                        fullUaElement.style.display = 'none';
+                    }
+                });
             }
         };
         
