@@ -121,7 +121,6 @@
                 <option value="oldBaiduFanyi" id="baiduFanyiOption">百度翻译</option>
                 <option value="fanyiSo">360翻译</option>
                 <option value="volcTranslate">火山翻译</option>
-                <option value="nowTsAi">在线翻译</option>
                 <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
             </optgroup>
             <optgroup label="视频">
@@ -503,9 +502,6 @@
                         break;
                     case 'transmartQQTs':
                         url = 'https://transmart.qq.com/zh-CN/index?sourcelang=auto&targetlang=zh&source=' + encodeURIComponent(url);
-                        break;
-                    case 'nowTsAi':
-                        url = 'https://www.aitranslatenow.com/zh/translate/en/zh#sourceText=' + encodeURIComponent(url);
                         break;
                     case 'githubCode':
                         url = 'https://github.com/search?q=' + encodeURIComponent(url);
