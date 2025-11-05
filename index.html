@@ -2,12 +2,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>搜索Easy V6.9</title>
+    <title>搜索Easy V7</title>
     
 <link rel="icon" href="https://wugdu27376.github.io/setsearchbox/favicon.ico">
 
 <body>
-<p><strong><a href="javascript:void(0)" id="85727544071588039023" class="link-85727544071588039023" style="font-size: 30px;">Baidu.com</a></strong></p>
+<p><strong><a href="javascript:void(0)" id="85727544071588039023" class="link-85727544071588039023" style="font-size: 30px; text-decoration: underline;">Baidu.com</a></strong></p>
 </body>
 
     <style>
@@ -64,6 +64,12 @@
             margin-right: auto;
             flex-wrap: wrap;
             justify-content: center;
+        }
+        
+        /* 限制在 #autoFillhttps 和 #iframeContainer 区域内，排除与checkbox关联的label和指定ID */
+        #autoFillhttps label:active:not([for*="Checkbox"]):not(#noActiveLab),
+        #iframeContainer label:active:not([for*="Checkbox"]):not(#noActiveLab) {
+            color: #ff0000 !important;
         }
         
         #quickInputBtn button {
@@ -123,16 +129,25 @@
                 <option value="volcTranslate">火山翻译</option>
                 <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
             </optgroup>
+            <optgroup label="购物">
+                <option value="taobaoWeb">淘宝(需登录)</option>
+                <option value="jdWebPage">京东(需登录)</option>
+            </optgroup>
             <optgroup label="视频">
                 <option value="biliTv">哔哩哔哩</option>
                 <option value="dyIsWindows" id="douyinpcOption">抖音电脑版</option>
-                <option value="haokanVideoM" id="haokanmovOption">好看视频 (手机)</option>
-                <option value="haokanVideoPC" id="haokanwinOption">好看视频 (电脑)</option>
+                <option value="haokanVideo">好看视频</option>
+            </optgroup>
+            <optgroup label="社区\博客">
+                <option value="githubCode">Github</option>
+                <option value="zhihuFriends">知乎(需登录)</option>
+                <option value="csdnWebPage">CSDN(含付费)</option>
+                <option value="weiboFriends">微博(电脑需登录)</option>
+                <option value="bdZhidao">百度知道</option>
             </optgroup>
             <optgroup label="其他">
-                <option value="githubCode">Github</option>
-                <option value="baiduTw" id="baidutwOption">Baidu (繁体)</option>
                 <option value="kfBaidu">开发者搜索</option>
+                <option value="baiduTw" id="baidutwOption">Baidu (繁体)</option>
                 <option value="iFrameFree">IFrame</option>
                 <option value="showCheckbox">工具</option>
             </optgroup>
@@ -185,10 +200,10 @@
             </div>
             <div style="display: inline-block; margin-left: 3px;">
                 <input type="checkbox" id="selectHttpsText" disabled>
-                <label for="selectHttpsText" style="user-select: none;">自动选择文本</label>
+                <label for="selectHttpsText" id="noActiveLab" style="user-select: none;">自动选择文本</label>
             </div>
             <div style="display: inline-block;">
-                <label style="user-select: none; margin-left: -3px;">用户设置: </label>
+                <label style="user-select: none; margin-left: -3px;" id="noActiveLab">用户设置: </label>
                 <label for="importSettingsBtn" style="user-select: none; vertical-align: middle; margin-left: -5px; cursor: pointer;">导入</label>
                 <input type="file" id="importSettingsInput" accept=".json" style="display: none;">
                 <label for="exportSettingsBtn" style="user-select: none; vertical-align: middle; margin-left: -7px; cursor: pointer;">导出</label>
@@ -214,9 +229,23 @@
             <input type="submit" id="clearCustomSearchesBtn" style="display: none;">
             <label for="quickLinksColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">超链接颜色: <span id="quickLinksColorValue">#0000ee</span></label>
             <input type="text" id="quickLinksColorPicker" style="display: none;">
+            <label for="executeJsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">Extcute JS</label>
+            <input type="submit" id="executeJsBtn" style="display: none;">
+            <div style="display: inline-block;">
+                <input type="checkbox" id="trustJsCheckbox">
+                <label for="trustJsCheckbox" style="user-select: none;">信任保存JS代码</label>
+            </div>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="hitokotoCheckbox">
+                <label for="hitokotoCheckbox" style="user-select: none;">显示随机一言</label>
+            </div>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="searchEngineDisplayCheckbox">
+                <label for="searchEngineDisplayCheckbox" style="user-select: none;">精简搜索引擎</label>
+            </div>
             <label for="clearAllSettingsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">清除所有设置</label>
             <br/>
-            <label style="user-select: none; margin-right: 0;">超链接:</label>
+            <label style="user-select: none; margin-right: 0;" id="noActiveLab">超链接:</label>
             <span id="linkCreatorBtn">
             <label for="linkCreatorBtn0" style="user-select: none; margin-right: 0; vertical-align: middle; cursor: pointer;">新建</label>
             </span>
@@ -230,6 +259,7 @@
         <div style="margin-top: 10px;">
             <span id="browserInfo" style="user-select: none;"></span>
             <span id="fullUserAgent" style="display: none; user-select: none; margin-top: 5px; font-size: 12px; word-break: break-all;"></span>
+            <span id="githubUploaded" style="display: none; user-select: none; margin-top: 5px; font-size: 12px; word-break: break-all;">已经上传到 GitHub，<a href="https://raw.githubusercontent.com/wugdu27376/setsearchbox/refs/heads/main/index.html" style="text-decoration: none;">点击查看</a>源码</span>
         </div>
     </div>
     
@@ -238,7 +268,7 @@
         <label style="user-select: none; vertical-align: middle; cursor: pointer;">清空历史记录</label>
     </div>
     
-    <div id="quickLinks" style="margin-top: 10px; margin-bottom: 20px;"></div>
+    <div id="quickLinks" style="margin-top: 10px; margin-bottom: 7px;"></div>
     <div style="height: 5px;"></div>
     
     <div id="iframeContainer" style="display: none; width: 100%; height: 600px; margin-top: 10px;">
@@ -289,6 +319,8 @@
         </div>
     </div>
     </div>
+    
+    <div id="hitokotoDisplay" style="display: none; left: 0; right: 0; margin: 0 auto; margin-top: 10px; text-align: center; font-style: italic;"></div>
 
     <script>
         // 检测是否为电脑端
@@ -309,16 +341,17 @@
             // 如果保存的选择是iFrameFree，则显示iframe容器
             if (savedEngine === 'iFrameFree') {
                 document.getElementById('iframeContainer').style.display = 'block';
+                document.getElementById('hitokotoDisplay').style.marginTop = '40px';
             }
             if (isDesktopMobile()) {
                 if (savedEngine === 'baiduTw' || 
-                    savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'dyIsWindows' || savedEngine === 'haokanVideoPC' || savedEngine === 'showCheckbox') {
+                    savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'dyIsWindows' || savedEngine === 'showCheckbox') {
                     document.getElementById('submitBtn').disabled = true;
                     document.getElementById('urlInput').disabled = true;
                 }
             }
             if (isDesktop()) {
-                if (savedEngine === 'sodouyinM' || savedEngine === 'yzmsmM' || savedEngine === 'sotoutiaoM' || savedEngine === 'qksmSearch' || savedEngine === 'haokanVideoM' || savedEngine === 'baiduMEasy' || savedEngine === 'oldBaiduFanyi' || savedEngine === 'showCheckbox') {
+                if (savedEngine === 'sodouyinM' || savedEngine === 'yzmsmM' || savedEngine === 'sotoutiaoM' || savedEngine === 'qksmSearch' || savedEngine === 'baiduMEasy' || savedEngine === 'oldBaiduFanyi' || savedEngine === 'showCheckbox') {
                     document.getElementById('submitBtn').disabled = true;
                     document.getElementById('urlInput').disabled = true;
                 }
@@ -348,7 +381,6 @@
                 document.getElementById('toutiaoOption').disabled = true;
                 document.getElementById('quarksoOption').disabled = true;
                 document.getElementById('baidueasyOption').disabled = true;
-                document.getElementById('haokanmovOption').style.display = 'none';
                 document.getElementById('baiduFanyiOption').disabled = true;
             }
             
@@ -356,7 +388,6 @@
                 document.getElementById('quarkaiOption').disabled = true;
                 document.getElementById('baidutwOption').disabled = true;
                 document.getElementById('douyinpcOption').disabled = true;
-                document.getElementById('haokanwinOption').style.display = 'none';
                 document.getElementById('tencentFanyi2').style.display = 'none';
             }
 
@@ -503,6 +534,20 @@
                     case 'transmartQQTs':
                         url = 'https://transmart.qq.com/zh-CN/index?sourcelang=auto&targetlang=zh&source=' + encodeURIComponent(url);
                         break;
+                    case 'taobaoWeb':
+                        if (isDesktopMobile()) {
+                            url = 'https://main.m.taobao.com/search/index.html?q=' + encodeURIComponent(url);
+                        } else {
+                            url = 'https://s.taobao.com/search?q=' + encodeURIComponent(url);
+                        }
+                        break;
+                    case 'jdWebPage':
+                        if (isDesktopMobile()) {
+                            url = 'https://so.m.jd.com/ware/search.action?keyword=' + encodeURIComponent(url);
+                        } else {
+                            url = 'https://search.jd.com/Search?keyword=' + encodeURIComponent(url);
+                        }
+                        break;
                     case 'githubCode':
                         url = 'https://github.com/search?q=' + encodeURIComponent(url);
                         break;
@@ -515,11 +560,32 @@
                     case 'dyIsWindows':
                         url = 'https://www.douyin.com/root/search/' + encodeURIComponent(url);
                         break;
-                    case 'haokanVideoM':
-                        url = 'https://haokan.baidu.com/videoui/page/search/result?searchword=' + encodeURIComponent(url);
+                    case 'haokanVideo':
+                        if (isDesktopMobile()) {
+                            url = 'https://haokan.baidu.com/videoui/page/search/result?searchword=' + encodeURIComponent(url);
+                        } else {
+                            url = 'https://haokan.baidu.com/web/search/page?query=' + encodeURIComponent(url);
+                        }
                         break;
-                    case 'haokanVideoPC':
-                        url = 'https://haokan.baidu.com/web/search/page?query=' + encodeURIComponent(url);
+                    case 'zhihuFriends':
+                        url = 'https://www.zhihu.com/search?type=content&q=' + encodeURIComponent(url);
+                        break;
+                    case 'csdnWebPage':
+                        if (isDesktopMobile()) {
+                            url = 'https://so.csdn.net/so/search?q=' + encodeURIComponent(url);
+                        } else {
+                            url = 'https://so.csdn.net/so/search?spm=0&q=' + encodeURIComponent(url);
+                        }
+                        break;
+                    case 'weiboFriends':
+                        url = 'https://s.weibo.com/weibo?q=' + encodeURIComponent(url);
+                        break;
+                    case 'bdZhidao':
+                        if (isDesktopMobile()) {
+                            url = 'https://zhidao.baidu.com/index?word=' + encodeURIComponent(url);
+                        } else {
+                            url = 'https://zhidao.baidu.com/search?word=' + encodeURIComponent(url);
+                        }
                         break;
                     case 'showCheckbox':
                         url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
@@ -760,8 +826,10 @@
             // 控制iframe显示
             if (this.value === 'iFrameFree') {
                 document.getElementById('iframeContainer').style.display = 'block';
+                document.getElementById('hitokotoDisplay').style.marginTop = '40px';
             } else {
                 document.getElementById('iframeContainer').style.display = 'none';
+                document.getElementById('hitokotoDisplay').style.marginTop = '10px';
             }
             // 根据选择显示或隐藏 checkbox
             if (this.value === 'showCheckbox') {
@@ -779,7 +847,7 @@
             }
             if (isDesktopMobile()) {
                 if (this.value === 'baiduTw' || 
-                this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'haokanVideoPC' || this.value === 'showCheckbox') {
+                this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
                 document.getElementById('submitBtn').disabled = true;
                 document.getElementById('urlInput').disabled = true;
             } else {
@@ -789,7 +857,7 @@
             }
             if (isDesktop()) {
                 if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
-                this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'haokanVideoM' || this.value === 'showCheckbox') {
+                this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
                 document.getElementById('submitBtn').disabled = true;
                 document.getElementById('urlInput').disabled = true;
             } else {
@@ -845,7 +913,7 @@
                         }
                         if (isDesktopMobile()) {
                             if (this.value === 'baiduTw' || 
-                            this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'haokanVideoPC' || this.value === 'showCheckbox') {
+                            this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
                             document.getElementById('urlInput').disabled = true;
                         } else {
@@ -855,7 +923,7 @@
                         }
                         if (isDesktop()) {
                             if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
-                            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'haokanVideoM' || this.value === 'showCheckbox') {
+                            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
                              document.getElementById('urlInput').disabled = true;
                         } else {
@@ -891,7 +959,7 @@
                         }
                         if (isDesktopMobile()) {
                             if (this.value === 'baiduTw' || 
-                            this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'haokanVideoPC' || this.value === 'showCheckbox') {
+                            this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
                             document.getElementById('urlInput').disabled = true;
                         } else {
@@ -901,7 +969,7 @@
                         }
                         if (isDesktop()) {
                             if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
-                            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'haokanVideoM' || this.value === 'showCheckbox') {
+                            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
                             document.getElementById('urlInput').disabled = true;
                         } else {
@@ -1183,6 +1251,148 @@
             document.getElementById('submitBtnNameValue').textContent = savedSubmitBtnName;
         }
         
+        // 执行JavaScript代码功能 - 修改modal部分
+        document.querySelector('label[for="executeJsBtn"]').addEventListener('click', function() {
+            const currentJs = localStorage.getItem('customJs') || '';
+            
+            showCustomCodeModal('输入JavaScript代码（输入为空时不执行）：', currentJs, function(jsCode) {
+                if (jsCode === null) {
+                    return;
+                }
+                if (jsCode === '') {
+                    // 输入为空时不执行任何操作，同时清除保存的代码
+                    if (document.getElementById('trustJsCheckbox').checked) {
+                        localStorage.removeItem('customJs');
+                    }
+                    return;
+                } else {
+                    try {
+                        // 执行JavaScript代码
+                        eval(jsCode);
+                        
+                        // 如果信任保存checkbox被勾选，则保存代码
+                        if (document.getElementById('trustJsCheckbox').checked) {
+                            localStorage.setItem('customJs', jsCode);
+                        } else {
+                            // 未勾选信任保存时，清空已保存的代码
+                            localStorage.removeItem('customJs');
+                        }
+                    } catch (error) {
+                        // 执行出错时不保存
+                    }
+                }
+            });
+        });
+        
+        // 信任保存JavaScript代码checkbox事件监听
+        document.getElementById('trustJsCheckbox').addEventListener('change', function() {
+            if (this.checked) {
+                showCustomConfirm('警告：启用此功能后，保存的JavaScript代码将在每次页面加载时自动运行，在启用此功能后请勿运行对本网站造成威胁的代码，否则无法恢复！', function(result) {
+                    if (!result) {
+                        document.getElementById('trustJsCheckbox').checked = false;
+                    } else {
+                        localStorage.setItem('trustJsChecked', 'true');
+                    }
+                });
+            } else {
+                localStorage.setItem('trustJsChecked', 'false');
+                localStorage.removeItem('customJs');
+            }
+        });
+        
+        // 加载保存的信任JavaScript设置
+        const savedTrustJsState = localStorage.getItem('trustJsChecked');
+        if (savedTrustJsState === 'true') {
+            document.getElementById('trustJsCheckbox').checked = true;
+        }
+        
+        // 页面加载时执行保存的JavaScript代码（如果信任保存被勾选）
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('trustJsChecked') === 'true') {
+                const savedJs = localStorage.getItem('customJs');
+                if (savedJs) {
+                    try {
+                        eval(savedJs);
+                    } catch (error) {
+                        // 执行出错时不处理
+                    }
+                }
+            }
+        });
+        
+        // 通用编辑代码输入框函数
+        function showCustomCodeModal(title, currentCode, callback) {
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            const originalScrollX = window.scrollX || window.pageXOffset;
+            const originalScrollY = window.scrollY || window.pageYOffset;
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = [
+                'position: fixed',
+                'top: 0',
+                'left: 0',
+                'width: 100%',
+                'height: 100%',
+                'background: rgba(0,0,0,0.5)',
+                'z-index: 10000',
+                'display: flex',
+                'justify-content: center',
+                'align-items: center'
+            ].join(';');
+            
+            const callbackName = 'codeCallback_' + Date.now();
+            window[callbackName] = function(code) {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+                window.scrollTo(originalScrollX, originalScrollY);
+        
+                if (typeof callback === 'function') {
+                    callback(code);
+                }
+                
+                setTimeout(function() {
+                    delete window[callbackName];
+                }, 100);
+            };
+            
+            modal.innerHTML = [
+                '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
+                '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
+                '<textarea id="codeInput_' + callbackName + '" style="min-height:46px;max-height:110px;overflow-y:auto;width:100%;padding:4px;box-sizing:border-box;border:1px solid #ccc;font-family:inherit;font-size:inherit;resize:none;" placeholder="请输入代码" oninput="executeCodeAutoResize(this)">' + (currentCode || '') + '</textarea>',
+                '<div style="margin-top: 15px; text-align: right;">',
+                '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null)">取消</label>',
+                '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var textarea=document.getElementById(\'codeInput_' + callbackName + '\');window.' + callbackName + '(textarea?textarea.value:null)">确定</label>',
+                '</div>',
+                '</div>'
+            ].join('');
+            
+            document.body.appendChild(modal);
+        
+            var textarea = document.getElementById('codeInput_' + callbackName);
+            if (textarea) {
+                executeCodeAutoResize(textarea);
+            }
+        }
+        
+        function executeCodeAutoResize(textarea) {
+            textarea.style.height = 'auto';
+            const contentHeight = textarea.scrollHeight;
+            
+            if (contentHeight < 46) {
+                textarea.style.height = '46px';
+            } else if (contentHeight > 110) {
+                textarea.style.height = '110px';
+            } else {
+                textarea.style.height = contentHeight + 'px';
+            }
+        }
+        
         // 通用文本截断函数
         function truncateText(elementId, text, maxWidth) {
             const element = document.getElementById(elementId);
@@ -1461,6 +1671,95 @@
             searchHistoryDiv.appendChild(container);
         }
         
+        // 保存和加载一言显示checkbox状态
+        const savedHitokotoState = localStorage.getItem('hitokotoChecked');
+        if (savedHitokotoState === 'true') {
+            document.getElementById('hitokotoCheckbox').checked = true;
+            document.getElementById('hitokotoDisplay').style.display = 'block';
+            fetchHitokoto();
+        }
+        
+        // 监听一言显示checkbox变化
+        document.getElementById('hitokotoCheckbox').addEventListener('change', function() {
+            if (this.checked) {
+                showCustomConfirm('启用后，会在下方显示随机生成一条一言，生成的一言内容与本网站无关，确定要启用此功能吗？', function(result) {
+                    if (result) {
+                        localStorage.setItem('hitokotoChecked', 'true');
+                        document.getElementById('hitokotoDisplay').style.display = 'block';
+                        fetchHitokoto();
+                    } else {
+                        document.getElementById('hitokotoCheckbox').checked = false;
+                    }
+                });
+            } else {
+                localStorage.setItem('hitokotoChecked', 'false');
+                document.getElementById('hitokotoDisplay').style.display = 'none';
+            }
+        });
+        
+        // 获取一言数据
+        function fetchHitokoto() {
+            fetch('https://v1.hitokoto.cn/')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('hitokotoDisplay').textContent = `「${data.hitokoto}」—— ${data.from}`;
+                })
+                .catch(error => {
+                    document.getElementById('hitokotoDisplay').textContent = 'Network Error';
+                });
+        }
+        
+        // 保存和加载搜索引擎显示checkbox状态
+        const savedSearchEngineDisplayState = localStorage.getItem('searchEngineDisplayChecked');
+        if (savedSearchEngineDisplayState === 'true') {
+            document.getElementById('searchEngineDisplayCheckbox').checked = true;
+            hideSearchEngineOptions();
+        }
+        
+        // 监听搜索引擎显示checkbox变化
+        document.getElementById('searchEngineDisplayCheckbox').addEventListener('change', function() {
+            localStorage.setItem('searchEngineDisplayChecked', this.checked);
+            if (this.checked) {
+                hideSearchEngineOptions();
+            } else {
+                showAllSearchEngineOptions();
+            }
+        });
+        
+        // 隐藏指定搜索引擎选项
+        function hideSearchEngineOptions() {
+            const engineSelect = document.getElementById('engineSelect');
+            const optgroups = engineSelect.getElementsByTagName('optgroup');
+            
+            for (let optgroup of optgroups) {
+                if (optgroup.label !== "搜索引擎" && optgroup.label !== "网页" && optgroup.label !== "其他" && optgroup.label !== "我的搜索引擎") {
+                    optgroup.style.display = 'none';
+                }
+            }
+            
+            // 隐藏特定选项值
+            const optionsToHide = ['kfBaidu', 'baiduTw', 'iFrameFree'];
+            for (let option of engineSelect.options) {
+                if (optionsToHide.includes(option.value)) {
+                    option.style.display = 'none';
+                }
+            }
+        }
+        
+        // 显示所有搜索引擎选项
+        function showAllSearchEngineOptions() {
+            const engineSelect = document.getElementById('engineSelect');
+            const optgroups = engineSelect.getElementsByTagName('optgroup');
+            
+            for (let optgroup of optgroups) {
+                optgroup.style.display = '';
+            }
+            
+            for (let option of engineSelect.options) {
+                option.style.display = '';
+            }
+        }
+        
         // 保存和加载quickInputCheckbox状态
         const savedQuickInputState = localStorage.getItem('quickInputChecked');
         if (savedQuickInputState === 'true') {
@@ -1485,6 +1784,7 @@
                 document.querySelector('.search-container').classList.add('focused');
                 document.getElementById('quickInputBtn').style.display = 'block';
                 document.getElementById('iframeContainer').style.display = 'none';
+                document.getElementById('hitokotoDisplay').style.display = 'none';
             });
             
             // 添加延迟恢复
@@ -1506,6 +1806,7 @@
                         document.body.classList.remove('focused');
                         document.querySelector('.search-container').classList.remove('focused');
                         document.getElementById('quickInputBtn').style.display = 'none';
+                        document.getElementById('hitokotoDisplay').style.display = 'block';
                         // 恢复iframe显示（仅在iFrameFree选中时）
                         if (document.getElementById('engineSelect').value === 'iFrameFree') {
                             document.getElementById('iframeContainer').style.display = 'block';
@@ -1715,41 +2016,11 @@
             this.dataset.manualHttps = '';
         });
         
-        // 执行CSS代码功能
+        // 执行CSS代码功能 - 修改modal部分
         document.querySelector('label[for="executeCssBtn"]').addEventListener('click', function() {
             const currentCss = localStorage.getItem('customCss') || '';
             
-            // 创建自定义textarea弹窗
-            const originalBodyOverflow = document.body.style.overflow;
-            const originalHtmlOverflow = document.documentElement.style.overflow;
-            const originalScrollX = window.scrollX || window.pageXOffset;
-            const originalScrollY = window.scrollY || window.pageYOffset;
-            document.body.style.overflow = 'hidden';
-            document.documentElement.style.overflow = 'hidden';
-            
-            const modal = document.createElement('div');
-            modal.style.cssText = [
-                'position: fixed',
-                'top: 0',
-                'left: 0',
-                'width: 100%',
-                'height: 100%',
-                'background: rgba(0,0,0,0.5)',
-                'z-index: 10000',
-                'display: flex',
-                'justify-content: center',
-                'align-items: center'
-            ].join(';');
-            
-            const callbackName = 'cssCallback_' + Date.now();
-            window[callbackName] = function(cssCode) {
-                if (modal.parentNode) {
-                    modal.parentNode.removeChild(modal);
-                }
-                document.body.style.overflow = originalBodyOverflow;
-                document.documentElement.style.overflow = originalHtmlOverflow;
-                window.scrollTo(originalScrollX, originalScrollY);
-        
+            showCustomCodeModal('输入CSS代码（输入为空时恢复默认）：', currentCss, function(cssCode) {
                 if (cssCode === null) {
                     return;
                 }
@@ -1776,30 +2047,7 @@
                     // 保存CSS代码
                     localStorage.setItem('customCss', cssCode);
                 }
-                
-                setTimeout(function() {
-                    delete window[callbackName];
-                }, 100);
-            };
-            
-            modal.innerHTML = [
-                '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
-                '<p style="margin-top: 0; user-select: none; text-align: left;">请输入CSS代码（输入为空时恢复默认）：</p>',
-                '<textarea id="cssInput_' + callbackName + '" style="min-height:46px;max-height:110px;overflow-y:auto;width:100%;padding:4px;box-sizing:border-box;border:1px solid #ccc;font-family:inherit;font-size:inherit;resize:none;" placeholder="仅支持CSS代码" oninput="executeCssAutoResize(this)">' + (currentCss || '') + '</textarea>',
-                '<div style="margin-top: 15px; text-align: right;">',
-                '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null)">取消</label>',
-                '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var textarea=document.getElementById(\'cssInput_' + callbackName + '\');window.' + callbackName + '(textarea?textarea.value:null);localStorage.setItem(\'cssTextareaHeight\',textarea.style.height)">确定</label>',
-                '</div>',
-                '</div>'
-            ].join('');
-            
-            document.body.appendChild(modal);
-        
-            var textarea = document.getElementById('cssInput_' + callbackName);
-            var savedHeight = localStorage.getItem('cssTextareaHeight');
-            if (savedHeight && textarea) {
-                textarea.style.height = savedHeight;
-            }
+            });
         });
         
         function executeCssAutoResize(textarea) {
@@ -2158,7 +2406,11 @@
                 selectedCustomSearch: localStorage.getItem('selectedCustomSearch') || '',
                 searchHistoryChecked: localStorage.getItem('searchHistoryChecked') || 'false',
                 urlInputPlaceholder: localStorage.getItem('urlInputPlaceholder') || '输入网址',
-                quickLinksColor: localStorage.getItem('quickLinksColor') || '#0000ee'
+                quickLinksColor: localStorage.getItem('quickLinksColor') || '#0000ee',
+                trustJsChecked: localStorage.getItem('trustJsChecked') || 'false',
+                customJs: localStorage.getItem('customJs') || '',
+                hitokotoChecked: localStorage.getItem('hitokotoChecked') || 'false',
+                searchEngineDisplayChecked: localStorage.getItem('searchEngineDisplayChecked') || 'false'
             };
             
             const jsonContent = JSON.stringify(settings, null, 2);
@@ -2210,17 +2462,17 @@
             }
             
             const currentPercent = localStorage.getItem('heightPercent') || '25%';
-            showCustomModal('请输入居中高度百分比 (7%-40%，输入为空时恢复默认25%) ：', currentPercent, function(newPercent) {
+            showCustomModal('请输入居中高度百分比 (5%-40%，输入为空时恢复默认25%) ：', currentPercent, function(newPercent) {
                 if (newPercent === '') {
                     // 输入为空时恢复默认高度
                     const defaultPercent = '25%';
                     document.body.style.top = defaultPercent;
                     document.getElementById('heightPercentValue').textContent = defaultPercent;
                     localStorage.setItem('heightPercent', defaultPercent);
-                } else if (/^([7-9](\.[0-9]+)?|[1-3][0-9](\.[0-9]+)?|40(\.[0]+)?)%$/.test(newPercent)) {
-                    // 验证输入是否在7%-40%范围内（支持小数点）
+                } else if (/^([5-9](\.[0-9]+)?|[1-3][0-9](\.[0-9]+)?|40(\.[0]+)?)%$/.test(newPercent)) {
+                    // 验证输入是否在5%-40%范围内（支持小数点）
                     const percentValue = parseFloat(newPercent);
-                    if (percentValue >= 7 && percentValue <= 40) { //>
+                    if (percentValue >= 5 && percentValue <= 40) { //>
                         document.body.style.top = newPercent;
                         document.getElementById('heightPercentValue').textContent = newPercent;
                         localStorage.setItem('heightPercent', newPercent);
@@ -2782,11 +3034,21 @@
                 // 添加点击事件
                 displayElement.addEventListener('click', function() {
                     var fullUaElement = document.getElementById('fullUserAgent');
+                    var githubUploadedElement = document.getElementById('githubUploaded');
+                    
                     if (fullUaElement.style.display === 'none') {
                         fullUaElement.textContent = navigator.userAgent;
                         fullUaElement.style.display = 'block';
+                        // 同时显示 githubUploaded
+                        if (githubUploadedElement) {
+                            githubUploadedElement.style.display = 'block';
+                        }
                     } else {
                         fullUaElement.style.display = 'none';
+                        // 同时隐藏 githubUploaded
+                        if (githubUploadedElement) {
+                            githubUploadedElement.style.display = 'none';
+                        }
                     }
                 });
             }
