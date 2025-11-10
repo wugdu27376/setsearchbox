@@ -1119,7 +1119,7 @@
         // 链接颜色控制
         document.querySelector('label[for="linkColorPicker"]').addEventListener('click', function() {
             const currentColor = localStorage.getItem('linkColor') || '#0000ee';
-            showCustomModal('请输入颜色值（如 #ffffff 或 red）\n或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
+            showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）\n或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
                 if (newValue !== null) {
                     if (newValue === '') {
                         // 输入为空时恢复默认颜色
@@ -2262,7 +2262,7 @@
         // 字体颜色控制
         document.querySelector('label[for="fontColorPicker"]').addEventListener('click', function() {
             const currentColor = localStorage.getItem('fontColor') || '#000000';
-            showCustomModal('请输入颜色值（如 #ffffff 或 red）\n或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newColor) {
+            showCustomModal('请输入字体颜色值（如 #000000 或 black）\n或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newColor) {
                 if (newColor === null) {
                     return;
                 }
@@ -2977,7 +2977,7 @@
         
         document.querySelector('label[for="quickLinksColorPicker"]').addEventListener('click', function() {
             const currentColor = localStorage.getItem('quickLinksColor') || '#0000ee';
-            showCustomModal('请输入颜色值（如 #ffffff 或 red）\n或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
+            showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）\n或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
                 if (newValue !== null) {
                     if (newValue === '') {
                         // 输入为空时恢复默认颜色
