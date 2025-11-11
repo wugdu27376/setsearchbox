@@ -1762,7 +1762,13 @@
             }
             
             // 隐藏特定选项值
-            const optionsToHide = ['kfBaidu', 'baiduTw', 'iFrameFree'];
+            const optionsToHide = ['sodouyinM', 'yzmsmM', 'sotoutiaoM', 'qksmSearch', 'baiduMEasy',
+                'metasosuoAI', 'baiduAI', '360namisoAI', 'zhihuZhiDaAI', 'quarkpcAI',
+                'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'fanyiSo', 'volcTranslate', 'transmartQQTs', 
+                'taobaoWeb', 'jdWebPage',
+                'biliTv', 'dyIsWindows', 'haokanVideo',
+                'githubCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
+                'kfBaidu', 'baiduTw', 'iFrameFree'];
             for (let option of engineSelect.options) {
                 if (optionsToHide.includes(option.value)) {
                     option.style.display = 'none';
