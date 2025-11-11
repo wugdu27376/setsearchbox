@@ -1091,7 +1091,6 @@
                 urlInput.focus();
                 // 更新搜索建议
                 fetchSearchSuggestions(urlInput.value);
-                // 只有在未启用搜索建议功能时才隐藏
                 setTimeout(function() {
                     if (document.getElementById('searchSuggestionsCheckbox').checked) {
                         searchSuggestions.style.display = 'block';
@@ -2646,6 +2645,11 @@
         const savedSearchSuggestionsState = localStorage.getItem('searchSuggestionsChecked');
         if (savedSearchSuggestionsState === 'true') {
             document.getElementById('searchSuggestionsCheckbox').checked = true;
+            if (document.getElementById('searchSuggestionsCheckbox').checked) {
+                setTimeout(function() {
+                    searchSuggestions.style.display = 'none';
+                }, 100);
+            }
         }
         
         // 监听搜索建议checkbox变化
