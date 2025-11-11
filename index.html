@@ -105,21 +105,21 @@
                 <option value="newtabpageHttp1">新建标签页(Http)</option>
                 <option value="newtabpageHttps">新建标签页(Https)</option>
             </optgroup>
-            <optgroup label="手机搜索">
+            <optgroup label="手机搜索" id="mobileSearchGroup">
                 <option value="sodouyinM" id="douyinOption">抖音搜索</option>
                 <option value="yzmsmM" id="shenmaOption">神马搜索</option>
                 <option value="sotoutiaoM" id="toutiaoOption">头条搜索</option>
                 <option value="qksmSearch" id="quarksoOption">夸克搜索</option>
                 <option value="baiduMEasy" id="baidueasyOption">百度精简版</option>
             </optgroup>
-            <optgroup label="AI搜索">
+            <optgroup label="AI搜索" id="aiSearchGroup">
                 <option value="metasosuoAI">秘塔搜索</option>
                 <option value="baiduAI">百度AI</option>
                 <option value="360namisoAI">360纳米AI</option>
                 <option value="zhihuZhiDaAI">知乎直答(需登录)</option>
                 <option value="quarkpcAI" id="quarkaiOption">夸克AI(需登录)</option>
             </optgroup>
-            <optgroup label="快捷翻译">
+            <optgroup label="快捷翻译" id="translateGroup">
                 <option value="googleTranslate">谷歌翻译</option>
                 <option value="mcTranslator">必应翻译</option>
                 <option value="yandexTranslate">Yandex翻译</option>
@@ -129,16 +129,16 @@
                 <option value="volcTranslate">火山翻译</option>
                 <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
             </optgroup>
-            <optgroup label="购物">
+            <optgroup label="购物" id="shoppingGroup">
                 <option value="taobaoWeb">淘宝(需登录)</option>
                 <option value="jdWebPage">京东(需登录)</option>
             </optgroup>
-            <optgroup label="视频">
+            <optgroup label="视频" id="videoGroup">
                 <option value="biliTv">哔哩哔哩</option>
                 <option value="dyIsWindows" id="douyinpcOption">抖音电脑版</option>
                 <option value="haokanVideo">好看视频</option>
             </optgroup>
-            <optgroup label="社区\博客">
+            <optgroup label="社区\博客" id="communityGroup">
                 <option value="githubCode">Github</option>
                 <option value="zhihuFriends">知乎(需登录)</option>
                 <option value="csdnWebPage">CSDN(含付费)</option>
@@ -1749,8 +1749,14 @@
             const engineSelect = document.getElementById('engineSelect');
             const optgroups = engineSelect.getElementsByTagName('optgroup');
             
+            // 要隐藏的optgroup id列表
+            const groupsToHide = [
+                'mobileSearchGroup', 'aiSearchGroup', 'translateGroup', 
+                'shoppingGroup', 'videoGroup', 'communityGroup'
+            ];
+            
             for (let optgroup of optgroups) {
-                if (optgroup.label !== "搜索引擎" && optgroup.label !== "网页" && optgroup.label !== "其他" && optgroup.label !== "我的搜索引擎") {
+                if (groupsToHide.includes(optgroup.id)) {
                     optgroup.style.display = 'none';
                 }
             }
