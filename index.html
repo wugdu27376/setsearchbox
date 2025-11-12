@@ -2570,7 +2570,7 @@
         // 获取搜索建议
         function fetchSearchSuggestions(query) {
             // 检查是否启用搜索建议功能
-            if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
+            if (!document.getElementById('searchSuggestionsCheckbox').checked || document.getElementById('engineSelect').value === 'iFrameFree') return;
             
             if (!query || query.trim() === '') {
                 // 空查询时显示搜索热词
