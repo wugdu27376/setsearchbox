@@ -91,6 +91,7 @@
     <div class="search-container" id="searchContainer">
         <select id="engineSelect" style="height: 24px;">
             <optgroup label="搜索引擎">
+                <option value="baidu_0" style="display: none" disabled selected>百度</option>
                 <option value="baidu">百度</option>
                 <option value="google">谷歌</option>
                 <option value="bing">必应</option>
@@ -602,6 +603,9 @@
                         break;
                     case 'kfBaidu':
                         url = 'https://kaifa.baidu.com/searchPage?wd=' + encodeURIComponent(url);
+                        break;
+                    case 'baidu_0':
+                        url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
                         break;
                     case 'customSearch':
                         const customSearchUrl = localStorage.getItem('customSearchUrl');
