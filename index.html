@@ -91,7 +91,7 @@
     <div class="search-container" id="searchContainer">
         <select id="engineSelect" style="height: 24px;">
             <optgroup label="搜索引擎">
-                <option value="baidu_0" style="display: none" disabled selected>百度</option>
+                <option value="baidu_0" id="nullBaidu" style="display: none" disabled selected>百度</option>
                 <option value="baidu">百度</option>
                 <option value="google">谷歌</option>
                 <option value="bing">必应</option>
@@ -1765,7 +1765,7 @@
                 }
             }
             
-            // 隐藏特定选项值
+            // 隐藏特定选项值 - 修改这里：添加对 nullBaidu 的处理
             const optionsToHide = ['sodouyinM', 'yzmsmM', 'sotoutiaoM', 'qksmSearch', 'baiduMEasy',
                 'metasosuoAI', 'baiduAI', '360namisoAI', 'zhihuZhiDaAI', 'quarkpcAI',
                 'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'fanyiSo', 'volcTranslate', 'transmartQQTs', 
@@ -1774,7 +1774,8 @@
                 'githubCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
                 'kfBaidu', 'baiduTw', 'iFrameFree'];
             for (let option of engineSelect.options) {
-                if (optionsToHide.includes(option.value)) {
+                // 修改这里：除了 nullBaidu ID 外都隐藏
+                if (optionsToHide.includes(option.value) && option.id !== 'nullBaidu') {
                     option.style.display = 'none';
                 }
             }
@@ -1790,7 +1791,18 @@
             }
             
             for (let option of engineSelect.options) {
-                option.style.display = '';
+                // 修改这里：除了 nullBaidu ID 外都显示
+                if (option.id !== 'nullBaidu') {
+                    option.style.display = '';
+                }
+                // 添加特殊处理：在电脑端显示 tencentFanyi2，移动端隐藏
+                if (option.value === 'transmartQQTs') {
+                    if (isDesktopMobile()) {
+                        option.style.display = 'none';
+                    } else {
+                        option.style.display = '';
+                    }
+                }
             }
         }
         
