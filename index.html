@@ -1121,8 +1121,33 @@
         
         // 链接颜色控制
         document.querySelector('label[for="linkColorPicker"]').addEventListener('click', function() {
+            const savedLinkImage = localStorage.getItem('linkImage');
+            if (savedLinkImage) {
+                // 当前使用图片，直接弹出图片URL输入框
+                const currentImage = localStorage.getItem('linkImage') || '';
+                showCustomModal('请输入图片URL：', currentImage, function(imageUrl) {
+                    if (imageUrl && imageUrl.trim() !== '') {
+                        const linkElement = document.getElementById('85727544071588039023');
+                        const linkSize = localStorage.getItem('linkSize') || '30px';
+                        linkElement.innerHTML = `<img src="${imageUrl}" style="width: auto; height: auto; max-width: ${linkSize}; max-height: ${linkSize}; display: block; left: 0; right: 0; margin: 0 auto;">`;
+                        document.getElementById('linkColorValue').textContent = 'Image';
+                        localStorage.setItem('linkImage', imageUrl);
+                    } else if (imageUrl === '') {
+                        // 输入为空时恢复默认颜色
+                        const defaultColor = '#0000ee';
+                        const linkElement = document.getElementById('85727544071588039023');
+                        linkElement.style.color = defaultColor;
+                        linkElement.innerHTML = 'Baidu.com';
+                        document.getElementById('linkColorValue').textContent = defaultColor;
+                        localStorage.setItem('linkColor', defaultColor);
+                        localStorage.removeItem('linkImage');
+                    }
+                });
+                return;
+            }
             const currentColor = localStorage.getItem('linkColor') || '#0000ee';
-            showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）\n或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
+            const currentLinkValue = localStorage.getItem('linkColor') || '#0000ee';
+            showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%)。使用<a href="javascript:void(0)" onclick="var input=document.getElementById(\'modalInput_\' + Object.keys(window).find(key=>key.startsWith(\'modalCallback_\')));if(input){input.value=\'image url\';var confirmBtn=document.querySelector(\'label[onclick*=\\\'modalCallback_\\\']:last-child\');if(confirmBtn)confirmBtn.click();}return false;">图片</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentLinkValue, function(newValue) {
                 if (newValue !== null) {
                     if (newValue === '') {
                         // 输入为空时恢复默认颜色
@@ -1134,13 +1159,23 @@
                         localStorage.setItem('linkColor', defaultColor);
                         localStorage.removeItem('linkImage');
                     } else if (newValue.toLowerCase() === 'image url') {
-                        showCustomModal('请输入图片URL：', '', function(imageUrl) {
+                        const currentImage = localStorage.getItem('linkImage') || '';
+                        showCustomModal('请输入图片URL：', currentImage, function(imageUrl) {
                             if (imageUrl && imageUrl.trim() !== '') {
                                 const linkElement = document.getElementById('85727544071588039023');
                                 const linkSize = localStorage.getItem('linkSize') || '30px';
                                 linkElement.innerHTML = `<img src="${imageUrl}" style="width: auto; height: auto; max-width: ${linkSize}; max-height: ${linkSize}; display: block; left: 0; right: 0; margin: 0 auto;">`;
                                 document.getElementById('linkColorValue').textContent = 'Image';
                                 localStorage.setItem('linkImage', imageUrl);
+                            } else if (imageUrl === '') {
+                                // 输入为空时恢复默认颜色
+                                const defaultColor = '#0000ee';
+                                const linkElement = document.getElementById('85727544071588039023');
+                                linkElement.style.color = defaultColor;
+                                linkElement.innerHTML = 'Baidu.com';
+                                document.getElementById('linkColorValue').textContent = defaultColor;
+                                localStorage.setItem('linkColor', defaultColor);
+                                localStorage.removeItem('linkImage');
                             }
                         });
                     } else if (/^#([0-9A-F]{3,6})$/i.test(newValue) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newValue) || /^[a-z]+$/i.test(newValue) || /^hsla?\(\s*\d+\s*,\s*\d+%?\s*,\s*\d+%?\s*(,\s*[\d.]+\s*)?\)$/i.test(newValue)) {
@@ -2220,8 +2255,36 @@
         
         // 点击label触发颜色输入提示
         document.querySelector('label[for="bgColorPicker"]').addEventListener('click', function() {
-            const currentColor = localStorage.getItem('backgroundColor') || '#ffffff';
-            showCustomModal('请输入颜色值（如 #ffffff 或 red）\n或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
+        const savedBackgroundImage = localStorage.getItem('backgroundImage');
+        if (savedBackgroundImage) {
+            // 当前使用图片，直接弹出图片URL输入框
+            const currentImage = localStorage.getItem('backgroundImage') || '';
+            showCustomModal('请输入图片URL：', currentImage, function(imageUrl) {
+                if (imageUrl && imageUrl.trim() !== '') {
+                    document.body.style.backgroundColor = '';
+                    document.body.style.backgroundImage = `url("${imageUrl}")`;
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundRepeat = 'no-repeat';
+                    document.body.style.backgroundAttachment = 'fixed';
+                    document.getElementById('searchContainer').style.background = '';
+                    document.getElementById('colorValue').textContent = 'Image';
+                    localStorage.setItem('backgroundImage', imageUrl);
+                } else if (imageUrl === '') {
+                    // 输入为空时恢复默认颜色
+                    const defaultColor = '#ffffff';
+                    document.body.style.backgroundColor = defaultColor;
+                    document.body.style.backgroundImage = '';
+                    document.getElementById('searchContainer').style.background = defaultColor;
+                    document.getElementById('colorValue').textContent = defaultColor;
+                    localStorage.setItem('backgroundColor', defaultColor);
+                    localStorage.removeItem('backgroundImage');
+                }
+            });
+            return;
+        }
+        const currentColor = localStorage.getItem('backgroundColor') || '#ffffff';
+        const currentBgValue = localStorage.getItem('backgroundColor') || '#ffffff';
+            showCustomModal('请输入颜色值（如 #ffffff 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%)。使用<a href="javascript:void(0)" onclick="var input=document.getElementById(\'modalInput_\' + Object.keys(window).find(key=>key.startsWith(\'modalCallback_\')));if(input){input.value=\'image url\';var confirmBtn=document.querySelector(\'label[onclick*=\\\'modalCallback_\\\']:last-child\');if(confirmBtn)confirmBtn.click();}return false;">图片</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentBgValue, function(newValue) {
                 if (newValue === null) {
                     return;
                 }
@@ -2236,7 +2299,8 @@
                     localStorage.removeItem('backgroundImage');
                 } else if (newValue.toLowerCase() === 'image url') {
                     // 输入image时弹出背景图片链接输入框
-                    showCustomModal('请输入图片URL：', '', function(imageUrl) {
+                    const currentImage = localStorage.getItem('backgroundImage') || '';
+                    showCustomModal('请输入图片URL：', currentImage, function(imageUrl) {
                         if (imageUrl && imageUrl.trim() !== '') {
                             document.body.style.backgroundColor = '';
                             document.body.style.backgroundImage = `url("${imageUrl}")`;
@@ -2246,6 +2310,15 @@
                             document.getElementById('searchContainer').style.background = '';
                             document.getElementById('colorValue').textContent = 'Image';
                             localStorage.setItem('backgroundImage', imageUrl);
+                        } else if (imageUrl === '') {
+                            // 输入为空时恢复默认颜色
+                            const defaultColor = '#ffffff';
+                            document.body.style.backgroundColor = defaultColor;
+                            document.body.style.backgroundImage = '';
+                            document.getElementById('searchContainer').style.background = defaultColor;
+                            document.getElementById('colorValue').textContent = defaultColor;
+                            localStorage.setItem('backgroundColor', defaultColor);
+                            localStorage.removeItem('backgroundImage');
                         }
                     });
                 } else if (/^#([0-9A-F]{3,6})$/i.test(newValue) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newValue) || /^[a-z]+$/i.test(newValue) || /^hsla?\(\s*\d+\s*,\s*\d+%?\s*,\s*\d+%?\s*(,\s*[\d.]+\s*)?\)$/i.test(newValue)) {
@@ -2289,7 +2362,7 @@
         // 字体颜色控制
         document.querySelector('label[for="fontColorPicker"]').addEventListener('click', function() {
             const currentColor = localStorage.getItem('fontColor') || '#000000';
-            showCustomModal('请输入字体颜色值（如 #000000 或 black）\n或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newColor) {
+            showCustomModal('请输入字体颜色值（如 #000000 或 black）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newColor) {
                 if (newColor === null) {
                     return;
                 }
@@ -3011,7 +3084,7 @@
         
         document.querySelector('label[for="quickLinksColorPicker"]').addEventListener('click', function() {
             const currentColor = localStorage.getItem('quickLinksColor') || '#0000ee';
-            showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）\n或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
+            showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
                 if (newValue !== null) {
                     if (newValue === '') {
                         // 输入为空时恢复默认颜色
@@ -3236,7 +3309,7 @@
         
         // 清除所有设置功能
         document.querySelector('label[for="clearAllSettingsBtn"]').addEventListener('click', function() {
-            showCustomConfirm('警告：此操作将清除所有设置和快捷链接，并重置为默认状态！\n确定要继续吗？', function(result) {
+            showCustomConfirm('警告：此操作将清除所有设置和快捷链接，并重置为默认状态！确定要继续吗？', function(result) {
                 if (result) {
                     // 第一个确认框点击确定后，保持滚动禁止状态，直接显示第二个输入框
                     showCustomModal('请输入 "Clear All" 确认操作：', '', function(inputText) {
