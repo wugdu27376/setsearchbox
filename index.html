@@ -1338,7 +1338,7 @@
                         // 执行出错时不保存
                     }
                 }
-            });
+            }, '输入JavaScript代码');
         });
         
         // 信任保存JavaScript代码checkbox事件监听
@@ -1378,7 +1378,7 @@
         });
         
         // 通用编辑代码输入框函数
-        function showCustomCodeModal(title, currentCode, callback) {
+        function showCustomCodeModal(title, currentCode, callback, placeholder) {
             const originalBodyOverflow = document.body.style.overflow;
             const originalHtmlOverflow = document.documentElement.style.overflow;
             const originalScrollX = window.scrollX || window.pageXOffset;
@@ -1421,7 +1421,7 @@
             modal.innerHTML = [
                 '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
                 '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
-                '<textarea id="codeInput_' + callbackName + '" style="min-height:46px;max-height:110px;overflow-y:auto;width:100%;padding:4px;box-sizing:border-box;border:1px solid #ccc;font-family:inherit;font-size:inherit;resize:none;" placeholder="请输入代码" oninput="executeCodeAutoResize(this)">' + (currentCode || '') + '</textarea>',
+                '<textarea id="codeInput_' + callbackName + '" style="min-height:46px;max-height:110px;overflow-y:auto;width:100%;padding:4px;box-sizing:border-box;border:1px solid #ccc;font-family:inherit;font-size:inherit;resize:none;" placeholder="' + (placeholder || '输入文本') + '" oninput="executeCodeAutoResize(this)">' + (currentCode || '') + '</textarea>',
                 '<div style="margin-top: 15px; text-align: right;">',
                 '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null)">取消</label>',
                 '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var textarea=document.getElementById(\'codeInput_' + callbackName + '\');window.' + callbackName + '(textarea?textarea.value:null)">确定</label>',
@@ -2143,7 +2143,7 @@
                     // 保存CSS代码
                     localStorage.setItem('customCss', cssCode);
                 }
-            });
+            }, '输入CSS代码');
         });
         
         function executeCssAutoResize(textarea) {
@@ -2589,6 +2589,75 @@
             };
             reader.readAsText(file);
         });
+        
+        // 为导入设置按钮添加拖放支持
+        const importSettingsLabel = document.querySelector('label[for="importSettingsBtn"]');
+        setupDragDrop(importSettingsLabel, function(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const content = event.target.result;
+                    const settings = JSON.parse(content);
+                    
+                    // 恢复所有设置到localStorage
+                    Object.keys(settings).forEach(key => {
+                        if (settings[key] !== null) {
+                            localStorage.setItem(key, settings[key]);
+                        }
+                    });
+                    
+                    // 重新加载页面应用设置
+                    location.reload();
+                } catch (error) {
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        // 为导入链接按钮添加拖放支持
+        const importLinksLabel = document.querySelector('label[for="importLinksBtn"]');
+        setupDragDrop(importLinksLabel, function(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const content = event.target.result;
+                    const links = JSON.parse(content);
+                    
+                    if (links.length > 0) {
+                        const existingLinks = JSON.parse(localStorage.getItem('quickLinks') || '[]');
+                        const mergedLinks = existingLinks.concat(links);
+                        localStorage.setItem('quickLinks', JSON.stringify(mergedLinks));
+                        updateQuickLinks();
+                    }
+                } catch (error) {
+                    // JSON解析失败
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        // 拖放支持函数
+        function setupDragDrop(element, callback) {
+            element.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.color = '#ff0000';
+            });
+            
+            element.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.style.color = '';
+            });
+            
+            element.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.color = '';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    callback(files[0]);
+                }
+            });
+        }
         
         // 在 layoutCheckbox 事件监听器附近添加以下代码
         document.querySelector('label[for="heightAdjustBtn"]').addEventListener('click', function() {
@@ -3287,22 +3356,22 @@
             };
             
             modal.innerHTML = [
-                        '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
-                        '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
-                        '<div style="text-align: left; margin-bottom: 10px;">',
-                        '<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' + label1 + '</div>',
-                        '<input type="text" id="doubleInput1_' + callbackName + '" value="' + (currentValue1 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
-                        '</div>',
-                        '<div style="text-align: left; margin-bottom: 15px;">',
-                        '<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' + label2 + '</div>',
-                        '<input type="text" id="doubleInput2_' + callbackName + '" value="' + (currentValue2 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
-                        '</div>',
-                        '<div style="margin-top: 15px; text-align: right;">',
-                        '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null, null)">取消</label>',
-                        '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input1=document.getElementById(\'doubleInput1_' + callbackName + '\'),input2=document.getElementById(\'doubleInput2_' + callbackName + '\');window.' + callbackName + '(input1?input1.value:null,input2?input2.value:null)">确定</label>',
-                        '</div>',
-                        '</div>'
-                    ].join('');
+                    '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
+                    '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
+                    '<div style="text-align: left; margin-bottom: 10px;">',
+                    '<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' + label1 + '</div>',
+                    '<input type="text" id="doubleInput1_' + callbackName + '" value="' + (currentValue1 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+                    '</div>',
+                    '<div style="text-align: left; margin-bottom: 15px;">',
+                    '<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' + label2 + '</div>',
+                    '<input type="text" id="doubleInput2_' + callbackName + '" value="' + (currentValue2 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+                    '</div>',
+                    '<div style="margin-top: 15px; text-align: right;">',
+                    '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null, null)">取消</label>',
+                    '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input1=document.getElementById(\'doubleInput1_' + callbackName + '\'),input2=document.getElementById(\'doubleInput2_' + callbackName + '\');window.' + callbackName + '(input1?input1.value:null,input2?input2.value:null)">确定</label>',
+                    '</div>',
+                    '</div>'
+                ].join('');
             
             document.body.appendChild(modal);
         }
