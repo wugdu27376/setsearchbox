@@ -2703,6 +2703,10 @@
                     div.onclick = (function(suggestion) {
                         return function() {
                             document.getElementById('urlInput').value = suggestion;
+                            // 如果保存输入文本复选框被勾选，保存当前输入
+                            if (document.getElementById('saveInputCheckbox').checked) {
+                                localStorage.setItem('savedInputText', suggestion);
+                            }
                             // 不隐藏搜索建议列表，保持显示
                             // 自动更新搜索建议
                             fetchSearchSuggestions(suggestion);
@@ -2886,6 +2890,10 @@
                     div.onclick = (function(suggestion) {
                         return function() {
                             document.getElementById('urlInput').value = suggestion;
+                            // 如果保存输入文本复选框被勾选，保存当前输入
+                            if (document.getElementById('saveInputCheckbox').checked) {
+                                localStorage.setItem('savedInputText', suggestion);
+                            }
                             // 不隐藏搜索建议列表，保持显示
                             // 自动更新搜索建议
                             fetchSearchSuggestions(suggestion);
@@ -2956,6 +2964,10 @@
                     div.onclick = (function(suggestion) {
                         return function() {
                             document.getElementById('urlInput').value = suggestion;
+                            // 如果保存输入文本复选框被勾选，保存当前输入
+                            if (document.getElementById('saveInputCheckbox').checked) {
+                                localStorage.setItem('savedInputText', suggestion);
+                            }
                             // 不隐藏搜索建议列表，保持显示
                             // 自动更新搜索建议
                             fetchSearchSuggestions(suggestion);
@@ -3007,6 +3019,10 @@
                     div.onclick = (function(suggestion) {
                         return function() {
                             document.getElementById('urlInput').value = suggestion;
+                            // 如果保存输入文本复选框被勾选，保存当前输入
+                            if (document.getElementById('saveInputCheckbox').checked) {
+                                localStorage.setItem('savedInputText', suggestion);
+                            }
                             // 不隐藏搜索建议列表，保持显示
                             // 自动更新搜索建议
                             fetchSearchSuggestions(suggestion);
