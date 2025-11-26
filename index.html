@@ -339,7 +339,7 @@
             return !/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
         
-        function isDesktopMobile() {
+        function isMobileAndroidApple() {
             return /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
         
@@ -354,7 +354,7 @@
                 document.getElementById('iframeContainer').style.display = 'block';
                 document.getElementById('hitokotoDisplay').style.marginTop = '40px';
             }
-            if (isDesktopMobile()) {
+            if (isMobileAndroidApple()) {
                 if (savedEngine === 'baiduTw' || 
                     savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'dyIsWindows' || savedEngine === 'showCheckbox') {
                     document.getElementById('submitBtn').disabled = true;
@@ -395,7 +395,7 @@
                 document.getElementById('baiduFanyiOption').disabled = true;
             }
             
-            if (isDesktopMobile()) {
+            if (isMobileAndroidApple()) {
                 document.getElementById('quarkaiOption').disabled = true;
                 document.getElementById('baidutwOption').disabled = true;
                 document.getElementById('douyinpcOption').disabled = true;
@@ -546,14 +546,14 @@
                         url = 'https://transmart.qq.com/zh-CN/index?sourcelang=auto&targetlang=zh&source=' + encodeURIComponent(url);
                         break;
                     case 'taobaoWeb':
-                        if (isDesktopMobile()) {
+                        if (isMobileAndroidApple()) {
                             url = 'https://main.m.taobao.com/search/index.html?q=' + encodeURIComponent(url);
                         } else {
                             url = 'https://s.taobao.com/search?q=' + encodeURIComponent(url);
                         }
                         break;
                     case 'jdWebPage':
-                        if (isDesktopMobile()) {
+                        if (isMobileAndroidApple()) {
                             url = 'https://so.m.jd.com/ware/search.action?keyword=' + encodeURIComponent(url);
                         } else {
                             url = 'https://search.jd.com/Search?keyword=' + encodeURIComponent(url);
@@ -572,7 +572,7 @@
                         url = 'https://www.douyin.com/root/search/' + encodeURIComponent(url);
                         break;
                     case 'haokanVideo':
-                        if (isDesktopMobile()) {
+                        if (isMobileAndroidApple()) {
                             url = 'https://haokan.baidu.com/videoui/page/search/result?searchword=' + encodeURIComponent(url);
                         } else {
                             url = 'https://haokan.baidu.com/web/search/page?query=' + encodeURIComponent(url);
@@ -582,7 +582,7 @@
                         url = 'https://www.zhihu.com/search?type=content&q=' + encodeURIComponent(url);
                         break;
                     case 'csdnWebPage':
-                        if (isDesktopMobile()) {
+                        if (isMobileAndroidApple()) {
                             url = 'https://so.csdn.net/so/search?q=' + encodeURIComponent(url);
                         } else {
                             url = 'https://so.csdn.net/so/search?spm=0&q=' + encodeURIComponent(url);
@@ -592,7 +592,7 @@
                         url = 'https://s.weibo.com/weibo?q=' + encodeURIComponent(url);
                         break;
                     case 'bdZhidao':
-                        if (isDesktopMobile()) {
+                        if (isMobileAndroidApple()) {
                             url = 'https://zhidao.baidu.com/index?word=' + encodeURIComponent(url);
                         } else {
                             url = 'https://zhidao.baidu.com/search?word=' + encodeURIComponent(url);
@@ -859,7 +859,7 @@
                     applyLayoutStyle(false);
                 }
             }
-            if (isDesktopMobile()) {
+            if (isMobileAndroidApple()) {
                 if (this.value === 'baiduTw' || 
                 this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
                 document.getElementById('submitBtn').disabled = true;
@@ -925,7 +925,7 @@
                         if (document.getElementById('engineSelect').value === 'iFrameFree') {
                             document.getElementById('iframeContainer').style.display = 'block';
                         }
-                        if (isDesktopMobile()) {
+                        if (isMobileAndroidApple()) {
                             if (this.value === 'baiduTw' || 
                             this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
@@ -971,7 +971,7 @@
                         if (document.getElementById('engineSelect').value === 'iFrameFree') {
                             document.getElementById('iframeContainer').style.display = 'block';
                         }
-                        if (isDesktopMobile()) {
+                        if (isMobileAndroidApple()) {
                             if (this.value === 'baiduTw' || 
                             this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
@@ -1832,7 +1832,7 @@
                 }
                 // 添加特殊处理：在电脑端显示 tencentFanyi2，移动端隐藏
                 if (option.value === 'transmartQQTs') {
-                    if (isDesktopMobile()) {
+                    if (isMobileAndroidApple()) {
                         option.style.display = 'none';
                     } else {
                         option.style.display = '';
@@ -2691,6 +2691,7 @@
         
         // 显示搜索建议
         function showSearchSuggestions(suggestions) {
+            if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
             searchSuggestions.innerHTML = '';
             if (suggestions && suggestions.length > 0) {
                 for (var i = 0; i < suggestions.length; i++) {
@@ -2724,8 +2725,16 @@
                     searchSuggestions.appendChild(div);
                 }
                 searchSuggestions.style.display = 'block';
+                updateSuggestionsPosition();
             } else {
                 searchSuggestions.style.display = 'none';
+                // 隐藏搜索建议时恢复quickInputUi位置
+                resetQuickInputPosition();
+                // 隐藏搜索建议时恢复quickInputUi位置
+                if (document.getElementById('quickInputCheckbox').checked) {
+                    var quickInputBtn = document.getElementById('quickInputBtn');
+                    quickInputBtn.style.marginTop = '0px';
+                }
             }
         }
         
@@ -2874,51 +2883,6 @@
             }
         }
         
-        // 修改显示搜索建议函数
-        function showSearchSuggestions(suggestions) {
-            if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
-            
-            searchSuggestions.innerHTML = '';
-            if (suggestions && suggestions.length > 0) {
-                for (var i = 0; i < suggestions.length; i++) {
-                    var div = document.createElement('div');
-                    div.textContent = suggestions[i];
-                    div.style.padding = '6px 10px';
-                    div.style.cursor = 'pointer';
-                    div.style.borderBottom = '1px solid #eee';
-                    
-                    div.onclick = (function(suggestion) {
-                        return function() {
-                            document.getElementById('urlInput').value = suggestion;
-                            // 如果保存输入文本复选框被勾选，保存当前输入
-                            if (document.getElementById('saveInputCheckbox').checked) {
-                                localStorage.setItem('savedInputText', suggestion);
-                            }
-                            // 不隐藏搜索建议列表，保持显示
-                            // 自动更新搜索建议
-                            fetchSearchSuggestions(suggestion);
-                            // 保持输入框焦点
-                            document.getElementById('urlInput').focus();
-                        };
-                    })(suggestions[i]);
-                    
-                    div.onmouseover = function() {
-                        this.style.backgroundColor = '#f0f0f0';
-                    };
-                    div.onmouseout = function() {
-                        this.style.backgroundColor = '';
-                    };
-                    searchSuggestions.appendChild(div);
-                }
-                searchSuggestions.style.display = 'block';
-                updateSuggestionsPosition();
-            } else {
-                searchSuggestions.style.display = 'none';
-                // 隐藏搜索建议时恢复quickInputUi位置
-                resetQuickInputPosition();
-            }
-        }
-        
         // 恢复quickInputUi位置
         function resetQuickInputPosition() {
             if (document.getElementById('quickInputCheckbox').checked) {
@@ -2948,103 +2912,12 @@
             }, 100);
         });
         
-        // 修改显示搜索建议函数
-        function showSearchSuggestions(suggestions) {
-            if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
-            
-            searchSuggestions.innerHTML = '';
-            if (suggestions && suggestions.length > 0) {
-                for (var i = 0; i < suggestions.length; i++) {
-                    var div = document.createElement('div');
-                    div.textContent = suggestions[i];
-                    div.style.padding = '6px 10px';
-                    div.style.cursor = 'pointer';
-                    div.style.borderBottom = '1px solid #eee';
-                    
-                    div.onclick = (function(suggestion) {
-                        return function() {
-                            document.getElementById('urlInput').value = suggestion;
-                            // 如果保存输入文本复选框被勾选，保存当前输入
-                            if (document.getElementById('saveInputCheckbox').checked) {
-                                localStorage.setItem('savedInputText', suggestion);
-                            }
-                            // 不隐藏搜索建议列表，保持显示
-                            // 自动更新搜索建议
-                            fetchSearchSuggestions(suggestion);
-                            // 保持输入框焦点
-                            document.getElementById('urlInput').focus();
-                        };
-                    })(suggestions[i]);
-                    
-                    div.onmouseover = function() {
-                        this.style.backgroundColor = '#f0f0f0';
-                    };
-                    div.onmouseout = function() {
-                        this.style.backgroundColor = '';
-                    };
-                    searchSuggestions.appendChild(div);
-                }
-                searchSuggestions.style.display = 'block';
-                updateSuggestionsPosition();
-            } else {
-                searchSuggestions.style.display = 'none';
-                // 隐藏搜索建议时恢复quickInputUi位置
-                if (document.getElementById('quickInputCheckbox').checked) {
-                    var quickInputBtn = document.getElementById('quickInputBtn');
-                    quickInputBtn.style.marginTop = '0px';
-                }
-            }
-        }
-        
         // 窗口尺寸变化时更新搜索建议框位置
         window.addEventListener('resize', function() {
             if (document.getElementById('searchSuggestionsCheckbox').checked && searchSuggestions.style.display === 'block') {
                 updateSuggestionsPosition();
             }
         });
-        
-        // 修改显示搜索建议函数，添加checkbox检查
-        function showSearchSuggestions(suggestions) {
-            if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
-            
-            searchSuggestions.innerHTML = '';
-            if (suggestions && suggestions.length > 0) {
-                for (var i = 0; i < suggestions.length; i++) {
-                    var div = document.createElement('div');
-                    div.textContent = suggestions[i];
-                    div.style.padding = '6px 10px';
-                    div.style.cursor = 'pointer';
-                    div.style.borderBottom = '1px solid #eee';
-                    
-                    div.onclick = (function(suggestion) {
-                        return function() {
-                            document.getElementById('urlInput').value = suggestion;
-                            // 如果保存输入文本复选框被勾选，保存当前输入
-                            if (document.getElementById('saveInputCheckbox').checked) {
-                                localStorage.setItem('savedInputText', suggestion);
-                            }
-                            // 不隐藏搜索建议列表，保持显示
-                            // 自动更新搜索建议
-                            fetchSearchSuggestions(suggestion);
-                            // 保持输入框焦点
-                            document.getElementById('urlInput').focus();
-                        };
-                    })(suggestions[i]);
-                    
-                    div.onmouseover = function() {
-                        this.style.backgroundColor = '#f0f0f0';
-                    };
-                    div.onmouseout = function() {
-                        this.style.backgroundColor = '';
-                    };
-                    searchSuggestions.appendChild(div);
-                }
-                searchSuggestions.style.display = 'block';
-                updateSuggestionsPosition();
-            } else {
-                searchSuggestions.style.display = 'none';
-            }
-        }
         
         // 在加载保存的布局复选框状态部分添加以下代码
         const savedHeightPercent = localStorage.getItem('heightPercent');
