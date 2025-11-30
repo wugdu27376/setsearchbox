@@ -44,27 +44,25 @@ body{text-align:center}
     </div>
 
     <script>
-        document.getElementById('submitBtn').addEventListener('click', function() {
-            let url = document.getElementById('urlInput').value.trim();
+        document.getElementById('submitBtn').onclick = function() {
+            var url = document.getElementById('urlInput').value;
             
-            if(url && !url.includes('://')) {
+            if(url && url.indexOf('://') === -1) {
                 url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
-            } else if(url) {
-                // 如果包含://，直接使用输入的URL
-                // 无需修改
             }
             
             if(url) {
                 window.location.href = url;
             }
-        });
+        };
         
         // 支持按Enter键提交
-        document.getElementById('urlInput').addEventListener('keypress', function(e) {
-            if(e.key === 'Enter') {
+        document.getElementById('urlInput').onkeypress = function(e) {
+            e = e || window.event;
+            if(e.keyCode === 13 || e.which === 13) {
                 document.getElementById('submitBtn').click();
             }
-        });
+        };
     </script>
 </body>
 </html>

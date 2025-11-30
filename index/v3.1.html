@@ -69,26 +69,46 @@ body{text-align:center}
 
     <script>
         // 页面加载时恢复保存的选择
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedEngine = localStorage.getItem('selectedEngine');
-            if (savedEngine) {
-                document.getElementById('engineSelect').value = savedEngine;
-            }
-        });
+        if (document.addEventListener) {
+            document.addEventListener('DOMContentLoaded', function() {
+                var savedEngine = localStorage.getItem('selectedEngine');
+                if (savedEngine) {
+                    document.getElementById('engineSelect').value = savedEngine;
+                }
+            });
+        } else {
+            // 兼容旧版IE
+            document.attachEvent('onreadystatechange', function() {
+                if (document.readyState === 'complete') {
+                    var savedEngine = localStorage.getItem('selectedEngine');
+                    if (savedEngine) {
+                        document.getElementById('engineSelect').value = savedEngine;
+                    }
+                }
+            });
+        }
 
         // 监听选择变化并保存
-        document.getElementById('engineSelect').addEventListener('change', function() {
-            localStorage.setItem('selectedEngine', this.value);
-        });
+        var engineSelect = document.getElementById('engineSelect');
+        if (engineSelect.addEventListener) {
+            engineSelect.addEventListener('change', function() {
+                localStorage.setItem('selectedEngine', this.value);
+            });
+        } else {
+            engineSelect.attachEvent('onchange', function() {
+                localStorage.setItem('selectedEngine', this.value);
+            });
+        }
 
-        document.getElementById('submitBtn').addEventListener('click', function() {
-            let url = document.getElementById('urlInput').value.trim();
-            const engine = document.getElementById('engineSelect').value;
+        // 跳转函数
+        function handleSubmit() {
+            var url = document.getElementById('urlInput').value.trim();
+            var engine = document.getElementById('engineSelect').value;
             
             // 保存当前选择
             localStorage.setItem('selectedEngine', engine);
             
-            if(url && !url.includes('://')) {
+            if(url && url.indexOf('://') === -1) {
                 // 根据选择的搜索引擎构建搜索URL
                 switch(engine) {
                     case 'baidu':
@@ -121,7 +141,7 @@ body{text-align:center}
                         // 新建标签页处理
                         if (url) {
                             // 如果没有协议前缀，添加https://
-                            if (!url.includes('://')) {
+                            if (url.indexOf('://') === -1) {
                                 url = 'https://' + url;
                             }
                             window.open(url, '_blank');
@@ -153,11 +173,21 @@ body{text-align:center}
                 }
                 window.location.href = url;
             }
-        });
+        }
+
+        // 绑定按钮点击事件
+        var submitBtn = document.getElementById('submitBtn');
+        if (submitBtn.addEventListener) {
+            submitBtn.addEventListener('click', handleSubmit);
+        } else {
+            submitBtn.attachEvent('onclick', handleSubmit);
+        }
         
         // 支持按Enter键提交
         document.getElementById('urlInput').addEventListener('keypress', function(e) {
-            if(e.key === 'Enter') {
+            // 兼容旧版浏览器的key属性
+            var key = e.key || e.keyCode || e.which;
+            if(key === 'Enter' || key === 13) {
                 document.getElementById('submitBtn').click();
             }
         });
