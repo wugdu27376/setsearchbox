@@ -690,7 +690,7 @@
                 }
             }
             if (!defaultSearch) {
-                defaultSearch = { name: savedCustomSearchName, url: 'https://www.baidu.com/s?wd={keywords}', order: 0 };
+                defaultSearch = { name: savedCustomSearchName, url: localStorage.getItem('customSearchUrl') || 'https://www.baidu.com/s?wd={keywords}', order: 0 };
             }
             
             showCustomDoubleInput(
@@ -721,6 +721,7 @@
                         // 如果是order为0，同时清除customSearchUrl
                         if (order === 0) {
                             localStorage.removeItem('customSearchUrl');
+                            localStorage.removeItem('customSearchName');
                         }
                         updateCustomSearchOptions();
                     } else if (order === 0) {
@@ -847,10 +848,15 @@
             if (savedCustomSearch) {
                 document.getElementById('engineSelect').value = savedCustomSearch;
             }
-            // 加载customSearch选项名称
+            // 恢复自定义搜索{0}的名称和网址
             var savedCustomSearchName = localStorage.getItem('customSearchName');
             if (savedCustomSearchName) {
                 document.getElementById('customSearchOption').textContent = savedCustomSearchName;
+            }
+            var customSearchUrl = localStorage.getItem('customSearchUrl');
+            if (customSearchUrl) {
+                // 确保customSearch选项可用
+                showCustomSearchButton();
             }
         });
         
