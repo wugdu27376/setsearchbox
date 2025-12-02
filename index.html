@@ -2633,11 +2633,13 @@
                     var settings = JSON.parse(content);
                     
                     // 恢复所有设置到localStorage
-                    Object.keys(settings).forEach(function(key) {
-                if (settings[key] !== null) {
+                    var settingsKeys = Object.keys(settings);
+                    for (var k = 0; k < settingsKeys.length; k++) {
+                        var key = settingsKeys[k];
+                        if (settings[key] !== null) {
                             localStorage.setItem(key, settings[key]);
                         }
-                    });
+                    }
                     
                     // 重新加载页面应用设置
                     location.reload();
@@ -2658,11 +2660,13 @@
                     var settings = JSON.parse(content);
                     
                     // 恢复所有设置到localStorage
-                    Object.keys(settings).forEach(function(key) {
+                    var settingsKeys = Object.keys(settings);
+                    for (var k = 0; k < settingsKeys.length; k++) {
+                        var key = settingsKeys[k];
                         if (settings[key] !== null) {
                             localStorage.setItem(key, settings[key]);
                         }
-                    });
+                    }
                     
                     // 重新加载页面应用设置
                     location.reload();
@@ -2747,10 +2751,99 @@
         // 搜索建议功能
         var searchSuggestions = document.getElementById('searchSuggestions');
         
-        // 显示搜索建议
         function showSearchSuggestions(suggestions) {
             if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
+            
+            // 检测输入内容是否包含网址格式
+            var inputText = document.getElementById('urlInput').value.trim();
+            var isUrlPattern = false;
+            
+            var urlPatterns = [
+                /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+/,
+                /\.[a-zA-Z]{2,}/,
+                /^https?:\/\//,
+                /^www\./,
+                /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+\.[a-zA-Z]{2,}/
+            ];
+            
+            for (var i = 0; i < urlPatterns.length; i++) {
+                if (urlPatterns[i].test(inputText)) {
+                    isUrlPattern = true;
+                    break;
+                }
+            }
+            
+            // 额外检测包含斜杠的网址格式（如 m.baidu.com/xxx）
+            if (!isUrlPattern && inputText.indexOf('/') !== -1) {
+                var slashIndex = inputText.indexOf('/');
+                var beforeSlash = inputText.substring(0, slashIndex);
+                
+                // 检查斜杠前的内容是否符合网址格式
+                for (var i = 0; i < urlPatterns.length; i++) {
+                    if (urlPatterns[i].test(beforeSlash)) {
+                        isUrlPattern = true;
+                        break;
+                    }
+                }
+            }
+            
             searchSuggestions.innerHTML = '';
+            
+            // 如果检测到网址格式，在建议列表第一位添加访问网站选项
+            if (isUrlPattern && inputText.length > 0) {
+                var visitDiv = document.createElement('div');
+                visitDiv.textContent = '访问: ' + inputText;
+                visitDiv.style.padding = '6px 10px';
+                visitDiv.style.cursor = 'pointer';
+                visitDiv.style.borderBottom = '1px solid #eee';
+                visitDiv.style.fontWeight = 'bold';
+                visitDiv.style.fontSize = '13px';
+                visitDiv.style.backgroundColor = '#f8f8f8';
+                
+                visitDiv.onclick = function() {
+                    var engine = document.getElementById('engineSelect').value;
+                    var url = inputText;
+                    
+                    // 检查是否已包含协议
+                    var hasProtocol = url.indexOf('://') !== -1;
+                    var isRelativePath = url.indexOf('/') === 0;
+                    
+                    // 根据选择的引擎处理URL
+                    if (!hasProtocol && !isRelativePath) {
+                        // 如果没有协议前缀且不是相对路径，根据选择的引擎添加
+                        if (engine === 'autofillHttp1') {
+                            url = 'http://' + url;
+                        } else if (engine === 'autofillHttps') {
+                            url = 'https://' + url;
+                        } else if (engine === 'iFrameFree') {
+                            url = 'https://' + url;
+                        } else {
+                            // 默认添加https://
+                            url = 'https://' + url;
+                        }
+                    }
+                    
+                    // 如果是iFrameFree，在iframe中打开
+                    if (engine === 'iFrameFree') {
+                        document.getElementById('webFrame').src = url;
+                        document.getElementById('iframeContainer').style.display = 'block';
+                        searchSuggestions.style.display = 'none';
+                    } else {
+                        window.open(url, '_blank');
+                    }
+                };
+                
+                visitDiv.onmouseover = function() {
+                    this.style.backgroundColor = '#e0e0e0';
+                };
+                visitDiv.onmouseout = function() {
+                    this.style.backgroundColor = '#f8f8f8';
+                };
+                
+                searchSuggestions.appendChild(visitDiv);
+            }
+            
+            // 原有的建议显示代码（保持原样）
             if (suggestions && suggestions.length > 0) {
                 for (var i = 0; i < suggestions.length; i++) {
                     var div = document.createElement('div');
@@ -2759,8 +2852,8 @@
                     div.style.cursor = 'pointer';
                     div.style.borderBottom = '1px solid #eee';
                     
-                    div.onclick = (function(suggestion) {
-                        return function() {
+                    (function(suggestion) {
+                        div.onclick = function() {
                             document.getElementById('urlInput').value = suggestion;
                             // 如果保存输入文本复选框被勾选，保存当前输入
                             if (document.getElementById('saveInputCheckbox').checked) {
@@ -2785,13 +2878,19 @@
                 searchSuggestions.style.display = 'block';
                 updateSuggestionsPosition();
             } else {
-                searchSuggestions.style.display = 'none';
-                // 隐藏搜索建议时恢复quickInputUi位置
-                resetQuickInputPosition();
-                // 隐藏搜索建议时恢复quickInputUi位置
-                if (document.getElementById('quickInputCheckbox').checked) {
-                    var quickInputBtn = document.getElementById('quickInputBtn');
-                    quickInputBtn.style.marginTop = '0px';
+                // 只有网址选项时也显示
+                if (isUrlPattern) {
+                    searchSuggestions.style.display = 'block';
+                    updateSuggestionsPosition();
+                } else {
+                    searchSuggestions.style.display = 'none';
+                    // 隐藏搜索建议时恢复quickInputUi位置
+                    resetQuickInputPosition();
+                    // 隐藏搜索建议时恢复quickInputUi位置
+                    if (document.getElementById('quickInputCheckbox').checked) {
+                        var quickInputBtn = document.getElementById('quickInputBtn');
+                        quickInputBtn.style.marginTop = '0px';
+                    }
                 }
             }
         }
@@ -2803,22 +2902,22 @@
             
             if (!query || query.trim() === '') {
                 // 空查询时显示搜索热词
-                var hotWords = ['今日热点', '新闻', '天气', '时间', '翻译', '计算器'];
-                showSearchSuggestions(hotWords);
+                searchSuggestions.style.display = 'none';
+                setTimeout(function() { searchSuggestions.style.display = 'none'; }, 100);
                 return;
             }
             
             // 创建script标签进行JSONP请求（兼容所有浏览器）
             var script = document.createElement('script');
-            script.src = 'https://suggestion.baidu.com/su?wd=' + encodeURIComponent(query) + '&cb=window.handleSuggestion';
+            script.src = 'https://www.baidu.com/sugrec?prod=pc&wd=' + encodeURIComponent(query) + '&cb=window.handleSuggestion';
             document.head.appendChild(script);
             
             // 设置超时处理
             setTimeout(function() {
-                if (document.head.contains(script)) {
+                if (script.parentNode === document.head) {
                     document.head.removeChild(script);
                     // 如果API失败，显示本地建议
-                    var localSuggestions = [query + ' 是什么', query + ' 教程', query + ' 下载'];
+                    var localSuggestions = [query];
                     showSearchSuggestions(localSuggestions);
                 }
             }, 3000);
@@ -2829,15 +2928,27 @@
             // 移除script标签
             var scripts = document.head.getElementsByTagName('script');
             for (var i = scripts.length - 1; i >= 0; i--) {
-                if (scripts[i].src.indexOf('suggestion.baidu.com') > -1) {
+                if (scripts[i].src.indexOf('sugrec') > -1) {
                     document.head.removeChild(scripts[i]);
                 }
             }
             
-            if (data && data.s && data.s.length > 0) {
-                showSearchSuggestions(data.s);
+            if (data && data.g && data.g.length > 0) {
+                // 提取新API返回的建议词（兼容低版本浏览器）
+                var suggestions = [];
+                for (var j = 0; j < data.g.length; j++) {
+                    if (data.g[j] && data.g[j].q) {
+                        suggestions.push(data.g[j].q);
+                    }
+                }
+                if (suggestions.length > 0) {
+                    showSearchSuggestions(suggestions);
+                } else {
+                    var localSuggestions = [document.getElementById('urlInput').value.trim()];
+                    showSearchSuggestions(localSuggestions);
+                }
             } else {
-                var localSuggestions = [document.getElementById('urlInput').value.trim() + ' 是什么', document.getElementById('urlInput').value.trim() + ' 教程'];
+                var localSuggestions = [document.getElementById('urlInput').value.trim()];
                 showSearchSuggestions(localSuggestions);
             }
         };
@@ -2859,8 +2970,17 @@
         
         // 输入框输入事件
         document.getElementById('urlInput').addEventListener('input', function() {
+            if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
+            
             var query = this.value.trim();
             fetchSearchSuggestions(query);
+            
+            // 立即更新建议框位置（确保网址检测后能正确显示）
+            setTimeout(function() {
+                if (document.getElementById('searchSuggestionsCheckbox').checked) {
+                    updateSuggestionsPosition();
+                }
+            }, 10);
         });
         
         // 输入框失焦事件
