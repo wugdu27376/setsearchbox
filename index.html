@@ -148,6 +148,7 @@
             </optgroup>
             <optgroup label="其他">
                 <option value="kfBaidu">开发者搜索</option>
+                <option value="weixinSogou">搜狗微信</option>
                 <option value="baiduTw" id="baidutwOption">Baidu (繁体)</option>
                 <option value="iFrameFree">IFrame</option>
                 <option value="showCheckbox">工具</option>
@@ -230,11 +231,11 @@
             <input type="submit" id="clearCustomSearchesBtn" style="display: none;">
             <label for="quickLinksColorPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">超链接颜色: <span id="quickLinksColorValue">#0000ee</span></label>
             <input type="text" id="quickLinksColorPicker" style="display: none;">
-            <label for="executeJsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">Extcute JS</label>
+            <label for="executeJsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">执行JS脚本</label>
             <input type="submit" id="executeJsBtn" style="display: none;">
             <div style="display: inline-block;">
                 <input type="checkbox" id="trustJsCheckbox">
-                <label for="trustJsCheckbox" style="user-select: none;">信任保存JS代码</label>
+                <label for="trustJsCheckbox" style="user-select: none;">信任并保存脚本</label>
             </div>
             <div style="display: inline-block;">
                 <input type="checkbox" id="hitokotoCheckbox">
@@ -606,6 +607,13 @@
                     case 'kfBaidu':
                         url = 'https://kaifa.baidu.com/searchPage?wd=' + encodeURIComponent(url);
                         break;
+                    case 'weixinSogou':
+                        if (isMobileAndroidApple()) {
+                            url = 'https://weixin.sogou.com/weixinwap?type=2&query=' + encodeURIComponent(url);
+                        } else {
+                            url = 'https://weixin.sogou.com/weixin?type=2&query=' + encodeURIComponent(url);
+                        }
+                        break;
                     case 'baidu_0':
                         url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
                         break;
@@ -722,6 +730,7 @@
                         if (order === 0) {
                             localStorage.removeItem('customSearchUrl');
                             localStorage.removeItem('customSearchName');
+                            customSearchOption.textContent = '自定义';
                         }
                         updateCustomSearchOptions();
                     } else if (order === 0) {
@@ -864,6 +873,7 @@
         document.querySelector('label[for="clearCustomSearchesBtn"]').addEventListener('click', function() {
             showCustomConfirm('确定要清除所有自定义搜索吗？', function(result) {
                 if (result) {
+                    customSearchOption.textContent = '自定义';
                     localStorage.removeItem('customSearches');
                     localStorage.removeItem('customSearchUrl');
                     localStorage.removeItem('customSearchName');
@@ -1361,7 +1371,7 @@
         document.querySelector('label[for="executeJsBtn"]').addEventListener('click', function() {
             var currentJs = localStorage.getItem('customJs') || '';
             
-            showCustomCodeModal('输入JavaScript代码（输入为空时不执行）：', currentJs, function(jsCode) {
+            showCustomCodeModal('输入JavaScript脚本（输入为空时不执行）：', currentJs, function(jsCode) {
                 if (jsCode === null) {
                     return;
                 }
@@ -1387,13 +1397,13 @@
                         // 执行出错时不保存
                     }
                 }
-            }, '输入JavaScript代码');
+            }, '输入JavaScript脚本');
         });
         
         // 信任保存JavaScript代码checkbox事件监听
         document.getElementById('trustJsCheckbox').addEventListener('change', function() {
             if (this.checked) {
-                showCustomConfirm('警告：启用此功能后，保存的JavaScript代码将在每次页面加载时自动运行，在启用此功能后请勿运行对本网站造成威胁的代码，否则无法恢复！', function(result) {
+                showCustomConfirm('警告：启用此功能后，保存的JavaScript脚本将在每次页面加载时自动运行，在启用此功能后请勿运行对本网站造成威胁的代码，否则无法恢复！', function(result) {
                     if (!result) {
                         document.getElementById('trustJsCheckbox').checked = false;
                     } else {
@@ -1864,7 +1874,7 @@
                 'taobaoWeb', 'jdWebPage',
                 'biliTv', 'dyIsWindows', 'haokanVideo',
                 'githubCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
-                'kfBaidu', 'baiduTw', 'iFrameFree'];
+                'kfBaidu', 'weixinSogou', 'baiduTw', 'iFrameFree'];
             for (var i = 0; i < engineSelect.options.length; i++) {
                 // 修改这里：除了 nullBaidu ID 外都隐藏
                 if (optionsToHide.indexOf(engineSelect.options[i].value) !== -1 && engineSelect.options[i].id !== 'nullBaidu') {
