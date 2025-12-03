@@ -2789,6 +2789,10 @@
             
             searchSuggestions.innerHTML = '';
             
+            if (document.getElementById('searchSuggestionsCheckbox').checked && isDesktop()) {
+                searchSuggestions.style.maxHeight = '800px';
+            }
+            
             // 如果检测到网址格式，在建议列表第一位添加访问网站选项
             if (isUrlPattern && inputText.length > 0) {
                 var visitDiv = document.createElement('div');
