@@ -68,7 +68,8 @@
         
         /* 限制在 #autoFillhttps 和 #iframeContainer 区域内，排除与checkbox关联的label和指定ID */
         #autoFillhttps label:active:not([for*="Checkbox"]):not(#noActiveLab),
-        #iframeContainer label:active:not([for*="Checkbox"]):not(#noActiveLab) {
+        #iframeContainer label:active:not([for*="Checkbox"]):not(#noActiveLab),
+        #clearHistoryBtn label:active {
             color: #ff0000 !important;
         }
         
@@ -340,7 +341,7 @@
     
     <div id="searchSuggestions" style="display: none; position: fixed; background: white; font-size: 15px; border: 1px solid #ccc; text-align: left; max-height: 200px; overflow-y: auto; z-index: 1002; width: 80%;"></div>
     
-    <div id="hitokotoDisplay" style="display: none; left: 0; right: 0; margin: 0 auto; margin-top: 10px; text-align: center; font-style: italic;"></div>
+    <div id="hitokotoDisplay" style="display: none; left: 0; right: 0; margin: 0 auto; margin-top: 10px; text-align: center; font-size: 14px; user-select: none; font-style: italic;"></div>
 
     <script>
         // 检测是否为电脑端
