@@ -3059,7 +3059,11 @@
             if (!query || query.trim() === '') {
                 // 空查询时显示搜索热词
                 searchSuggestions.style.display = 'none';
-                setTimeout(function() { searchSuggestions.style.display = 'none'; }, 100);
+                resetQuickInputPosition();
+                setTimeout(function() {
+                    searchSuggestions.style.display = 'none';
+                    resetQuickInputPosition();
+                }, 100);
                 return;
             }
             
