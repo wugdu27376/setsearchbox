@@ -99,6 +99,7 @@
                 <option value="sogou">搜狗</option>
                 <option value="so">360搜索</option>
                 <option value="yandex">Yandex</option>
+                <option value="yahooSearch">Yahoo</option>
                 <option value="duckduckgo">DuckDuckGo</option>
             </optgroup>
             <optgroup label="网页">
@@ -571,6 +572,9 @@
                         break;
                     case 'yandex':
                         url = 'https://yandex.com/search/?text=' + encodeURIComponent(url);
+                        break;
+                    case 'yahooSearch':
+                        url = 'https://sg.search.yahoo.com/search?p=' + encodeURIComponent(url);
                         break;
                     case 'autofillHttp1':
                         // 自动填充http://前缀
@@ -1337,6 +1341,7 @@
                                 linkElement.innerHTML = '<img src="' + imageUrl + '" style="width: auto; height: auto; max-width: ' + linkSize + '; max-height: ' + linkSize + '; display: block; left: 0; right: 0; margin: 0 auto;">';
                                 document.getElementById('linkColorValue').textContent = 'Image';
                                 localStorage.setItem('linkImage', imageUrl);
+                                localStorage.setItem('36156798756549916136', 'true');
                             } else if (imageUrl === '') {
                                 // 输入为空时恢复默认颜色
                                 var defaultColor = '#0000ee';
@@ -1369,16 +1374,31 @@
             });
         });
         
-        // 加载保存的链接颜色
-        var savedLinkColor = localStorage.getItem('linkColor');
-        if (savedLinkColor) {
+        // 加载保存的图片链接（优先检查图片）
+        var savedLinkImage = localStorage.getItem('linkImage');
+        if (savedLinkImage) {
             var linkElement = document.getElementById('85727544071588039023');
-            linkElement.style.color = savedLinkColor;
-            document.getElementById('linkColorValue').textContent = savedLinkColor;
+            var linkSize = localStorage.getItem('linkSize') || '30px';
+            linkElement.innerHTML = '<img src="' + savedLinkImage + '" style="max-width: ' + linkSize + '; height: auto; display: block; left: 0; right: 0; margin: 0 auto;">';
+            document.getElementById('linkColorValue').textContent = 'Image';
+            // 设置链接颜色选择器的值为图片URL，以便后续识别
+            document.getElementById('linkColorPicker').value = savedLinkImage;
             // 添加链接激活状态样式
             var linkStyle = document.createElement('style');
             linkStyle.textContent = 'a:active.link-85727544071588039023 { color: #ff0000 !important; }';
             document.head.appendChild(linkStyle);
+        } else {
+            // 加载保存的链接颜色
+            var savedLinkColor = localStorage.getItem('linkColor');
+            if (savedLinkColor) {
+                var linkElement = document.getElementById('85727544071588039023');
+                linkElement.style.color = savedLinkColor;
+                document.getElementById('linkColorValue').textContent = savedLinkColor;
+                // 添加链接激活状态样式
+                var linkStyle = document.createElement('style');
+                linkStyle.textContent = 'a:active.link-85727544071588039023 { color: #ff0000 !important; }';
+                document.head.appendChild(linkStyle);
+            }
         }
         
         // 添加重命名功能
@@ -1427,15 +1447,6 @@
                 }
             });
         });
-        
-        // 加载保存的图片链接
-        var savedLinkImage = localStorage.getItem('linkImage');
-        if (savedLinkImage) {
-            var linkElement = document.getElementById('85727544071588039023');
-            var linkSize = localStorage.getItem('linkSize') || '30px';
-                linkElement.innerHTML = '<img src="' + savedLinkImage + '" style="max-width: ' + linkSize + '; height: auto; display: block; left: 0; right: 0; margin: 0 auto;">';
-            document.getElementById('linkColorValue').textContent = 'Image';
-        }
         
         // 加载保存的链接名称
         var savedLinkName = localStorage.getItem('linkName');
@@ -1569,6 +1580,10 @@
                 'justify-content: center',
                 'align-items: center'
             ].join(';');
+            
+            setTimeout(function() {
+                centerModalElement(modal);
+            }, 0);
             
             var callbackName = 'codeCallback_' + Date.now();
             window[callbackName] = function(code) {
@@ -1821,7 +1836,6 @@
             });
         });
         
-        // 更新搜索历史记录显示
         function updateSearchHistory() {
             var searchHistoryDiv = document.getElementById('searchHistory');
             var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
@@ -1839,62 +1853,59 @@
             searchHistoryDiv.style.textAlign = 'center';
             
             var container = document.createElement('div');
-            container.style.display = 'flex';
+            container.style.textAlign = 'center';
             container.style.width = '100%';
-            container.style.justifyContent = 'center';
-            container.style.flexWrap = 'wrap';
-            container.style.margin = '10px';
             container.style.left = '0';
             container.style.right = '0';
             container.style.margin = '0 auto';
             
             history.forEach(function(item, index) {
-            var linkElement = document.createElement('a');
-            linkElement.href = '#';
-                    
-            // 处理显示文本，超过150px时显示...
-            var displayText = item.text;
-            var tempSpan = document.createElement('span');
-            tempSpan.style.visibility = 'hidden';
-            tempSpan.style.position = 'absolute';
-            tempSpan.style.whiteSpace = 'nowrap';
-            tempSpan.style.font = getComputedStyle(linkElement).font;
-            tempSpan.textContent = displayText;
-            document.body.appendChild(tempSpan);
-            
-            if (tempSpan.offsetWidth > 150) {
-                while (tempSpan.offsetWidth > 150 && displayText.length > 3) {
-                    displayText = displayText.substring(0, displayText.length - 1);
-                    tempSpan.textContent = displayText + '...';
+                var linkElement = document.createElement('a');
+                linkElement.href = '#';
+                        
+                // 处理显示文本，超过150px时显示...
+                var displayText = item.text;
+                var tempSpan = document.createElement('span');
+                tempSpan.style.visibility = 'hidden';
+                tempSpan.style.position = 'absolute';
+                tempSpan.style.whiteSpace = 'nowrap';
+                tempSpan.style.font = getComputedStyle(linkElement).font;
+                tempSpan.textContent = displayText;
+                document.body.appendChild(tempSpan);
+                
+                if (tempSpan.offsetWidth > 150) {
+                    while (tempSpan.offsetWidth > 150 && displayText.length > 3) {
+                        displayText = displayText.substring(0, displayText.length - 1);
+                        tempSpan.textContent = displayText + '...';
+                    }
+                    displayText = displayText + '...';
                 }
-                displayText = displayText + '...';
-            }
-            
-            document.body.removeChild(tempSpan);
-            linkElement.textContent = displayText;
-            linkElement.title = item.text; // 添加title显示完整内容
-            
-            linkElement.style.margin = '0 5px';
-            linkElement.style.maxWidth = '150px';
-            linkElement.style.overflow = 'hidden';
-            linkElement.style.textOverflow = 'ellipsis';
-            linkElement.style.whiteSpace = 'nowrap';
-            linkElement.style.display = 'inline-block';
-            linkElement.style.verticalAlign = 'bottom';
-            linkElement.onclick = function(e) {
-                e.preventDefault();
-                document.getElementById('urlInput').value = item.text;
-                document.getElementById('urlInput').focus();
-            };
-            
-            var linkContainer = document.createElement('div');
-            linkContainer.style.display = 'flex';
-            linkContainer.style.alignItems = 'center';
-            linkContainer.appendChild(linkElement);
-            
-            container.appendChild(linkContainer);
-        });
-            
+                
+                document.body.removeChild(tempSpan);
+                linkElement.textContent = displayText;
+                linkElement.title = item.text; // 添加title显示完整内容
+                
+                linkElement.style.margin = '0 5px';
+                linkElement.style.maxWidth = '150px';
+                linkElement.style.overflow = 'hidden';
+                linkElement.style.textOverflow = 'ellipsis';
+                linkElement.style.whiteSpace = 'nowrap';
+                linkElement.style.display = 'inline-block';
+                linkElement.style.verticalAlign = 'bottom';
+                linkElement.onclick = function(e) {
+                    e.preventDefault();
+                    document.getElementById('urlInput').value = item.text;
+                    document.getElementById('urlInput').focus();
+                };
+                
+                var linkContainer = document.createElement('div');
+                linkContainer.style.display = 'inline-block';
+                linkContainer.style.alignItems = 'center';
+                linkContainer.appendChild(linkElement);
+                
+                container.appendChild(linkContainer);
+            });
+                
             searchHistoryDiv.appendChild(container);
         }
         
@@ -1978,8 +1989,9 @@
                 }
             }
             
-            // 隐藏特定选项值 - 修改这里：添加对 nullBaidu 的处理
-            var optionsToHide = ['sodouyinM', 'yzmsmM', 'sotoutiaoM', 'qksmSearch', 'baiduMEasy',
+            // 隐藏特定选项值
+            var optionsToHide = ['yahooSearch',
+                'sodouyinM', 'yzmsmM', 'sotoutiaoM', 'qksmSearch', 'baiduMEasy',
                 'metasosuoAI', 'baiduAI', '360namisoAI', 'zhihuZhiDaAI', 'quarkpcAI',
                 'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'fanyiSo', 'volcTranslate', 'transmartQQTs', 
                 'taobaoWeb', 'jdWebPage',
@@ -1987,7 +1999,6 @@
                 'githubCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
                 'kfBaidu', 'weixinSogou', 'baiduTw', 'iFrameFree'];
             for (var i = 0; i < engineSelect.options.length; i++) {
-                // 修改这里：除了 nullBaidu ID 外都隐藏
                 if (optionsToHide.indexOf(engineSelect.options[i].value) !== -1 && engineSelect.options[i].id !== 'nullBaidu') {
                     engineSelect.options[i].style.display = 'none';
                 }
@@ -2427,12 +2438,26 @@
             }
         });
         
-        // 保存和加载背景颜色
-        var savedBgColor = localStorage.getItem('backgroundColor') || '#ffffff';
-        document.body.style.backgroundColor = savedBgColor;
-        document.getElementById('searchContainer').style.background = savedBgColor;
-        document.getElementById('bgColorPicker').value = savedBgColor;
-        document.getElementById('colorValue').textContent = savedBgColor;
+        // 加载保存的背景图片（优先检查图片）
+        var savedBackgroundImage = localStorage.getItem('backgroundImage');
+        if (savedBackgroundImage) {
+            document.body.style.backgroundColor = '';
+            document.body.style.backgroundImage = 'url("' + savedBackgroundImage + '")';
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+            document.getElementById('searchContainer').style.background = '';
+            document.getElementById('colorValue').textContent = 'Image';
+            // 设置颜色选择器的值为图片URL，以便后续识别
+            document.getElementById('bgColorPicker').value = savedBackgroundImage;
+        } else {
+            // 加载保存的背景颜色
+            var savedBgColor = localStorage.getItem('backgroundColor') || '#ffffff';
+            document.body.style.backgroundColor = savedBgColor;
+            document.getElementById('searchContainer').style.background = savedBgColor;
+            document.getElementById('bgColorPicker').value = savedBgColor;
+            document.getElementById('colorValue').textContent = savedBgColor;
+        }
         
         // 监听背景颜色变化
         document.getElementById('bgColorPicker').addEventListener('input', function() {
@@ -2534,18 +2559,6 @@
             if (savedCheckboxState === 'true') {
                 document.getElementById('selectHttpsText').disabled = false;
             }
-        }
-        
-        // 加载保存的背景图片
-        var savedBackgroundImage = localStorage.getItem('backgroundImage');
-        if (savedBackgroundImage) {
-            document.body.style.backgroundColor = '';
-            document.body.style.backgroundImage = 'url("' + savedBackgroundImage + '")';
-            document.body.style.backgroundSize = 'cover';
-            document.body.style.backgroundRepeat = 'no-repeat';
-            document.body.style.backgroundAttachment = 'fixed';
-            document.getElementById('searchContainer').style.background = '';
-            document.getElementById('colorValue').textContent = 'Image';
         }
         
         // 字体颜色控制
@@ -2989,6 +3002,9 @@
                     }
                 };
                 
+                var visitUrl = inputText;
+                var visitEngine = document.getElementById('engineSelect').value;
+                
                 visitDiv.onmouseover = function() {
                     this.style.backgroundColor = '#e0e0e0';
                 };
@@ -3050,6 +3066,31 @@
                 }
             }
         }
+        
+        document.getElementById('urlInput').addEventListener('keydown', function(e) {
+            e = e || window.event;
+            var keyCode = e.keyCode || e.which;
+            
+            // 检查是否按下了 alt + enter
+            if (keyCode === 13 && e.altKey) {
+                // 检查搜索建议是否显示并且包含访问建议
+                var searchSuggestions = document.getElementById('searchSuggestions');
+                if (searchSuggestions.style.display === 'block') {
+                    // 检查第一个建议项是否是访问网站建议
+                    var firstSuggestion = searchSuggestions.firstChild;
+                    if (firstSuggestion && firstSuggestion.textContent.indexOf('访问:') === 0) {
+                        // 获取当前输入框的值
+                        var inputText = this.value.trim();
+                        if (inputText) {
+                            // 模拟点击访问建议
+                            firstSuggestion.click();
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+                }
+            }
+        });
         
         // 获取搜索建议
         function fetchSearchSuggestions(query) {
@@ -3349,9 +3390,11 @@
                     }
                 });
                 
-                var linkContainer = document.createElement('div');
-                linkContainer.style.display = 'flex';
+                var linkContainer = document.createElement('span'); // 修改这里
+                linkContainer.style.display = 'inline-flex'; // 修改这里
                 linkContainer.style.alignItems = 'center';
+                linkContainer.style.margin = '0 0'; // 添加这行
+                linkContainer.style.display = 'inline-block';
                 
                 // 只在showCheckbox时显示删除按钮
                 if (isShowCheckbox) {
@@ -3439,6 +3482,10 @@
                 'align-items: center'
             ].join(';');
             
+            setTimeout(function() {
+                centerModalElement(modal);
+            }, 0);
+            
             // 创建唯一的回调函数名称以避免冲突
             var callbackName = 'modalCallback_' + Date.now();
             window[callbackName] = function(value) {
@@ -3507,6 +3554,10 @@
                 'align-items: center'
             ].join(';');
             
+            setTimeout(function() {
+                centerModalElement(modal);
+            }, 0);
+            
             // 创建唯一的回调函数名称以避免冲突
             var callbackName = 'confirmCallback_' + Date.now();
             window[callbackName] = function(result) {
@@ -3563,6 +3614,10 @@
                 'align-items: center'
             ].join(';');
             
+            setTimeout(function() {
+                centerModalElement(modal);
+            }, 0);
+            
             // 创建唯一的回调函数名称以避免冲突
             var callbackName = 'doubleInputCallback_' + Date.now();
             window[callbackName] = function(value1, value2) {
@@ -3583,24 +3638,57 @@
             };
             
             modal.innerHTML = [
-                    '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
-                    '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
-                    '<div style="text-align: left; margin-bottom: 10px;">',
-                    '<div style="font-size: 12px; user-select: none; color: #666; margin-bottom: 5px;">' + label1 + '</div>',
-                    '<input type="text" id="doubleInput1_' + callbackName + '" value="' + (currentValue1 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
-                    '</div>',
-                    '<div style="text-align: left; margin-bottom: 15px;">',
-                    '<div style="font-size: 12px; user-select: none; color: #666; margin-bottom: 5px;">' + label2 + '</div>',
-                    '<input type="text" id="doubleInput2_' + callbackName + '" value="' + (currentValue2 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
-                    '</div>',
-                    '<div style="margin-top: 15px; text-align: right;">',
-                    '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null, null)">取消</label>',
-                    '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input1=document.getElementById(\'doubleInput1_' + callbackName + '\'),input2=document.getElementById(\'doubleInput2_' + callbackName + '\');window.' + callbackName + '(input1?input1.value:null,input2?input2.value:null)">确定</label>',
-                    '</div>',
-                    '</div>'
-                ].join('');
+                '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
+                '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
+                '<div style="text-align: left; margin-bottom: 10px;">',
+                '<div style="font-size: 12px; user-select: none; color: #666; margin-bottom: 5px;">' + label1 + '</div>',
+                '<input type="text" id="doubleInput1_' + callbackName + '" value="' + (currentValue1 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+                '</div>',
+                '<div style="text-align: left; margin-bottom: 15px;">',
+                '<div style="font-size: 12px; user-select: none; color: #666; margin-bottom: 5px;">' + label2 + '</div>',
+                '<input type="text" id="doubleInput2_' + callbackName + '" value="' + (currentValue2 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+                '</div>',
+                '<div style="margin-top: 15px; text-align: right;">',
+                '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null, null)">取消</label>',
+                '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input1=document.getElementById(\'doubleInput1_' + callbackName + '\'),input2=document.getElementById(\'doubleInput2_' + callbackName + '\');window.' + callbackName + '(input1?input1.value:null,input2?input2.value:null)">确定</label>',
+                '</div>',
+                '</div>'
+            ].join('');
             
             document.body.appendChild(modal);
+        }
+        
+        function centerModalElement(modal) {
+            var modalContent = modal.firstChild;
+            if (modalContent) {
+                // 计算居中位置的函数
+                function updateModalPosition() {
+                    var modalWidth = modalContent.offsetWidth;
+                    var modalHeight = modalContent.offsetHeight;
+                    var windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+                    var windowHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+                    
+                    var leftPos = (windowWidth - modalWidth) / 2;
+                    var topPos = (windowHeight - modalHeight) / 2;
+                    
+                    // 设置绝对定位居中
+                    modalContent.style.position = 'absolute';
+                    modalContent.style.left = (leftPos > 0 ? leftPos : 0) + 'px';
+                    modalContent.style.top = (topPos > 0 ? topPos : 0) + 'px';
+                }
+                
+                // 初始居中
+                updateModalPosition();
+                
+                // 窗口大小改变时重新居中
+                var resizeHandler = function() {
+                    updateModalPosition();
+                };
+                
+                // 保存到modal对象上，以便移除事件监听
+                modal._resizeHandler = resizeHandler;
+                window.addEventListener('resize', resizeHandler);
+            }
         }
         
         // 清除所有设置功能
