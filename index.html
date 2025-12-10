@@ -1377,16 +1377,18 @@
         // 加载保存的图片链接（优先检查图片）
         var savedLinkImage = localStorage.getItem('linkImage');
         if (savedLinkImage) {
-            var linkElement = document.getElementById('85727544071588039023');
-            var linkSize = localStorage.getItem('linkSize') || '30px';
-            linkElement.innerHTML = '<img src="' + savedLinkImage + '" style="max-width: ' + linkSize + '; height: auto; display: block; left: 0; right: 0; margin: 0 auto;">';
-            document.getElementById('linkColorValue').textContent = 'Image';
-            // 设置链接颜色选择器的值为图片URL，以便后续识别
-            document.getElementById('linkColorPicker').value = savedLinkImage;
-            // 添加链接激活状态样式
-            var linkStyle = document.createElement('style');
-            linkStyle.textContent = 'a:active.link-85727544071588039023 { color: #ff0000 !important; }';
-            document.head.appendChild(linkStyle);
+            setTimeout(function() {
+                var linkElement = document.getElementById('85727544071588039023');
+                var linkSize = localStorage.getItem('linkSize') || '30px';
+                linkElement.innerHTML = '<img src="' + savedLinkImage + '" style="max-width: ' + linkSize + '; height: auto; display: block; left: 0; right: 0; margin: 0 auto;">';
+                document.getElementById('linkColorValue').textContent = 'Image';
+                // 设置链接颜色选择器的值为图片URL，以便后续识别
+                document.getElementById('linkColorPicker').value = savedLinkImage;
+                // 添加链接激活状态样式
+                var linkStyle = document.createElement('style');
+                linkStyle.textContent = 'a:active.link-85727544071588039023 { color: #ff0000 !important; }';
+                document.head.appendChild(linkStyle);
+            }, 0);
         } else {
             // 加载保存的链接颜色
             var savedLinkColor = localStorage.getItem('linkColor');
@@ -2441,15 +2443,17 @@
         // 加载保存的背景图片（优先检查图片）
         var savedBackgroundImage = localStorage.getItem('backgroundImage');
         if (savedBackgroundImage) {
-            document.body.style.backgroundColor = '';
-            document.body.style.backgroundImage = 'url("' + savedBackgroundImage + '")';
-            document.body.style.backgroundSize = 'cover';
-            document.body.style.backgroundRepeat = 'no-repeat';
-            document.body.style.backgroundAttachment = 'fixed';
-            document.getElementById('searchContainer').style.background = '';
-            document.getElementById('colorValue').textContent = 'Image';
-            // 设置颜色选择器的值为图片URL，以便后续识别
-            document.getElementById('bgColorPicker').value = savedBackgroundImage;
+            setTimeout(function() {
+                document.body.style.backgroundColor = '';
+                document.body.style.backgroundImage = 'url("' + savedBackgroundImage + '")';
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundRepeat = 'no-repeat';
+                document.body.style.backgroundAttachment = 'fixed';
+                document.getElementById('searchContainer').style.background = '';
+                document.getElementById('colorValue').textContent = 'Image';
+                // 设置颜色选择器的值为图片URL，以便后续识别
+                document.getElementById('bgColorPicker').value = savedBackgroundImage;
+            }, 0);
         } else {
             // 加载保存的背景颜色
             var savedBgColor = localStorage.getItem('backgroundColor') || '#ffffff';
