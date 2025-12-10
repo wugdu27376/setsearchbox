@@ -2975,13 +2975,35 @@
             // 如果检测到网址格式，在建议列表第一位添加访问网站选项
             if (isUrlPattern && inputText.length > 0 && document.getElementById('showVisitWebsiteCheckbox').checked) {
                 var visitDiv = document.createElement('div');
-                visitDiv.textContent = '访问: ' + inputText;
-                visitDiv.style.padding = '6px 10px';
+                
+                // 创建文本内容
+                var visitText = document.createElement('span');
+                visitText.textContent = '访问: ' + inputText;
+                
+                // 电脑端时添加Alt+Enter提示
+                var altEnterText = null;
+                if (isDesktop()) {
+                    altEnterText = document.createElement('span');
+                    altEnterText.textContent = 'Alt+Enter';
+                    altEnterText.style.color = '#666';
+                    altEnterText.style.fontSize = '10px';
+                    altEnterText.style.marginLeft = '10px';
+                }
+                
+                visitDiv.appendChild(visitText);
+                if (altEnterText) {
+                    visitDiv.appendChild(altEnterText);
+                }
+                
+                visitDiv.style.padding = isDesktop() ? '6px 10px' : '5px 10px';
                 visitDiv.style.cursor = 'pointer';
                 visitDiv.style.borderBottom = '1px solid #eee';
                 visitDiv.style.fontWeight = 'bold';
-                visitDiv.style.fontSize = '13px';
+                visitDiv.style.fontSize = isDesktop() ? '11px' : '13px';
                 visitDiv.style.backgroundColor = '#f8f8f8';
+                visitDiv.style.display = 'flex';
+                visitDiv.style.justifyContent = 'space-between';
+                visitDiv.style.alignItems = 'center';
                 
                 visitDiv.onclick = function() {
                     var engine = document.getElementById('engineSelect').value;
@@ -3053,7 +3075,8 @@
                 for (var i = 0; i < suggestions.length; i++) {
                     var div = document.createElement('div');
                     div.textContent = suggestions[i];
-                    div.style.padding = '6px 10px';
+                    div.style.padding = isDesktop() ? '7px 10px' : '6px 10px';
+                    div.style.fontSize = isDesktop() ? '12.4px' : '';
                     div.style.cursor = 'pointer';
                     div.style.borderBottom = '1px solid #eee';
                     
