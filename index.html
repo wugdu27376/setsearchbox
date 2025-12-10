@@ -129,6 +129,7 @@
                 <option value="sogouFanyi">搜狗翻译</option>
                 <option value="oldBaiduFanyi" id="baiduFanyiOption">百度翻译</option>
                 <option value="fanyiSo">360翻译</option>
+                <option value="quarkTranslateTools" id="quarkFanyiOption">夸克翻译</option>
                 <option value="volcTranslate">火山翻译</option>
                 <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
             </optgroup>
@@ -292,7 +293,7 @@
     <div style="height: 5px;"></div>
     
     <div id="iframeContainer" style="display: none; width: 100%; height: 600px; margin-top: 10px;">
-        <iframe id="webFrame" src="about:blank" style="width: 100%; height: calc(100% - 30px); border: 1px solid #ccc;"></iframe>
+        <iframe id="webFrame" src="about:blank" style="width: 100%; height: 100%; border: 1px solid #ccc;"></iframe>
         <div style="margin-top: 10px; margin-bottom: -20px;">
             <label for="iframeRefreshBtn" style="user-select: none; vertical-align: middle; margin-left: 0; cursor: pointer; font-size: 17px;">刷新</label>
             <label for="iframeCloseBtn" style="user-select: none; vertical-align: middle; margin-left: 0; cursor: pointer; font-size: 17px;">关闭</label>
@@ -373,7 +374,7 @@
                 }
             }
             if (isDesktop()) {
-                if (savedEngine === 'sodouyinM' || savedEngine === 'yzmsmM' || savedEngine === 'sotoutiaoM' || savedEngine === 'qksmSearch' || savedEngine === 'baiduMEasy' || savedEngine === 'oldBaiduFanyi' || savedEngine === 'showCheckbox') {
+                if (savedEngine === 'sodouyinM' || savedEngine === 'yzmsmM' || savedEngine === 'sotoutiaoM' || savedEngine === 'qksmSearch' || savedEngine === 'baiduMEasy' || savedEngine === 'oldBaiduFanyi' || savedEngine === 'quarkTranslateTools' || savedEngine === 'showCheckbox') {
                     document.getElementById('submitBtn').disabled = true;
                     document.getElementById('urlInput').disabled = true;
                 }
@@ -404,6 +405,22 @@
             if (document.getElementById('urlInput').value !== 'https://') {
                 document.getElementById('urlInput').dataset.userInput = 'true';
             }
+            var iframe = document.getElementById('webFrame');
+            var container = document.getElementById('iframeContainer');
+            
+            function resizeIframe() {
+                if (container && iframe) {
+                    // 获取容器高度并减去30px
+                    var containerHeight = container.offsetHeight;
+                    iframe.style.height = (containerHeight - 30) + 'px';
+                }
+            }
+            
+            // 初始调整
+            resizeIframe();
+            
+            // 窗口大小改变时调整
+            window.addEventListener('resize', resizeIframe);
         });
         
         // 如果是电脑端，禁用移动搜索选项
@@ -414,6 +431,7 @@
                 document.getElementById('quarksoOption').disabled = true;
                 document.getElementById('baidueasyOption').disabled = true;
                 document.getElementById('baiduFanyiOption').disabled = true;
+                document.getElementById('quarkFanyiOption').disabled = true;
             }
             
             if (isMobileAndroidApple()) {
@@ -656,6 +674,9 @@
                         break;
                     case 'fanyiSo':
                         url = 'https://fanyi.so.com/#' + encodeURIComponent(url);
+                        break;
+                    case 'quarkTranslateTools':
+                        url = 'https://vt.quark.cn/blm/translation-486/translate?query=' + encodeURIComponent(url) + '&source_language=detect&target_language=zh&from=douyin';
                         break;
                     case 'volcTranslate':
                         url = 'https://translate.volcengine.com/mobile?text=' + encodeURIComponent(url) + '&source_language=detect&target_language=zh&from=douyin';
@@ -1045,7 +1066,7 @@
             }
             if (isDesktop()) {
                 if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
-                this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'quarkTranslateTools' || this.value === 'showCheckbox') {
                 document.getElementById('submitBtn').disabled = true;
                 document.getElementById('urlInput').disabled = true;
             } else {
@@ -1111,7 +1132,7 @@
                         }
                         if (isDesktop()) {
                             if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
-                            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'quarkTranslateTools' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
                              document.getElementById('urlInput').disabled = true;
                         } else {
@@ -1157,7 +1178,7 @@
                         }
                         if (isDesktop()) {
                             if (this.value === 'sodouyinM' || this.value === 'yzmsmM' || 
-                            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'showCheckbox') {
+                            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'quarkTranslateTools' || this.value === 'showCheckbox') {
                             document.getElementById('submitBtn').disabled = true;
                             document.getElementById('urlInput').disabled = true;
                         } else {
@@ -1380,14 +1401,22 @@
             setTimeout(function() {
                 var linkElement = document.getElementById('85727544071588039023');
                 var linkSize = localStorage.getItem('linkSize') || '30px';
-                linkElement.innerHTML = '<img src="' + savedLinkImage + '" style="max-width: ' + linkSize + '; height: auto; display: block; left: 0; right: 0; margin: 0 auto;">';
-                document.getElementById('linkColorValue').textContent = 'Image';
-                // 设置链接颜色选择器的值为图片URL，以便后续识别
-                document.getElementById('linkColorPicker').value = savedLinkImage;
-                // 添加链接激活状态样式
-                var linkStyle = document.createElement('style');
-                linkStyle.textContent = 'a:active.link-85727544071588039023 { color: #ff0000 !important; }';
-                document.head.appendChild(linkStyle);
+                
+                // 创建图片元素并添加加载失败处理
+                var img = new Image();
+                img.onload = function() {
+                    linkElement.innerHTML = '<img src="' + savedLinkImage + '" style="max-width: ' + linkSize + '; height: auto; display: block; left: 0; right: 0; margin: 0 auto;">';
+                    document.getElementById('linkColorValue').textContent = 'Image';
+                    // 添加链接激活状态样式
+                    var linkStyle = document.createElement('style');
+                    linkStyle.textContent = 'a:active.link-85727544071588039023 { color: #ff0000 !important; }';
+                    document.head.appendChild(linkStyle);
+                };
+                img.onerror = function() {
+                    linkElement.innerHTML = '';
+                    document.getElementById('linkColorValue').textContent = 'Image';
+                };
+                img.src = savedLinkImage;
             }, 0);
         } else {
             // 加载保存的链接颜色
@@ -1995,7 +2024,7 @@
             var optionsToHide = ['yahooSearch',
                 'sodouyinM', 'yzmsmM', 'sotoutiaoM', 'qksmSearch', 'baiduMEasy',
                 'metasosuoAI', 'baiduAI', '360namisoAI', 'zhihuZhiDaAI', 'quarkpcAI',
-                'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'fanyiSo', 'volcTranslate', 'transmartQQTs', 
+                'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'quarkTranslateTools', 'fanyiSo', 'volcTranslate', 'transmartQQTs', 
                 'taobaoWeb', 'jdWebPage',
                 'biliTv', 'dyIsWindows', 'haokanVideo',
                 'githubCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
