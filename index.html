@@ -1362,7 +1362,9 @@
                                 linkElement.innerHTML = '<img src="' + imageUrl + '" style="width: auto; height: auto; max-width: ' + linkSize + '; max-height: ' + linkSize + '; display: block; left: 0; right: 0; margin: 0 auto;">';
                                 document.getElementById('linkColorValue').textContent = 'Image';
                                 localStorage.setItem('linkImage', imageUrl);
-                                localStorage.setItem('36156798756549916136', 'true');
+                                if (!localStorage.getItem('36156798756549916136')) {
+                                    localStorage.setItem('36156798756549916136', 'true');
+                                }
                             } else if (imageUrl === '') {
                                 // 输入为空时恢复默认颜色
                                 var defaultColor = '#0000ee';
@@ -1451,6 +1453,9 @@
                     document.getElementById('linkNameValue').textContent = newName.trim();
                     localStorage.setItem('linkName', newName.trim());
                     truncateText('linkNameValue', newName.trim(), 100);
+                    if (!localStorage.getItem('36156798756549916136')) {
+                        localStorage.setItem('36156798756549916136', 'true');
+                    }
                 }
             });
         });
