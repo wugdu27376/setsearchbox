@@ -3899,9 +3899,11 @@
                             var defaultHeight = '600px';
                             document.getElementById('webFrame').style.height = defaultHeight;
                             document.getElementById('iframeContainer').style.height = defaultHeight;
+                            document.getElementById('iframeContainer').style.height = defaultHeight;
                             localStorage.setItem('iframeHeight', defaultHeight);
                         } else {
                             document.getElementById('webFrame').style.height = height;
+                            document.getElementById('iframeContainer').style.height = height;
                             document.getElementById('iframeContainer').style.height = height;
                             localStorage.setItem('iframeHeight', height);
                         }
@@ -3916,6 +3918,7 @@
         if (savedIframeWidth && savedIframeHeight) {
             document.getElementById('webFrame').style.width = savedIframeWidth;
             document.getElementById('webFrame').style.height = savedIframeHeight;
+            document.getElementById('iframeContainer').style.height = savedIframeHeight;
         }
         
         function getBrowserInfo() {
