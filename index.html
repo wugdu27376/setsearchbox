@@ -2745,6 +2745,14 @@
         
         // 导出设置功能
         document.querySelector('label[for="exportSettingsBtn"]').addEventListener('click', function() {
+            showCustomConfirm('确定要导出用户数据吗？', function(result) {
+                if (result) {
+                    exportSettingsData()
+                }
+            });
+        });
+        
+        function exportSettingsData() {
             var settings = {
                 autoFillHttpsChecked: localStorage.getItem('autoFillHttpsChecked') || 'false',
                 focusCheckboxChecked: localStorage.getItem('focusCheckboxChecked') || 'false',
@@ -2799,7 +2807,7 @@
             a.href = dataUrl;
             a.download = 'search_settings.json';
             a.click();
-        });
+        }
         
         // 导入设置功能
         document.querySelector('label[for="importSettingsBtn"]').addEventListener('click', function() {
@@ -3010,6 +3018,12 @@
                 visitDiv.style.justifyContent = 'space-between';
                 visitDiv.style.alignItems = 'center';
                 
+                visitText.style.overflow = 'hidden';
+                visitText.style.textOverflow = 'ellipsis';
+                visitText.style.whiteSpace = 'nowrap';
+                visitText.style.display = 'inline-block';
+                visitText.style.verticalAlign = 'middle';
+                
                 visitDiv.onclick = function() {
                     var engine = document.getElementById('engineSelect').value;
                     var url = inputText;
@@ -3059,6 +3073,7 @@
                         searchSuggestions.style.display = 'none';
                     } else {
                         window.open(url, '_blank');
+                        urlInput.blur();
                     }
                 };
                 
@@ -3084,6 +3099,8 @@
                     div.style.fontSize = isDesktop() ? '12.4px' : '';
                     div.style.cursor = 'pointer';
                     div.style.borderBottom = '1px solid #eee';
+                    div.style.overflow = 'hidden';
+                    div.style.textOverflow = 'ellipsis';
                     
                     (function(suggestion) {
                         div.onclick = function() {
@@ -3642,11 +3659,34 @@
                 '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
                 '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
                 '<div style="margin-top: 15px; text-align: right;">',
-                '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(false)">取消</label>',
-                '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="window.' + callbackName + '(true)">确定</label>',
+                '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(false)">取消' + (isDesktop() ? '(1)' : '') + '</label>',
+                '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="window.' + callbackName + '(true)">确定' + (isDesktop() ? '(2)' : '') + '</label>',
                 '</div>',
                 '</div>'
             ].join('');
+            
+            // 添加键盘事件处理函数
+            modal._keyHandler = function(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which;
+                
+                // 按数字键1 (keyCode 49) 或 数字小键盘1 (keyCode 97) 为取消
+                if (keyCode === 49 || keyCode === 97) {
+                    window[callbackName](false);
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // 按数字键2 (keyCode 50) 或 数字小键盘2 (keyCode 98) 为确定
+                if (keyCode === 50 || keyCode === 98) {
+                    window[callbackName](true);
+                    e.preventDefault();
+                    return false;
+                }
+            };
+            
+            // 添加键盘事件监听
+            document.addEventListener('keydown', modal._keyHandler);
             
             document.body.appendChild(modal);
         }
