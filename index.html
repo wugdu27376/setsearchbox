@@ -1468,6 +1468,9 @@
         
         // 重置链接颜色和名称
         document.getElementById('resetLinkColorBtn').addEventListener('click', function() {
+        if (!document.getElementById('showLinkCheckbox').checked) {
+            return;
+        }
         showCustomConfirm('确定要重置链接样式吗？', function(result) {
                 if (result) {
                     // 重置链接颜色
