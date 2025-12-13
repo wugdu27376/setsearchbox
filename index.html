@@ -264,7 +264,7 @@
                 <input type="checkbox" id="showVisitWebsiteCheckbox" checked disabled>
                 <label for="showVisitWebsiteCheckbox" style="user-select: none;">显示访问建议</label>
             </div>
-            <label for="clearAllSettingsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">清除所有设置</label>
+            <label for="clearAllSettingsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">重置所有设置</label>
             <br/>
             <label style="user-select: none; margin-right: 0;" id="noActiveLab">超链接:</label>
             <span id="linkCreatorBtn">
@@ -1340,6 +1340,9 @@
                 });
                 return;
             }
+            if (!document.getElementById('showLinkCheckbox').checked) {
+                return;
+            }
             var currentColor = localStorage.getItem('linkColor') || '#0000ee';
             var currentLinkValue = localStorage.getItem('linkColor') || '#0000ee';
             showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%)。使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){input.value=\'image url\';var labels=document.querySelectorAll(\'label[onclick*=\\\'modalCallback_\\\']\');if(labels.length>0){labels[labels.length-1].click();}}}return false;">图片</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentLinkValue, function(newValue) {
@@ -1436,6 +1439,9 @@
         
         // 添加重命名功能
         document.querySelector('label[for="renameLinkBtn"]').addEventListener('click', function() {
+            if (!document.getElementById('showLinkCheckbox').checked) {
+                return;
+            }
             var linkElement = document.getElementById('85727544071588039023');
             var currentName = linkElement.textContent;
             showCustomModal('请输入链接名称：', currentName, function(newName) {
@@ -1778,6 +1784,9 @@
         // 链接大小控制
         document.querySelector('label[for="linkSizePicker"]').addEventListener('click', function() {
             var currentSize = localStorage.getItem('linkSize') || '30px';
+            if (!document.getElementById('showLinkCheckbox').checked) {
+                return;
+            }
             showCustomModal('请输入链接大小（如 30px，输入为空时恢复默认）：', currentSize, function(newSize) {
                 if (newSize === null) {
                     return;
@@ -2713,6 +2722,9 @@
         // 宽度调整功能
         document.querySelector('label[for="widthPicker"]').addEventListener('click', function() {
             var currentWidth = localStorage.getItem('buttonWidth') || 'Default';
+            if (!document.getElementById('showSendCheckbox').checked) {
+                return;
+            }
             showCustomModal('请输入按钮宽度值（如 50px，输入空值恢复默认）：', currentWidth === 'Default' ? '' : currentWidth, function(newWidth) {
                 if (newWidth === '') {
                     // 输入为空时恢复默认宽度
@@ -3794,33 +3806,41 @@
         
         // 清除所有设置功能
         document.querySelector('label[for="clearAllSettingsBtn"]').addEventListener('click', function() {
-            showCustomConfirm('警告：此操作将清除所有设置和快捷链接，并重置为默认状态！确定要继续吗？', function(result) {
+            showCustomConfirm('确定要重置设置吗？此操作将清除所有已保存设置，并清除所有快捷链接和自定义搜索，请在进行此操作前备份本地数据。', function(result) {
                 if (result) {
                     // 第一个确认框点击确定后，保持滚动禁止状态，直接显示第二个输入框
-                    showCustomModal('请输入 "Clear All" 确认操作：', '', function(inputText) {
+                    showCustomModal('请输入 "Clear All" 继续操作：', '', function(inputText) {
                         // 验证输入内容（不区分大小写）
                         if (inputText && inputText.toLowerCase() === 'clear all') {
-                            // 清除所有localStorage设置
-                            localStorage.clear();
-                            
-                            // 重置engineSelect为默认选择（百度）
-                            document.getElementById('engineSelect').value = 'baidu_0';
-                            
-                            // 清除所有快捷链接
-                            updateQuickLinks();
-                        
-                            // 自动关闭标签页
-                            setTimeout(function() {
-                                window.close();
-                            }, 100);
-                            setTimeout(function() {
-                                window.location.reload(true);
-                            }, 200);
+                            clearAllSettingsThreeConfirm();
                         }
                     });
                 }
             });
         });
+        
+        function clearAllSettingsThreeConfirm() {
+            showCustomConfirm('<span style="font-weight: bold;">警告：</span>此操作将清除所有设置和快捷链接，并重置为默认状态！确定要继续吗？', function(result) {
+                if (result) {
+                    // 清除所有localStorage设置
+                    localStorage.clear();
+                    
+                    // 重置engineSelect为默认选择（百度）
+                    document.getElementById('engineSelect').value = 'baidu_0';
+                    
+                    // 清除所有快捷链接
+                    updateQuickLinks();
+                    
+                    setTimeout(function() {
+                        window.close();
+                        document.body.innerHTML = '<p>重置完成，若没有自动刷新，请手动<a href="javascript:void(0)" onclick="javascript:location.reload(true);">刷新</a></p>';
+                    }, 100);
+                    setTimeout(function() {
+                        window.location.reload(true);
+                    }, 200);
+                }
+            });
+        }
         
         // 导出链接功能
         document.querySelector('label[for="exportLinksBtn"]').addEventListener('click', function() {
