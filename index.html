@@ -11,7 +11,6 @@
 <body>
 <p><strong><a href="javascript:void(0)" id="85727544071588039023" class="link-85727544071588039023" style="font-size: 30px; text-decoration: underline;">Baidu.com</a></strong></p>
 </body>
-
     <style>
         body {
             margin: 0;
@@ -1222,6 +1221,7 @@
                 document.querySelector('.search-container').classList.add('focused');
                 document.getElementById('quickInputBtn').style.display = 'block';
                 document.getElementById('iframeContainer').style.display = 'none';
+                document.getElementById('centerBoxDisplay').style.display = 'none';
                 
                 // 添加高度检测和间距调整
                 var inputHeight = parseInt(getComputedStyle(this).height);
@@ -2114,6 +2114,7 @@
                 document.querySelector('.search-container').classList.add('focused');
                 document.getElementById('quickInputBtn').style.display = 'block';
                 document.getElementById('iframeContainer').style.display = 'none';
+                document.getElementById('centerBoxDisplay').style.display = 'none';
                 document.getElementById('hitokotoDisplay').style.display = 'none';
             });
             
@@ -2140,6 +2141,9 @@
                         // 恢复iframe显示（仅在iFrameFree选中时）
                         if (document.getElementById('engineSelect').value === 'iFrameFree') {
                             document.getElementById('iframeContainer').style.display = 'block';
+                        }
+                        if (document.getElementById('layoutCheckbox').checked) {
+                            document.getElementById('centerBoxDisplay').style.display = 'block';
                         }
                     }, 100);
                 }
@@ -2211,7 +2215,7 @@
             // 添加：当重复勾选时恢复当前调节的高度
             if (this.checked) {
                 var savedHeightPercent = localStorage.getItem('heightPercent') || '25%';
-                document.body.style.top = savedHeightPercent;
+                document.getElementById('centerBoxDisplay').style.height = savedHeightPercent;
             }
         });
         
@@ -3433,7 +3437,7 @@
             document.getElementById('heightPercentValue').textContent = savedHeightPercent;
             // 只有当布局居中启用时才应用保存的高度
             if (document.getElementById('layoutCheckbox').checked) {
-                document.body.style.top = savedHeightPercent;
+                document.getElementById('centerBoxDisplay').style.height = savedHeightPercent;
             }
         }
 
@@ -3650,7 +3654,7 @@
             modal.innerHTML = [
                 '<div style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
                 '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
-                '<input type="search" id="modalInput_' + callbackName + '" value="' + (currentValue || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+                '<input type="search" id="modalInput_' + callbackName + '" placeholder="请输入" value="' + (currentValue || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
                 '<div style="margin-top: 15px; text-align: right;">',
                 '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null)">取消</label>',
                 '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input=document.getElementById(\'modalInput_' + callbackName + '\');window.' + callbackName + '(input?input.value:null)">确定</label>',
@@ -3796,11 +3800,11 @@
                 '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
                 '<div style="text-align: left; margin-bottom: 10px;">',
                 '<div style="font-size: 12px; user-select: none; color: #666; margin-bottom: 5px;">' + label1 + '</div>',
-                '<input type="text" id="doubleInput1_' + callbackName + '" value="' + (currentValue1 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+                '<input type="text" id="doubleInput1_' + callbackName + '" placeholder="请输入" value="' + (currentValue1 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
                 '</div>',
                 '<div style="text-align: left; margin-bottom: 15px;">',
                 '<div style="font-size: 12px; user-select: none; color: #666; margin-bottom: 5px;">' + label2 + '</div>',
-                '<input type="text" id="doubleInput2_' + callbackName + '" value="' + (currentValue2 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+                '<input type="text" id="doubleInput2_' + callbackName + '" placeholder="请输入" value="' + (currentValue2 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
                 '</div>',
                 '<div style="margin-top: 15px; text-align: right;">',
                 '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null, null)">取消</label>',
