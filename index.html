@@ -265,6 +265,12 @@
                 <input type="checkbox" id="showVisitWebsiteCheckbox" checked disabled>
                 <label for="showVisitWebsiteCheckbox" style="user-select: none;">显示访问建议</label>
             </div>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="autoFillAndJumpCheckbox" disabled>
+                <label for="autoFillAndJumpCheckbox" style="user-select: none;">点建议直接搜索</label>
+            </div>
+            <label for="searchContainerMarginPicker" style="user-select: none; vertical-align: middle; cursor: pointer;">框上边距: <span id="searchContainerMarginValue">Default</span></label>
+            <input type="text" id="searchContainerMarginPicker" style="display: none;">
             <label for="clearAllSettingsBtn" style="user-select: none; vertical-align: middle; cursor: pointer;">重置所有设置</label>
             <br/>
             <label style="user-select: none; margin-right: 0;" id="noActiveLab">超链接:</label>
@@ -344,8 +350,8 @@
     
     <div id="searchSuggestions" style="display: none; position: absolute; background: white; font-size: 15px; border: 1px solid #ccc; text-align: left; max-height: 200px; overflow-y: auto; z-index: 1002; width: 80%;"></div>
     
-    <div id="hitokotoDisplay" style="display: none; left: 0; right: 0; margin: 0 auto; margin-top: 10px; text-align: center; font-size: 14px; user-select: none; font-style: italic;"></div>
-
+    <div id="hitokotoDisplay" style="display: none; left: 0; right: 0; margin: 0 auto; margin-top: 10px; text-align: center; font-size: 14px; user-select: none; font-style: italic; position: sticky; top: 85%;"></div>
+    
     <script>
         // 检测是否为电脑端
         function isDesktop() {
@@ -1512,6 +1518,32 @@
             linkElement.textContent = savedLinkName;
             document.getElementById('linkNameValue').textContent = savedLinkName;
         }
+        
+        // searchContainer边距调整功能
+document.querySelector('label[for="searchContainerMarginPicker"]').addEventListener('click', function() {
+    var currentMargin = localStorage.getItem('searchContainerMargin') || 'Default';
+    showCustomModal('请输入搜索框边距值（如 20px、5%，输入空值恢复默认）：', 
+                   currentMargin === 'Default' ? '' : currentMargin, 
+                   function(newMargin) {
+        if (newMargin === '') {
+            // 输入为空时恢复默认边距
+            document.getElementById('searchContainer').style.marginTop = '';
+            document.getElementById('searchContainerMarginValue').textContent = 'Default';
+            localStorage.setItem('searchContainerMargin', 'Default');
+        } else if (/^\d+(\.\d+)?(px|in|mm|pt|%)$/.test(newMargin)) {
+            document.getElementById('searchContainer').style.marginTop = newMargin;
+            document.getElementById('searchContainerMarginValue').textContent = newMargin;
+            localStorage.setItem('searchContainerMargin', newMargin);
+        }
+    });
+});
+
+// 加载保存的searchContainer边距设置
+var savedSearchContainerMargin = localStorage.getItem('searchContainerMargin');
+if (savedSearchContainerMargin && savedSearchContainerMargin !== 'Default') {
+    document.getElementById('searchContainer').style.marginTop = savedSearchContainerMargin;
+    document.getElementById('searchContainerMarginValue').textContent = savedSearchContainerMargin;
+}
 
         // submitBtn重命名功能
         document.querySelector('label[for="renameSubmitBtn"]').addEventListener('click', function() {
@@ -1628,7 +1660,8 @@
             document.documentElement.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.top = '-' + originalScrollY + 'px';
-            document.body.style.left = '-' + originalScrollX + 'px';
+            document.body.style.left = '0';
+            document.body.style.right = '0';
             
             var modal = document.createElement('div');
             modal.style.cssText = [
@@ -1660,6 +1693,7 @@
                 document.body.style.position = '';
                 document.body.style.top = '';
                 document.body.style.left = '';
+                document.body.style.right = '';
                 
                 // 恢复滚动位置
                 window.scrollTo(originalScrollX, originalScrollY);
@@ -2861,7 +2895,9 @@
                 searchSuggestionsChecked: localStorage.getItem('searchSuggestionsChecked') || 'false',
                 autoFocusChecked: localStorage.getItem('autoFocusChecked') || 'false',
                 directUrlJumpChecked: localStorage.getItem('directUrlJumpChecked') || 'false',
-                showVisitWebsiteChecked: localStorage.getItem('showVisitWebsiteChecked') || 'true'
+                showVisitWebsiteChecked: localStorage.getItem('showVisitWebsiteChecked') || 'true',
+                searchContainerMargin: localStorage.getItem('searchContainerMargin') || 'Default',
+                autoFillAndJumpChecked: localStorage.getItem('autoFillAndJumpChecked') || 'false'
             };
             
             var jsonContent = JSON.stringify(settings, null, 2);
@@ -3175,16 +3211,29 @@
                     
                     (function(suggestion) {
                         div.onclick = function() {
-                            document.getElementById('urlInput').value = suggestion;
-                            // 如果保存输入文本复选框被勾选，保存当前输入
-                            if (document.getElementById('saveInputCheckbox').checked) {
-                                localStorage.setItem('savedInputText', suggestion);
+                            if (document.getElementById('autoFillAndJumpCheckbox').checked) {
+                                // 自动填充并跳转
+                                document.getElementById('urlInput').value = suggestion;
+                                // 如果保存输入文本复选框被勾选，保存当前输入
+                                if (document.getElementById('saveInputCheckbox').checked) {
+                                    localStorage.setItem('savedInputText', suggestion);
+                                }
+                                // 触发搜索跳转
+                                document.getElementById('submitBtn').click();
+                                document.getElementById('urlInput').blur();
+                            } else {
+                                // 原有逻辑：仅填充不跳转
+                                document.getElementById('urlInput').value = suggestion;
+                                // 如果保存输入文本复选框被勾选，保存当前输入
+                                if (document.getElementById('saveInputCheckbox').checked) {
+                                    localStorage.setItem('savedInputText', suggestion);
+                                }
+                                // 不隐藏搜索建议列表，保持显示
+                                // 自动更新搜索建议
+                                fetchSearchSuggestions(suggestion);
+                                // 保持输入框焦点
+                                document.getElementById('urlInput').focus();
                             }
-                            // 不隐藏搜索建议列表，保持显示
-                            // 自动更新搜索建议
-                            fetchSearchSuggestions(suggestion);
-                            // 保持输入框焦点
-                            document.getElementById('urlInput').focus();
                         };
                     })(suggestions[i]);
                     
@@ -3214,6 +3263,17 @@
                     }
                 }
             }
+        }
+        
+        // 监听autoFillAndJumpCheckbox变化
+        document.getElementById('autoFillAndJumpCheckbox').addEventListener('change', function() {
+            localStorage.setItem('autoFillAndJumpChecked', this.checked);
+        });
+        
+        // 加载保存的autoFillAndJumpCheckbox状态
+        var savedAutoFillAndJumpState = localStorage.getItem('autoFillAndJumpChecked');
+        if (savedAutoFillAndJumpState === 'true') {
+            document.getElementById('autoFillAndJumpCheckbox').checked = true;
         }
         
         document.getElementById('urlInput').addEventListener('keydown', function(e) {
@@ -3364,6 +3424,7 @@
                 }, 100);
             }
             document.getElementById('showVisitWebsiteCheckbox').disabled = !document.getElementById('searchSuggestionsCheckbox').checked;
+            document.getElementById('autoFillAndJumpCheckbox').disabled = !document.getElementById('searchSuggestionsCheckbox').checked;
         }
         
         // 输入框焦点事件
@@ -3422,6 +3483,11 @@
             }
             // 控制showVisitWebsiteCheckbox的disabled状态
             document.getElementById('showVisitWebsiteCheckbox').disabled = !this.checked;
+            if (!this.checked) {
+                searchSuggestions.style.display = 'none';
+            }
+            // 控制autoFillAndJumpCheckbox的disabled状态
+            document.getElementById('autoFillAndJumpCheckbox').disabled = !this.checked;
             if (!this.checked) {
                 searchSuggestions.style.display = 'none';
             }
@@ -3610,60 +3676,62 @@
         // 通用弹窗函数（兼容所有浏览器版本）
         function showCustomModal(title, currentValue, callback) {
             // 禁止页面滚动（兼容所有浏览器）
-    var originalBodyOverflow = document.body.style.overflow;
-    var originalHtmlOverflow = document.documentElement.style.overflow;
-    var originalScrollX = window.pageXOffset || document.documentElement.scrollLeft || document.body.scrollLeft || 0;
-    var originalScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-    
-    // 兼容所有浏览器的滚动禁止
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = '-' + originalScrollY + 'px';
-    document.body.style.left = '-' + originalScrollX + 'px';
-    
-    var modal = document.createElement('div');
-    modal.style.cssText = [
-        'position: fixed',
-        'top: 0',
-        'left: 0',
-        'width: 100%',
-        'height: 100%',
-        'background: rgba(0,0,0,0.5)',
-        'z-index: 10000',
-        'display: flex',
-        'justify-content: center',
-        'align-items: center'
-    ].join(';');
-    
-    setTimeout(function() {
-        centerModalElement(modal);
-    }, 0);
-    
-    // 创建唯一的回调函数名称以避免冲突
-    var callbackName = 'modalCallback_' + Date.now();
-    window[callbackName] = function(value) {
-        if (modal.parentNode) {
-            modal.parentNode.removeChild(modal);
-        }
-        // 恢复页面滚动（兼容所有浏览器）
-        document.body.style.overflow = originalBodyOverflow;
-        document.documentElement.style.overflow = originalHtmlOverflow;
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        
-        // 恢复滚动位置
-        window.scrollTo(originalScrollX, originalScrollY);
-        
-        if (typeof callback === 'function') {
-            callback(value);
-        }
-        // 清理全局函数
-        setTimeout(function() {
-            delete window[callbackName];
-        }, 100);
-    };
+            var originalBodyOverflow = document.body.style.overflow;
+            var originalHtmlOverflow = document.documentElement.style.overflow;
+            var originalScrollX = window.pageXOffset || document.documentElement.scrollLeft || document.body.scrollLeft || 0;
+            var originalScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+            
+            // 兼容所有浏览器的滚动禁止
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.top = '-' + originalScrollY + 'px';
+            document.body.style.left = '0';
+            document.body.style.right = '0';
+            
+            var modal = document.createElement('div');
+            modal.style.cssText = [
+                'position: fixed',
+                'top: 0',
+                'left: 0',
+                'width: 100%',
+                'height: 100%',
+                'background: rgba(0,0,0,0.5)',
+                'z-index: 10000',
+                'display: flex',
+                'justify-content: center',
+                'align-items: center'
+            ].join(';');
+            
+            setTimeout(function() {
+                centerModalElement(modal);
+            }, 0);
+            
+            // 创建唯一的回调函数名称以避免冲突
+            var callbackName = 'modalCallback_' + Date.now();
+            window[callbackName] = function(value) {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+                // 恢复页面滚动（兼容所有浏览器）
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.left = '';
+                document.body.style.right = '';
+                
+                // 恢复滚动位置
+                window.scrollTo(originalScrollX, originalScrollY);
+                
+                if (typeof callback === 'function') {
+                    callback(value);
+                }
+                // 清理全局函数
+                setTimeout(function() {
+                    delete window[callbackName];
+                }, 100);
+            };
             
             // 添加输入事件监听来更新颜色预览
             setTimeout(function() {
@@ -3703,7 +3771,8 @@
             document.documentElement.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.top = '-' + originalScrollY + 'px';
-            document.body.style.left = '-' + originalScrollX + 'px';
+            document.body.style.left = '0';
+            document.body.style.right = '0';
             
             var modal = document.createElement('div');
             modal.style.cssText = [
@@ -3735,6 +3804,7 @@
                 document.body.style.position = '';
                 document.body.style.top = '';
                 document.body.style.left = '';
+                document.body.style.right = '';
                 
                 // 恢复滚动位置
                 window.scrollTo(originalScrollX, originalScrollY);
@@ -3797,7 +3867,8 @@
             document.documentElement.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.top = '-' + originalScrollY + 'px';
-            document.body.style.left = '-' + originalScrollX + 'px';
+            document.body.style.left = '0';
+            document.body.style.right = '0';
             
             var modal = document.createElement('div');
             modal.style.cssText = [
@@ -3829,6 +3900,7 @@
                 document.body.style.position = '';
                 document.body.style.top = '';
                 document.body.style.left = '';
+                document.body.style.right = '';
                 
                 // 恢复滚动位置
                 window.scrollTo(originalScrollX, originalScrollY);
