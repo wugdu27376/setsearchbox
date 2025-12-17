@@ -528,6 +528,10 @@
                 document.querySelector('.search-container').classList.remove('focused');
                 document.getElementById('quickInputBtn').style.display = 'none';
                 document.getElementById('urlInput').blur();
+                // 恢复iframe显示（仅在iFrameFree选中时）
+                if (document.getElementById('engineSelect').value === 'iFrameFree') {
+                    document.getElementById('iframeContainer').style.display = 'block';
+                }
             }
             
             // 在submitBtn点击事件开始处添加：
