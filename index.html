@@ -816,8 +816,15 @@
                 document.body.classList.remove('focused');
                 document.querySelector('.search-container').classList.remove('focused');
                 document.getElementById('quickInputBtn').style.display = 'none';
+                document.getElementById('hitokotoDisplay').style.display = 'block';
                 document.getElementById('searchContainer').style.marginTop = savedSearchContainerMargin;
-                document.getElementById('urlInput').blur();
+                // 恢复iframe显示（仅在iFrameFree选中时）
+                if (document.getElementById('engineSelect').value === 'iFrameFree') {
+                    document.getElementById('iframeContainer').style.display = 'block';
+                }
+                if (document.getElementById('layoutCheckbox').checked) {
+                    document.getElementById('centerBoxDisplay').style.display = 'block';
+                }
             }
             
             // 在submitBtn点击事件开始处添加：
