@@ -816,6 +816,7 @@
                 document.body.classList.remove('focused');
                 document.querySelector('.search-container').classList.remove('focused');
                 document.getElementById('quickInputBtn').style.display = 'none';
+                document.getElementById('searchContainer').style.marginTop = savedSearchContainerMargin;
                 document.getElementById('urlInput').blur();
             }
             
@@ -1228,6 +1229,7 @@
                 document.getElementById('quickInputBtn').style.display = 'block';
                 document.getElementById('iframeContainer').style.display = 'none';
                 document.getElementById('centerBoxDisplay').style.display = 'none';
+                document.getElementById('searchContainer').style.marginTop = '0';
                 
                 // 添加高度检测和间距调整
                 var inputHeight = parseInt(getComputedStyle(this).height);
@@ -1520,31 +1522,31 @@
         }
         
         // searchContainer边距调整功能
-document.querySelector('label[for="searchContainerMarginPicker"]').addEventListener('click', function() {
-    var currentMargin = localStorage.getItem('searchContainerMargin') || 'Default';
-    showCustomModal('请输入搜索框边距值（如 20px、5%，输入空值恢复默认）：', 
+        document.querySelector('label[for="searchContainerMarginPicker"]').addEventListener('click', function() {
+            var currentMargin = localStorage.getItem('searchContainerMargin') || 'Default';
+            showCustomModal('请输入搜索框边距值（如 20px、5%，输入空值恢复默认）：', 
                    currentMargin === 'Default' ? '' : currentMargin, 
                    function(newMargin) {
-        if (newMargin === '') {
-            // 输入为空时恢复默认边距
-            document.getElementById('searchContainer').style.marginTop = '';
-            document.getElementById('searchContainerMarginValue').textContent = 'Default';
-            localStorage.setItem('searchContainerMargin', 'Default');
-        } else if (/^\d+(\.\d+)?(px|in|mm|pt|%)$/.test(newMargin)) {
-            document.getElementById('searchContainer').style.marginTop = newMargin;
-            document.getElementById('searchContainerMarginValue').textContent = newMargin;
-            localStorage.setItem('searchContainerMargin', newMargin);
+                if (newMargin === '') {
+                    // 输入为空时恢复默认边距
+                    document.getElementById('searchContainer').style.marginTop = '';
+                    document.getElementById('searchContainerMarginValue').textContent = 'Default';
+                    localStorage.setItem('searchContainerMargin', 'Default');
+                } else if (/^\d+(\.\d+)?(px|in|mm|pt|%)$/.test(newMargin)) {
+                    document.getElementById('searchContainer').style.marginTop = newMargin;
+                    document.getElementById('searchContainerMarginValue').textContent = newMargin;
+                    localStorage.setItem('searchContainerMargin', newMargin);
+                }
+            });
+        });
+        
+        // 加载保存的searchContainer边距设置
+        var savedSearchContainerMargin = localStorage.getItem('searchContainerMargin');
+        if (savedSearchContainerMargin && savedSearchContainerMargin !== 'Default') {
+            document.getElementById('searchContainer').style.marginTop = savedSearchContainerMargin;
+            document.getElementById('searchContainerMarginValue').textContent = savedSearchContainerMargin;
         }
-    });
-});
-
-// 加载保存的searchContainer边距设置
-var savedSearchContainerMargin = localStorage.getItem('searchContainerMargin');
-if (savedSearchContainerMargin && savedSearchContainerMargin !== 'Default') {
-    document.getElementById('searchContainer').style.marginTop = savedSearchContainerMargin;
-    document.getElementById('searchContainerMarginValue').textContent = savedSearchContainerMargin;
-}
-
+        
         // submitBtn重命名功能
         document.querySelector('label[for="renameSubmitBtn"]').addEventListener('click', function() {
             // 检查 showSendCheckbox 是否勾选，如果未勾选则不执行任何操作
@@ -2163,6 +2165,7 @@ if (savedSearchContainerMargin && savedSearchContainerMargin !== 'Default') {
                 document.getElementById('iframeContainer').style.display = 'none';
                 document.getElementById('centerBoxDisplay').style.display = 'none';
                 document.getElementById('hitokotoDisplay').style.display = 'none';
+                document.getElementById('searchContainer').style.marginTop = '0';
             });
             
             // 添加延迟恢复
@@ -2185,6 +2188,7 @@ if (savedSearchContainerMargin && savedSearchContainerMargin !== 'Default') {
                         document.querySelector('.search-container').classList.remove('focused');
                         document.getElementById('quickInputBtn').style.display = 'none';
                         document.getElementById('hitokotoDisplay').style.display = 'block';
+                        document.getElementById('searchContainer').style.marginTop = savedSearchContainerMargin;
                         // 恢复iframe显示（仅在iFrameFree选中时）
                         if (document.getElementById('engineSelect').value === 'iFrameFree') {
                             document.getElementById('iframeContainer').style.display = 'block';
