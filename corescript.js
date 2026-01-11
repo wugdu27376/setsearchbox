@@ -2813,6 +2813,7 @@ function exportSettingsData() {
         selectedSearchApi: localStorage.getItem('selectedSearchApi') || 'baidu_sugrec',
         clearOnSearchChecked: localStorage.getItem('clearOnSearchChecked') || 'false',
         showTimeChecked: localStorage.getItem('showTimeChecked') || 'false',
+        timeLinkOriginalImage: localStorage.getItem('timeLinkOriginalImage'),
         timeFormat: localStorage.getItem('timeFormat') || '24hours'
     };
     
