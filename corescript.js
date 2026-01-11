@@ -113,6 +113,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (showLinkChecked && showTimeChecked) {
         showTimeLink();
     }
+    
+    // 加载保存的时间链接设置
+    var savedShowTimeState = localStorage.getItem('showTimeChecked');
+    if (savedShowTimeState === 'true') {
+        document.getElementById('showTimeCheckbox').checked = true;
+        // 修改这里：如果时间链接启用，检查是否有原始图片需要隐藏
+        var savedOriginalImage = localStorage.getItem('timeLinkOriginalImage');
+        if (savedOriginalImage) {
+            // 如果有保存的原始图片，暂时从linkImage中移除，避免冲突显示
+            localStorage.removeItem('linkImage');
+        }
+    }
 });
 
 // 如果是电脑端，禁用移动搜索选项
@@ -4245,7 +4257,8 @@ function showTimeLink() {
     // 保存当前图片链接（如果有）
     var savedLinkImage = localStorage.getItem('linkImage');
     if (savedLinkImage) {
-        timeLinkImage = savedLinkImage;
+        // 修改这里：将图片链接保存到专门的时间链接图片存储
+        localStorage.setItem('timeLinkOriginalImage', savedLinkImage);
         localStorage.removeItem('linkImage');
     }
     
@@ -4293,12 +4306,14 @@ function hideTimeLink() {
     }
     
     // 恢复图片或文字
-    if (timeLinkImage) {
+    var savedOriginalImage = localStorage.getItem('timeLinkOriginalImage');
+    if (savedOriginalImage) {
         // 恢复图片
         var linkSize = localStorage.getItem('linkSize') || '30px';
-        timeLinkElement.innerHTML = '<img src="' + timeLinkImage + '" style="width: auto; height: auto; max-width: ' + linkSize + '; max-height: ' + linkSize + '; display: block; left: 0; right: 0; margin: 0 auto;">';
-        localStorage.setItem('linkImage', timeLinkImage);
-        timeLinkImage = null;
+        timeLinkElement.innerHTML = '<img src="' + savedOriginalImage + '" style="width: auto; height: auto; max-width: ' + linkSize + '; max-height: ' + linkSize + '; display: block; left: 0; right: 0; margin: 0 auto;">';
+        localStorage.setItem('linkImage', savedOriginalImage);
+        localStorage.removeItem('timeLinkOriginalImage');
+        document.getElementById('linkColorValue').textContent = 'Image';
     } else {
         // 恢复文字
         var savedLinkName = localStorage.getItem('linkName') || 'Baidu.com';
