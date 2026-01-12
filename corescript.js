@@ -125,6 +125,39 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.removeItem('linkImage');
         }
     }
+    
+    var savedColonBlinkState = localStorage.getItem('colonBlinkChecked');
+    if (savedColonBlinkState === 'true') {
+        document.getElementById('colonBlinkCheckbox').checked = true;
+        // 如果时间链接已启用，启动闪烁效果
+        if (document.getElementById('showTimeCheckbox').checked) {
+            startColonBlink();
+        }
+    }
+
+    var savedShowSecondsState = localStorage.getItem('showSecondsChecked');
+    if (savedShowSecondsState === 'true') {
+        document.getElementById('showSecondsCheckbox').checked = true;
+        // 如果时间链接已启用且勾选显示秒数，立即显示秒数
+        if (document.getElementById('showTimeCheckbox').checked) {
+        updateTimeDisplay(); // 立即更新时间显示
+        }
+    }
+    
+    // 检查时间链接是否启用，控制相关控件的disabled状态
+    var showTimeChecked = document.getElementById('showTimeCheckbox').checked;
+    document.getElementById('showSecondsCheckbox').disabled = !showTimeChecked;
+    document.getElementById('colonBlinkCheckbox').disabled = !showTimeChecked;
+    document.getElementById('timeFormatSelect').disabled = !showTimeChecked;
+    
+    var savedShowTimeState = localStorage.getItem('showTimeChecked');
+    if (savedShowTimeState === 'true') {
+        document.getElementById('showTimeCheckbox').checked = true;
+        // 启用相关控件
+        document.getElementById('showSecondsCheckbox').disabled = false;
+        document.getElementById('colonBlinkCheckbox').disabled = false;
+        document.getElementById('timeFormatSelect').disabled = false;
+    }
 });
 
 // 如果是电脑端，禁用移动搜索选项
@@ -2401,13 +2434,20 @@ document.getElementById('showLinkCheckbox').addEventListener('change', function(
         localStorage.setItem('showTimeChecked', 'false');
         hideTimeLink();
         timeLinkElement.style.display = 'none';
+        
+        // 禁用相关控件
+        document.getElementById('showSecondsCheckbox').disabled = true;
+        document.getElementById('colonBlinkCheckbox').disabled = true;
+        document.getElementById('timeFormatSelect').disabled = true;
     } else if (this.checked && showTimeChecked) {
         // 重新显示链接且时间链接已勾选时，显示时间
         timeLinkElement.style.display = 'inline-block';
         showTimeLink();
-    } else if (this.checked) {
-        // 显示链接但时间链接未勾选时，正常显示
-        timeLinkElement.style.display = 'inline-block';
+        
+        // 启用相关控件
+        document.getElementById('showSecondsCheckbox').disabled = false;
+        document.getElementById('colonBlinkCheckbox').disabled = false;
+        document.getElementById('timeFormatSelect').disabled = false;
     }
     
     // 控制时间链接checkbox的可用性
@@ -4221,11 +4261,105 @@ var timeLinkInterval = null;
 
 // 更新时间显示函数
 function updateTimeDisplay() {
+    // 检查是否启用了冒号闪烁
+    var isColonBlinkEnabled = document.getElementById('colonBlinkCheckbox').checked;
+    
+    if (isColonBlinkEnabled) {
+        updateTimeDisplayWithBlink();
+    } else {
+        // 原有的时间显示逻辑（不闪烁，使用文本）
+        if (!timeLinkElement) return;
+        
+        var now = new Date();
+        var timeFormat = localStorage.getItem('timeFormat') || '24hours';
+        var timeStr;
+        
+        // 检查是否显示秒数
+        var showSeconds = document.getElementById('showSecondsCheckbox').checked;
+        
+        if (timeFormat === '24hours') {
+            // 24小时制
+            var hours = now.getHours();
+            var minutes = now.getMinutes();
+            
+            function padZero(num) {
+                return (num < 10 ? '0' : '') + num;
+            }
+            
+            timeStr = padZero(hours) + ':' + padZero(minutes);
+            
+            // 添加秒数（包含第二个冒号）
+            if (showSeconds) {
+                var seconds = now.getSeconds();
+                timeStr += ':' + padZero(seconds);
+            }
+        } else {
+            // 12小时制（删除 AM/PM）
+            var hours = now.getHours();
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            var minutes = now.getMinutes();
+            
+            function padZero(num) {
+                return (num < 10 ? '0' : '') + num;
+            }
+            
+            timeStr = hours + ':' + padZero(minutes);
+            
+            // 添加秒数（包含第二个冒号）
+            if (showSeconds) {
+                var seconds = now.getSeconds();
+                timeStr += ':' + padZero(seconds);
+            }
+        }
+        
+        // 使用textContent而不是innerHTML，确保纯文本显示
+        timeLinkElement.textContent = timeStr;
+        timeLinkElement.style.fontSize = localStorage.getItem('linkSize') || '30px';
+    }
+}
+
+// 冒号闪烁相关变量
+var colonBlinkInterval = null;
+var colonVisible = true;
+
+// 启动冒号闪烁效果
+function startColonBlink() {
+    if (colonBlinkInterval) {
+        clearInterval(colonBlinkInterval);
+    }
+    
+    colonVisible = true;
+    colonBlinkInterval = setInterval(function() {
+        colonVisible = !colonVisible;
+        updateTimeDisplayWithBlink();
+    }, 1000); // 每秒闪烁一次
+}
+
+// 停止冒号闪烁效果
+function stopColonBlink() {
+    if (colonBlinkInterval) {
+        clearInterval(colonBlinkInterval);
+        colonBlinkInterval = null;
+    }
+    colonVisible = true;
+    // 恢复显示冒号（完全可见）
+    updateTimeDisplayWithBlink();
+}
+
+// 带闪烁效果的时间显示函数
+function updateTimeDisplayWithBlink() {
     if (!timeLinkElement) return;
     
     var now = new Date();
     var timeFormat = localStorage.getItem('timeFormat') || '24hours';
     var timeStr;
+    
+    // 检查是否显示秒数
+    var showSeconds = document.getElementById('showSecondsCheckbox').checked;
+    
+    // 创建带透明度的冒号
+    var colonOpacity = colonVisible ? '1' : '0';
     
     if (timeFormat === '24hours') {
         // 24小时制
@@ -4237,11 +4371,19 @@ function updateTimeDisplay() {
             return (num < 10 ? '0' : '') + num;
         }
         
-        timeStr = padZero(hours) + ':' + padZero(minutes);
+        if (showSeconds) {
+            var seconds = now.getSeconds();
+            // 使用HTML包含带样式的冒号（两个冒号都闪烁）
+            timeStr = padZero(hours) + '<span style="opacity:' + colonOpacity + ';">:</span>' + 
+                     padZero(minutes) + '<span style="opacity:' + colonOpacity + ';">:</span>' + 
+                     padZero(seconds);
+        } else {
+            // 使用HTML包含带样式的冒号
+            timeStr = padZero(hours) + '<span style="opacity:' + colonOpacity + ';">:</span>' + padZero(minutes);
+        }
     } else {
-        // 12小时制
+        // 12小时制（删除 AM/PM）
         var hours = now.getHours();
-        var ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
         hours = hours ? hours : 12; // 0点显示为12
         var minutes = now.getMinutes();
@@ -4251,10 +4393,19 @@ function updateTimeDisplay() {
             return (num < 10 ? '0' : '') + num;
         }
         
-        timeStr = hours + ':' + padZero(minutes) + ' ' + ampm;
+        if (showSeconds) {
+            var seconds = now.getSeconds();
+            // 使用HTML包含带样式的冒号（两个冒号都闪烁）
+            timeStr = hours + '<span style="opacity:' + colonOpacity + ';">:</span>' + 
+                     padZero(minutes) + '<span style="opacity:' + colonOpacity + ';">:</span>' + 
+                     padZero(seconds);
+        } else {
+            // 使用HTML包含带样式的冒号
+            timeStr = hours + '<span style="opacity:' + colonOpacity + ';">:</span>' + padZero(minutes);
+        }
     }
     
-    timeLinkElement.textContent = timeStr;
+    timeLinkElement.innerHTML = timeStr;
     timeLinkElement.style.fontSize = localStorage.getItem('linkSize') || '30px';
 }
 
@@ -4281,6 +4432,12 @@ function showTimeLink() {
         } catch (e) {
             // 兼容低版本浏览器的错误处理
         }
+    }
+    
+    // 检查是否启用了冒号闪烁
+    var isColonBlinkEnabled = document.getElementById('colonBlinkCheckbox').checked;
+    if (isColonBlinkEnabled) {
+        startColonBlink();
     }
     
     // 使用更兼容的方式设置定时器
@@ -4312,6 +4469,8 @@ function hideTimeLink() {
         }
         timeLinkInterval = null;
     }
+    
+    stopColonBlink();
     
     // 恢复图片或文字
     var savedOriginalImage = localStorage.getItem('timeLinkOriginalImage');
@@ -4350,7 +4509,13 @@ document.getElementById('timeFormatSelect').addEventListener('change', function(
     // 如果时间链接正在显示，立即更新时间显示
     var showTimeChecked = document.getElementById('showTimeCheckbox').checked;
     if (showTimeChecked) {
-        updateTimeDisplay();
+        // 检查是否启用了冒号闪烁
+        var isColonBlinkEnabled = document.getElementById('colonBlinkCheckbox').checked;
+        if (isColonBlinkEnabled) {
+            updateTimeDisplayWithBlink();
+        } else {
+            updateTimeDisplay();
+        }
     }
 });
 
@@ -4394,6 +4559,11 @@ document.getElementById('showTimeCheckbox').addEventListener('change', function(
     
     localStorage.setItem('showTimeChecked', this.checked);
     
+    // 根据时间链接状态控制相关控件的disabled状态
+    document.getElementById('showSecondsCheckbox').disabled = !this.checked;
+    document.getElementById('colonBlinkCheckbox').disabled = !this.checked;
+    document.getElementById('timeFormatSelect').disabled = !this.checked;
+    
     if (this.checked) {
         showTimeLink();
         localStorage.setItem('36156798756549916136', 'true');
@@ -4405,6 +4575,32 @@ document.getElementById('showTimeCheckbox').addEventListener('change', function(
         var linkStyle = document.createElement('style');
         linkStyle.textContent = 'a:active.link-85727544071588039023 { color: #ff0000 !important; }';
         document.head.appendChild(linkStyle);
+    }
+});
+
+// 监听colonBlinkCheckbox变化
+document.getElementById('colonBlinkCheckbox').addEventListener('change', function() {
+    localStorage.setItem('colonBlinkChecked', this.checked);
+    
+    // 检查时间链接是否启用
+    var isTimeLinkEnabled = document.getElementById('showTimeCheckbox').checked;
+    
+    if (this.checked && isTimeLinkEnabled) {
+        startColonBlink();
+    } else {
+        stopColonBlink();
+        // 更新显示以确保冒号可见
+        updateTimeDisplay();
+    }
+});
+
+// 监听showSecondsCheckbox变化
+document.getElementById('showSecondsCheckbox').addEventListener('change', function() {
+    localStorage.setItem('showSecondsChecked', this.checked);
+    
+    // 如果时间链接已启用，立即更新时间显示
+    if (document.getElementById('showTimeCheckbox').checked) {
+        updateTimeDisplay();
     }
 });
 

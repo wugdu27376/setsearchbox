@@ -316,10 +316,18 @@
                 <input type="checkbox" id="showTimeCheckbox">
                 <label for="showTimeCheckbox">显示时间链接</label>
             </div>
-            <label class="text-select-wrapper"><select id="timeFormatSelect">
+            <label class="text-select-wrapper"><select id="timeFormatSelect" disabled>
                 <option value="12hours">时间小时制: 12H</option>
                 <option value="24hours" selected>时间小时制: 24H</option>
             </select></label>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="colonBlinkCheckbox" disabled>
+                <label for="colonBlinkCheckbox">时间冒号闪烁</label>
+            </div>
+            <div style="display: inline-block;">
+                <input type="checkbox" id="showSecondsCheckbox" disabled>
+                <label for="showSecondsCheckbox">时间显示秒数</label>
+            </div>
             <label for="clearAllSettingsBtn" style="vertical-align: middle; cursor: pointer;">重置所有设置</label>
             <br/>
             <label style="margin-right: 0;" id="noActiveLab">超链接:</label>
