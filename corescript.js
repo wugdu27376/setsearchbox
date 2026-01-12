@@ -255,12 +255,6 @@ document.getElementById('submitBtn').addEventListener('click', function() {
         }
     }
     
-    if (document.getElementById('searchSuggestionsCheckbox').checked) {
-        setTimeout(function() {
-            searchSuggestions.style.display = 'none';
-        }, 100);
-    }
-    
     // 搜索后清空输入功能
     if (document.getElementById('clearOnSearchCheckbox').checked && engine !== 'iFrameFree') {
         setTimeout(function() {
@@ -3188,7 +3182,8 @@ function showSearchSuggestions(suggestions) {
             };
             searchSuggestions.appendChild(div);
         }
-        if (document.getElementById('urlInput').value !== '') {
+        var urlInput = document.getElementById('urlInput');
+        if (urlInput.value !== '' && !urlInput.disabled) {
             searchSuggestions.style.display = 'block';
         }
         updateSuggestionsPosition();
