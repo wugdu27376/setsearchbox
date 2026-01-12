@@ -255,6 +255,12 @@ document.getElementById('submitBtn').addEventListener('click', function() {
         }
     }
     
+    if (document.getElementById('searchSuggestionsCheckbox').checked) {
+        setTimeout(function() {
+            searchSuggestions.style.display = 'none';
+        }, 100);
+    }
+    
     // 搜索后清空输入功能
     if (document.getElementById('clearOnSearchCheckbox').checked && engine !== 'iFrameFree') {
         setTimeout(function() {
