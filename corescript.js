@@ -3272,6 +3272,15 @@ function fetchSearchSuggestions(query) {
     
     // 设置超时处理
     setTimeout(function() {
+        // 检查输入框是否失焦，如果失焦则不再执行后续代码
+        if (document.activeElement !== document.getElementById('urlInput')) {
+            // 如果输入框没有焦点，清理script标签但不执行本地建议
+            if (script.parentNode === document.head) {
+                document.head.removeChild(script);
+            }
+            return;
+        }
+        
         if (script.parentNode === document.head) {
             document.head.removeChild(script);
             // 如果API失败，显示本地建议
@@ -3378,12 +3387,15 @@ document.getElementById('urlInput').addEventListener('input', function() {
         }
         if (document.getElementById('urlInput').value === '') {
             searchSuggestions.style.display = 'none';
+            resetQuickInputPosition();
             setTimeout(function() {
                 searchSuggestions.style.display = 'none';
+                resetQuickInputPosition();
             }, 100);
             setTimeout(function() {
                 searchSuggestions.style.display = 'none';
-            }, 140);
+                resetQuickInputPosition();
+            }, 150);
         }
     }, 10);
 });
@@ -3429,14 +3441,6 @@ document.getElementById('urlInput').addEventListener('focus', function() {
     var query = this.value.trim();
     fetchSearchSuggestions(query);
     updateSuggestionsPosition();
-});
-
-// 输入框输入事件
-document.getElementById('urlInput').addEventListener('input', function() {
-    if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
-    
-    var query = this.value.trim();
-    fetchSearchSuggestions(query);
 });
 
 // 更新搜索建议框位置和尺寸
