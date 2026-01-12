@@ -3182,7 +3182,9 @@ function showSearchSuggestions(suggestions) {
             };
             searchSuggestions.appendChild(div);
         }
-        searchSuggestions.style.display = 'block';
+        if (document.getElementById('urlInput').value !== '') {
+            searchSuggestions.style.display = 'block';
+        }
         updateSuggestionsPosition();
     } else {
         // 只有网址选项时也显示
