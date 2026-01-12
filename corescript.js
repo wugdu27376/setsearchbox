@@ -3182,8 +3182,7 @@ function showSearchSuggestions(suggestions) {
             };
             searchSuggestions.appendChild(div);
         }
-        var urlInput = document.getElementById('urlInput');
-        if (urlInput.value !== '' && !urlInput.disabled) {
+        if (document.getElementById('urlInput').value !== '' && document.activeElement === document.getElementById('urlInput')) {
             searchSuggestions.style.display = 'block';
         }
         updateSuggestionsPosition();
