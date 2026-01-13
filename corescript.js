@@ -2855,7 +2855,9 @@ function exportSettingsData() {
         clearOnSearchChecked: localStorage.getItem('clearOnSearchChecked') || 'false',
         showTimeChecked: localStorage.getItem('showTimeChecked') || 'false',
         timeLinkOriginalImage: localStorage.getItem('timeLinkOriginalImage'),
-        timeFormat: localStorage.getItem('timeFormat') || '24hours'
+        timeFormat: localStorage.getItem('timeFormat') || '24hours',
+        colonBlinkChecked: localStorage.getItem('colonBlinkChecked') || 'false',
+        showSecondsChecked: localStorage.getItem('colonBlinkChecked') || 'false'
     };
     
     var jsonContent = JSON.stringify(settings, null, 2);
