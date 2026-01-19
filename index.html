@@ -111,6 +111,12 @@
             -ms-user-select: none;
         }
         
+        #hitokotoDisplay {
+            position: sticky;
+            position: -webkit-sticky;
+            position: -moz-sticky;
+        }
+        
         #quickInputBtn button {
             margin-top: 3px;
             margin-bottom: 3px;
@@ -441,7 +447,7 @@
     
     <div id="searchSuggestions" style="display: none; position: absolute; background: white; font-size: 15px; border: 1px solid #ccc; text-align: left; max-height: 200px; overflow-y: auto; z-index: 1002; width: 80%;"></div>
     
-    <div id="hitokotoDisplay" style="display: none; left: 0; right: 0; margin: 0 auto; margin-top: 10px; text-align: center; font-size: 14px; font-style: italic; position: sticky; top: 85%;"></div>
+    <div id="hitokotoDisplay" style="display: none; left: 0; right: 0; margin: 0 auto; margin-top: 10px; text-align: center; font-size: 14px; font-style: italic; top: 85%;"></div>
     
     <script src='corescript.js' type='text/javascript'></script>
 </body>
