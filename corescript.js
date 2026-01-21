@@ -4700,9 +4700,54 @@ function getBrowserInfo() {
         version = "Unknown";
     }
     
+    // 提取设备型号和版本号
+    var deviceModel = "Unknown";
+    var deviceVersion = "Unknown";
+    
+    if (/Android/.test(userAgent)) {
+        var match = userAgent.match(/Android.*;\s*([^;)]+)\)/);
+        deviceModel = match ? match[1] : "Android Device";
+        deviceVersion = userAgent.match(/Android\s([0-9\.]+)/) ? "Android " + userAgent.match(/Android\s([0-9\.]+)/)[1] : "Android";
+    } else if (/iPhone|iPad|iPod/.test(userAgent)) {
+        var iosMatch = userAgent.match(/(iPhone|iPad|iPod)(?:\s+Simulator)?(?:\s+[^;)]+)?/);
+        deviceModel = iosMatch ? iosMatch[0] : "iOS Device";
+        deviceVersion = userAgent.match(/OS\s([0-9_]+)/) ? "iOS " + userAgent.match(/OS\s([0-9_]+)/)[1].replace(/_/g, '.') : "iOS";
+    } else if (/Windows/.test(userAgent)) {
+        var winMatch = userAgent.match(/Windows\s+(NT\s+[0-9\.]+)(?:\s*;\s*([^;)]+))?/);
+        deviceVersion = winMatch ? "Windows " + winMatch[1].replace('NT ', '') : "Windows";
+        if (winMatch && winMatch[2]) {
+            deviceModel = "Windows PC (" + winMatch[2] + ")";
+        } else if (/Win64/.test(userAgent) || /x64/.test(userAgent)) {
+            deviceModel = "Windows PC (x64)";
+        } else if (/WOW64/.test(userAgent)) {
+            deviceModel = "Windows PC (32-bit on x64)";
+        } else {
+            deviceModel = "Windows PC";
+        }
+    } else if (/Macintosh/.test(userAgent)) {
+        var macMatch = userAgent.match(/Macintosh;(?:\s*[^;)]+;\s*)?([^;)]+)(?:\s*\))?/);
+        deviceModel = macMatch ? "Mac (" + macMatch[1] + ")" : "Mac";
+        deviceVersion = userAgent.match(/Mac\sOS\sX\s([0-9_]+)/) ? "macOS " + userAgent.match(/Mac\sOS\sX\s([0-9_]+)/)[1].replace(/_/g, '.') : "macOS";
+    } else if (/Linux/.test(userAgent)) {
+        var linuxMatch = userAgent.match(/Linux\s+(x86_64|i686|arm|aarch64|ppc64le|s390x)(?:\s*[^;)]+)?/);
+        if (linuxMatch) {
+            deviceModel = "Linux PC (" + linuxMatch[1] + ")";
+        } else {
+            deviceModel = "Linux PC";
+        }
+        var distroMatch = userAgent.match(/Linux\s+(?:x86_64|i686|arm|aarch64|ppc64le|s390x)?(?:\s*;\s*([^;)]+))?/);
+        if (distroMatch && distroMatch[1]) {
+            deviceVersion = "Linux (" + distroMatch[1] + ")";
+        } else {
+            deviceVersion = "Linux";
+        }
+    }
+    
     return {
         name: browserName,
-        version: version
+        version: version,
+        deviceModel: deviceModel,
+        deviceVersion: deviceVersion
     };
 }
 
@@ -4718,9 +4763,9 @@ window.onload = function() {
         displayElement.style.zIndex = '9999';
         displayElement.style.userSelect = 'none';
         
-        // 添加点击事件
         displayElement.addEventListener('click', function() {
-            showCustomAlert('关于', '<div style="font-size: 15px;">搜索Easy<br>' + '<p>当前版本: v7.1<br></p>' + '<p>浏览器内核: ' + browserInfo.version + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<br><p style="display: inline-block;">Github源码: <form style="display: inline-block; float: right; margin-top: 14px;" action="https://github.com/wugdu27376/setsearchbox/" target="_blank"><button type="submit">点击跳转</button></form></p>' + '</div>');
+            var browserInfo = getBrowserInfo();    
+            showCustomAlert('关于', '<div style="font-size: 15px;">搜索Easy<br>' + '<p>当前版本: v7.1<br></p>' + '<p>浏览器内核: ' + browserInfo.version + '<br></p>' + '<p>设备版本: ' + browserInfo.deviceVersion + '<br></p>' + '<p>设备型号: ' + browserInfo.deviceModel + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<br><p style="display: inline-block;">Github源码: <form style="display: inline-block; float: right; margin-top: 14px;" action="https://github.com/wugdu27376/setsearchbox/" target="_blank"><button type="submit">点击跳转</button></form></p>' + '</div>');
         });
     }
 };
