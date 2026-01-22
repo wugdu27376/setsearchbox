@@ -500,6 +500,57 @@
                     }
                 }
                 
+                // 如果检测到非英文字符（除了在/或=之后的英文），则不视为网址格式
+                if (isUrlPattern) {
+                    // 检查整个字符串中是否包含非ASCII字符（中文字符等）
+                    var hasNonAscii = /[^\x00-\x7F]/.test(inputText);
+                    
+                    if (hasNonAscii) {
+                        // 如果包含非ASCII字符，进一步检查是否在路径或查询参数中
+                        // 检查是否有协议部分
+                        var protocolIndex = inputText.indexOf('://');
+                        var checkText = inputText;
+                        
+                        if (protocolIndex !== -1) {
+                            // 如果有协议，检查协议后面的部分
+                            var afterProtocol = inputText.substring(protocolIndex + 3);
+                            var firstSlashIndex = afterProtocol.indexOf('/');
+                            
+                            if (firstSlashIndex !== -1) {
+                                // 检查域名部分（协议后到第一个斜杠之间）
+                                var domainPart = afterProtocol.substring(0, firstSlashIndex);
+                                var pathPart = afterProtocol.substring(firstSlashIndex);
+                    
+                                // 如果域名部分包含非ASCII字符，则不是有效网址
+                                if (/[^\x00-\x7F]/.test(domainPart)) {
+                                    isUrlPattern = false;
+                                }
+                                // 路径部分可以包含非ASCII字符，所以不做检查
+                            } else {
+                                // 没有路径，整个协议后面的部分都是域名
+                                if (/[^\x00-\x7F]/.test(afterProtocol)) {
+                                    isUrlPattern = false;
+                                }
+                            }
+                        } else {
+                            // 没有协议，检查是否有斜杠
+                            var slashIndex = inputText.indexOf('/');
+                            if (slashIndex !== -1) {
+                                // 检查斜杠前的部分（可能是域名）
+                                var beforeSlash = inputText.substring(0, slashIndex);
+                                if (/[^\x00-\x7F]/.test(beforeSlash)) {
+                                    isUrlPattern = false;
+                                }
+                            } else {
+                                // 没有斜杠，整个字符串应该是域名
+                                if (/[^\x00-\x7F]/.test(inputText)) {
+                                    isUrlPattern = false;
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 // 保存历史记录
                 if (inputText && document.getElementById('searchHistoryCheckbox').checked) {
                     var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
@@ -3094,6 +3145,57 @@
                     if (urlPatterns[i].test(beforeSlash)) {
                         isUrlPattern = true;
                         break;
+                    }
+                }
+            }
+            
+            // 如果检测到非英文字符（除了在/或=之后的英文），则不视为网址格式
+            if (isUrlPattern) {
+                // 检查整个字符串中是否包含非ASCII字符（中文字符等）
+                var hasNonAscii = /[^\x00-\x7F]/.test(inputText);
+                
+                if (hasNonAscii) {
+                    // 如果包含非ASCII字符，进一步检查是否在路径或查询参数中
+                    // 检查是否有协议部分
+                    var protocolIndex = inputText.indexOf('://');
+                    var checkText = inputText;
+                    
+                    if (protocolIndex !== -1) {
+                        // 如果有协议，检查协议后面的部分
+                        var afterProtocol = inputText.substring(protocolIndex + 3);
+                        var firstSlashIndex = afterProtocol.indexOf('/');
+                        
+                        if (firstSlashIndex !== -1) {
+                            // 检查域名部分（协议后到第一个斜杠之间）
+                            var domainPart = afterProtocol.substring(0, firstSlashIndex);
+                            var pathPart = afterProtocol.substring(firstSlashIndex);
+                            
+                            // 如果域名部分包含非ASCII字符，则不是有效网址
+                            if (/[^\x00-\x7F]/.test(domainPart)) {
+                                isUrlPattern = false;
+                            }
+                            // 路径部分可以包含非ASCII字符，所以不做检查
+                        } else {
+                            // 没有路径，整个协议后面的部分都是域名
+                            if (/[^\x00-\x7F]/.test(afterProtocol)) {
+                                isUrlPattern = false;
+                            }
+                        }
+                    } else {
+                        // 没有协议，检查是否有斜杠
+                        var slashIndex = inputText.indexOf('/');
+                        if (slashIndex !== -1) {
+                            // 检查斜杠前的部分（可能是域名）
+                            var beforeSlash = inputText.substring(0, slashIndex);
+                            if (/[^\x00-\x7F]/.test(beforeSlash)) {
+                                isUrlPattern = false;
+                            }
+                        } else {
+                            // 没有斜杠，整个字符串应该是域名
+                            if (/[^\x00-\x7F]/.test(inputText)) {
+                                isUrlPattern = false;
+                            }
+                        }
                     }
                 }
             }
