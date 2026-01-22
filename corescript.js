@@ -4705,8 +4705,22 @@ function getBrowserInfo() {
     var deviceVersion = "Unknown";
     
     if (/Android/.test(userAgent)) {
+        // 改进的Android设备型号提取 - 过滤wv等无效信息
         var match = userAgent.match(/Android.*;\s*([^;)]+)\)/);
-        deviceModel = match ? match[1] : "Android Device";
+        if (match) {
+            // 过滤掉wv、build、wv等无效标识
+            var model = match[1];
+            // 排除常见的无效标识
+            if (!/^(wv|build|wv|mobile|tablet|android|google|sdk|model)$/i.test(model)) {
+                deviceModel = model;
+            } else {
+                // 尝试其他提取方式
+                var altMatch = userAgent.match(/Android.*;\s*(?:\w+\s+)*([A-Za-z0-9]+[-_][A-Za-z0-9]+(?:\s+[A-Za-z0-9]+[-_][A-Za-z0-9]+)*)/);
+                deviceModel = altMatch ? altMatch[1] : "Android Device";
+            }
+        } else {
+            deviceModel = "Android Device";
+        }
         deviceVersion = userAgent.match(/Android\s([0-9\.]+)/) ? "Android " + userAgent.match(/Android\s([0-9\.]+)/)[1] : "Android";
     } else if (/iPhone|iPad|iPod/.test(userAgent)) {
         var iosMatch = userAgent.match(/(iPhone|iPad|iPod)(?:\s+Simulator)?(?:\s+[^;)]+)?/);
