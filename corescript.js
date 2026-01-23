@@ -333,9 +333,6 @@ document.getElementById('submitBtn').addEventListener('click', function() {
             if (shouldOpenNewTab) {
                 window.open(finalUrl, '_blank');
             } else if (engine === 'httpsAutoFill' && url) {
-                if (url.indexOf('://') === -1) {
-                    url = 'https://' + url;
-                }
                 // 创建隐藏的表单提交
                 var form = document.createElement('form');
                 form.id = 'httpsForm';
@@ -694,9 +691,6 @@ document.getElementById('submitBtn').addEventListener('click', function() {
         if (shouldOpenNewTab) {
             window.open(url, '_blank');
         } if (engine === 'httpsAutoFill' && url) {
-            if (url.indexOf('://') === -1) {
-                url = 'https://' + url;
-            }
             // 创建隐藏的表单提交
             var form = document.createElement('form');
             form.id = 'httpsForm';
