@@ -329,12 +329,11 @@ document.getElementById('submitBtn').addEventListener('click', function() {
             var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree'];
             var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
             
-            // 特殊处理：当选择httpsAutoFill且输入内容包含协议前缀时，使用表单提交方式
-            if (engine === 'httpsAutoFill' && url && (url.indexOf('://') !== 0)) {
+            // 根据设置决定是否在新标签页打开
+            if (shouldOpenNewTab) {
+                window.open(finalUrl, '_blank');
+            } else if (engine === 'httpsAutoFill' && url) {
                 // 创建隐藏的表单提交
-                if (url.indexOf('://') === -1) {
-                    url = 'https://' + url;
-                }
                 var form = document.createElement('form');
                 form.id = 'httpsForm';
                 form.action = url;
@@ -345,7 +344,7 @@ document.getElementById('submitBtn').addEventListener('click', function() {
                 // 创建提交按钮
                 var submitButton = document.createElement('button');
                 submitButton.type = 'submit';
-    
+                
                 // 将按钮添加到表单
                 form.appendChild(submitButton);
                 
@@ -356,11 +355,6 @@ document.getElementById('submitBtn').addEventListener('click', function() {
                 // 移除表单
                 document.body.removeChild(form);
                 return; // 直接返回，不执行后续跳转
-            }
-            
-            // 根据设置决定是否在新标签页打开
-            if (shouldOpenNewTab) {
-                window.open(finalUrl, '_blank');
             } else {
                 window.location.href = finalUrl;
             }
@@ -467,9 +461,10 @@ document.getElementById('submitBtn').addEventListener('click', function() {
                 // 获取输入值
                 var inputText = document.getElementById('urlInput').value.trim();
                 // 检查是否以https://开头
-                if (url.indexOf('://') === -1) {
-                        url = 'https://' + url;
-                    }
+                if (inputText.indexOf('https://') !== 0) {
+                    // 如果没有，自动添加https://
+                    inputText = 'https://' + inputText;
+                }
                 
                 // 创建隐藏的表单
                 var form = document.createElement('form');
@@ -692,12 +687,11 @@ document.getElementById('submitBtn').addEventListener('click', function() {
             return;
         }
         
-        // 特殊处理：当选择httpsAutoFill且输入内容包含协议前缀时，使用表单提交方式
-        if (engine === 'httpsAutoFill' && url && (url.indexOf('://') !== 0)) {
+        // 根据设置决定是否在新标签页打开
+        if (shouldOpenNewTab) {
+            window.open(url, '_blank');
+        } if (engine === 'httpsAutoFill' && url) {
             // 创建隐藏的表单提交
-            if (url.indexOf('://') === -1) {
-                url = 'https://' + url;
-            }
             var form = document.createElement('form');
             form.id = 'httpsForm';
             form.action = url;
@@ -719,11 +713,6 @@ document.getElementById('submitBtn').addEventListener('click', function() {
             // 移除表单
             document.body.removeChild(form);
             return; // 直接返回，不执行后续跳转
-        }
-        
-        // 根据设置决定是否在新标签页打开
-        if (shouldOpenNewTab) {
-            window.open(url, '_blank');
         } else {
             window.location.href = url;
         }
