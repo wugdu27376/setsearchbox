@@ -4937,6 +4937,7 @@ document.getElementById('urlInput').addEventListener('keypress', function(e) {
     e = e || window.event;
     var keyCode = e.keyCode || e.which;
     if (keyCode === 13) {
+        if (document.getElementById('urlInput').value === '') return;
         document.getElementById('submitBtn').click();
         if (this.value.trim() !== '') {
             this.blur();
