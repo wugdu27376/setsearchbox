@@ -2800,6 +2800,7 @@
         // 支持按Enter键提交
         document.getElementById('urlInput').addEventListener('keypress', function(e) {
             if(e.key === 'Enter') {
+                if (document.getElementById('urlInput').value === '') return;
                 document.getElementById('submitBtn').click();
                 if (this.value.trim() !== '') {
                     this.blur();
