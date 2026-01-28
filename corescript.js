@@ -582,6 +582,9 @@ document.getElementById('submitBtn').addEventListener('click', function() {
                     url = 'https://haokan.baidu.com/web/search/page?query=' + encodeURIComponent(url);
                 }
                 break;
+            case 'enUsYoutubeVideo':
+                url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(url);
+                break;
             case 'zhihuFriends':
                 url = 'https://www.zhihu.com/search?type=content&q=' + encodeURIComponent(url);
                 break;
@@ -2092,7 +2095,7 @@ function hideSearchEngineOptions() {
         'metasosuoAI', 'baiduAI', '360namisoAI', 'zhihuZhiDaAI', 'quarkpcAI',
         'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'quarkTranslateTools', 'fanyiSo', 'volcTranslate', 'transmartQQTs',
         'taobaoWeb', 'jdWebPage',
-        'biliTv', 'dyIsWindows', 'haokanVideo',
+        'biliTv', 'dyIsWindows', 'haokanVideo', 'enUsYoutubeVideo',
         'githubCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
         'kfBaidu', 'weixinSogou', 'baiduTw', 'iFrameFree', 'httpsAutoFill'];
     for (var i = 0; i < engineSelect.options.length; i++) {
