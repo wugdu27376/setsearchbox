@@ -2782,7 +2782,7 @@ document.querySelector('label[for="defaultLinksBtn"]').addEventListener('click',
         if (result) {
             var defaultLinks = [
                 { url: 'https://www.baidu.com', text: '百度' },
-                { url: 'https://www.google.com', text: '谷歌' },
+                { url: 'https://www.google.com.hk', text: '谷歌' },
                 { url: 'https://www.bilibili.com', text: 'B站' },
                 { url: 'https://github.com', text: 'GitHub' },
                 { url: 'https://zhihu.com', text: '知乎' },
