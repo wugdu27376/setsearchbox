@@ -186,10 +186,15 @@ document.getElementById('submitBtn').addEventListener('click', function() {
     localStorage.setItem('selectedEngine', engine);
     
     // 检测是否启用直接跳转网址功能且输入符合网址格式
-    if (document.getElementById('directUrlJumpCheckbox').checked) {
-        var inputText = url;
-        var isUrlPattern = false;
-        
+if (document.getElementById('directUrlJumpCheckbox').checked) {
+    var inputText = url;
+    var isUrlPattern = false;
+    
+    // 排除纯数字、小数、负数等非网址格式
+    var isNumberPattern = /^[+-]?\d+(\.\d+)?$/;
+    if (isNumberPattern.test(inputText)) {
+        isUrlPattern = false;
+    } else {
         // 检测网址格式（与搜索建议的检测逻辑保持一致）
         var urlPatterns = [
             /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+/,
@@ -205,6 +210,7 @@ document.getElementById('submitBtn').addEventListener('click', function() {
                 break;
             }
         }
+    }
         
         // 额外检测包含斜杠的网址格式（如 m.baidu.com/xxx）
         if (!isUrlPattern && inputText.indexOf('/') !== -1) {
@@ -684,42 +690,44 @@ document.getElementById('submitBtn').addEventListener('click', function() {
     var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
     
     // 在最后的跳转逻辑处修改：
-    if (url) {
-        // 对于新建标签页选项，如果输入为空则不执行任何操作
-        if (engine === 'newtabpage' && !url) {
-            return;
-        }
-        
-        // 根据设置决定是否在新标签页打开
-        if (shouldOpenNewTab) {
-            window.open(url, '_blank');
-        } if (engine === 'httpsAutoFill' && url) {
-            // 创建隐藏的表单提交
-            var form = document.createElement('form');
-            form.id = 'httpsForm';
-            form.action = url;
-            form.target = '_self';
-            form.method = 'post';
-            form.style.display = 'none';
-            
-            // 创建提交按钮
-            var submitButton = document.createElement('button');
-            submitButton.type = 'submit';
-            
-            // 将按钮添加到表单
-            form.appendChild(submitButton);
-            
-            // 将表单添加到页面并提交
-            document.body.appendChild(form);
-            form.submit();
-            
-            // 移除表单
-            document.body.removeChild(form);
-            return; // 直接返回，不执行后续跳转
-        } else {
-            window.location.href = url;
-        }
+if (url) {
+    // 对于新建标签页选项，如果输入为空则不执行任何操作
+    if (engine === 'newtabpage' && !url) {
+        return;
     }
+    
+    // 根据设置决定是否在新标签页打开
+    if (shouldOpenNewTab) {
+        window.open(url, '_blank');
+        // 修复：当在新标签页打开时，原标签页不跳转
+        return;
+    } if (engine === 'httpsAutoFill' && url) {
+        // 创建隐藏的表单提交
+        var form = document.createElement('form');
+        form.id = 'httpsForm';
+        form.action = url;
+        form.target = '_self';
+        form.method = 'post';
+        form.style.display = 'none';
+        
+        // 创建提交按钮
+        var submitButton = document.createElement('button');
+        submitButton.type = 'submit';
+        
+        // 将按钮添加到表单
+        form.appendChild(submitButton);
+        
+        // 将表单添加到页面并提交
+        document.body.appendChild(form);
+        form.submit();
+        
+        // 移除表单
+        document.body.removeChild(form);
+        return; // 直接返回，不执行后续跳转
+    } else {
+        window.location.href = url;
+    }
+}
 });
 // 重新自定义搜索网址文字点击事件
 document.querySelector('label[for="redefineSearchBtn"]').addEventListener('click', function() {
@@ -3117,18 +3125,24 @@ function showSearchSuggestions(suggestions) {
     var inputText = document.getElementById('urlInput').value.trim();
     var isUrlPattern = false;
     
-    var urlPatterns = [
-        /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+/,
-        /\.[a-zA-Z]{2,}/,
-        /^https?:\/\//,
-        /^www\./,
-        /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+\.[a-zA-Z]{2,}/
-    ];
-    
-    for (var i = 0; i < urlPatterns.length; i++) {
-        if (urlPatterns[i].test(inputText)) {
-            isUrlPattern = true;
-            break;
+    // 排除纯数字、小数、负数等非网址格式
+    var isNumberPattern = /^[+-]?\d+(\.\d+)?$/;
+    if (isNumberPattern.test(inputText)) {
+        isUrlPattern = false;
+    } else {
+        var urlPatterns = [
+            /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+/,
+            /\.[a-zA-Z]{2,}/,
+            /^https?:\/\//,
+            /^www\./,
+            /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+\.[a-zA-Z]{2,}/
+        ];
+        
+        for (var i = 0; i < urlPatterns.length; i++) {
+            if (urlPatterns[i].test(inputText)) {
+                isUrlPattern = true;
+                break;
+            }
         }
     }
     
