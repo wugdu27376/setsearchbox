@@ -407,179 +407,8 @@ document.getElementById('submitBtn').addEventListener('click', function() {
         document.getElementById('iframeContainer').style.display = 'block';
         return; // 不执行后续跳转
     }
-    
-    // ========== iFramePlus 多窗口管理 ==========
-// 【修改位置 1】将变量挂载到 window 对象，确保全局可访问
-window.iframePlusWindows = window.iframePlusWindows || [];
-var iframePlusWindows = window.iframePlusWindows;
-var iframePlusNextId = 1;
 
-// 【修改位置 1】修改容器创建函数，确保容器引用全局可用
-function createIframePlusContainer() {
-    var container = document.getElementById('iframePlusContainer');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'iframePlusContainer';
-        container.style.cssText = 'display:none;width:100%;margin-top:10px;text-align:center;';
-        
-        // 兼容所有浏览器的 flex 回退
-        container.style.display = '-webkit-box';
-        container.style.display = '-moz-box';
-        container.style.display = '-ms-flexbox';
-        container.style.display = '-webkit-flex';
-        container.style.display = 'flex';
-        container.style.flexWrap = 'wrap';
-        container.style.webkitFlexWrap = 'wrap';
-        container.style.msFlexWrap = 'wrap';
-        container.style.justifyContent = 'center';
-        container.style.webkitJustifyContent = 'center';
-        container.style.msFlexPack = 'center';
-        
-        // 插入到 iframeContainer 后面
-        var iframeContainer = document.getElementById('iframeContainer');
-        if (iframeContainer && iframeContainer.parentNode) {
-            iframeContainer.parentNode.insertBefore(container, iframeContainer.nextSibling);
-        } else {
-            document.body.appendChild(container);
-        }
-    }
-    return container;
-}
-
-// 【修改位置 2】创建新窗口时确保容器显示
-function createIframePlusWindow(url) {
-    var container = createIframePlusContainer();
-    container.style.display = 'block';
-    
-    var windowId = 'iframePlus_' + (iframePlusNextId++);
-    
-    // 创建窗口包装器
-    var wrapper = document.createElement('div');
-    wrapper.id = windowId;
-    wrapper.className = 'iframe-plus-wrapper';
-    
-    var isMobile = isMobileAndroidApple();
-    wrapper.style.cssText = 'display:inline-block;vertical-align:top;margin:5px;margin: 0 auto;';
-    var savedWidth = localStorage.getItem('iframePlusWidth');
-    var defaultWidth = isMobile ? '98%' : '390px';
-    wrapper.style.width = savedWidth ? savedWidth : defaultWidth;
-    wrapper.style.maxWidth = isMobile ? '100%' : '960px';
-    wrapper.style.boxSizing = 'border-box';
-    wrapper.style.marginRight = '7px';
-    
-    var iframe = document.createElement('iframe');
-    iframe.src = url || 'about:blank';
-    iframe.style.cssText = 'width:100%;height:500px;border:1px solid #ccc;background:#fff;';
-    iframe.style.width = '100%';
-    var savedHeight = localStorage.getItem('iframePlusHeight');
-    var defaultHeight = isMobile ? '500px' : '500px';
-    iframe.style.height = savedHeight ? savedHeight : defaultHeight;
-    
-    var closeContainer = document.createElement('div');
-    closeContainer.style.cssText = 'text-align:right;margin-top:7px;margin-bottom:5px;';
-    
-    // 【修改位置 12】添加刷新当前网址按钮
-    var refreshBtn = document.createElement('button');
-    refreshBtn.innerHTML = '<i class="fa fa-repeat" style="font-size: 18px;"><i>';
-    refreshBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
-    refreshBtn.onclick = function() {
-        var currentSrc = iframe.src;
-        iframe.src = currentSrc;
-    };
-    
-    // 【修改位置 11】添加编辑当前网址按钮
-    var editBtn = document.createElement('button');
-    editBtn.innerHTML = '<i class="fa fa-pencil" style="font-size: 18px;"><i>';
-    editBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
-    editBtn.onclick = function() {
-        var currentUrl = iframe.src;
-        showCustomModal('编辑窗口网址：', currentUrl, function(newUrl) {
-            if (newUrl !== null && newUrl.trim() !== '') {
-                iframe.src = newUrl;
-                if (window.iframePlusWindows) {
-                    for (var i = 0; i < window.iframePlusWindows.length; i++) {
-                        if (window.iframePlusWindows[i].id === windowId) {
-                            window.iframePlusWindows[i].url = newUrl;
-                            break;
-                        }
-                    }
-                }
-            }
-        });
-    };
-    
-    var closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '<i class="fa fa-close" style="font-size: 18px;"><i>';
-    closeBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
-    closeBtn.onclick = function() {
-        closeIframePlusWindow(windowId);
-    };
-    
-    closeContainer.appendChild(refreshBtn);
-    closeContainer.appendChild(editBtn);
-    closeContainer.appendChild(closeBtn);
-    wrapper.appendChild(iframe);
-    wrapper.appendChild(closeContainer);
-    container.appendChild(wrapper);
-    
-    window.iframePlusWindows.push({
-        id: windowId,
-        wrapper: wrapper,
-        iframe: iframe,
-        url: url
-    });
-    
-    var hitokoto = document.getElementById('hitokotoDisplay');
-    if (hitokoto) {
-        hitokoto.style.marginTop = '40px';
-    }
-    
-    return windowId;
-}
-
-// 【修改位置 4】关闭窗口，当没有窗口时隐藏容器
-function closeIframePlusWindow(windowId) {
-    var container = document.getElementById('iframePlusContainer');
-    if (!container) return;
-    
-    var wrapper = document.getElementById(windowId);
-    if (wrapper && wrapper.parentNode === container) {
-        container.removeChild(wrapper);
-    }
-    
-    for (var i = window.iframePlusWindows.length - 1; i >= 0; i--) {
-        if (window.iframePlusWindows[i].id === windowId) {
-            window.iframePlusWindows.splice(i, 1);
-            break;
-        }
-    }
-    
-    // 当没有窗口时隐藏容器
-    if (window.iframePlusWindows.length === 0) {
-        container.style.display = 'none';
-        var hitokoto = document.getElementById('hitokotoDisplay');
-        if (hitokoto) {
-            hitokoto.style.marginTop = '10px';
-        }
-    }
-}
-
-// 【修改位置 5】关闭所有窗口时隐藏容器
-function closeAllIframePlusWindows() {
-    var container = document.getElementById('iframePlusContainer');
-    if (container) {
-        container.innerHTML = '';
-        container.style.display = 'none';
-    }
-    window.iframePlusWindows = [];
-    var hitokoto = document.getElementById('hitokotoDisplay');
-    if (hitokoto) {
-        hitokoto.style.marginTop = '10px';
-    }
-}
-// ========== iFramePlus 多窗口管理结束 ==========
-
-if (engine === 'iFramePlus') {
+    if (engine === 'iFramePlus') {
         var urlToLoad = document.getElementById('urlInput').value.trim();
         if (urlToLoad && (urlToLoad.indexOf('http://') === 0 || urlToLoad.indexOf('https://') === 0)) {
             // 直接创建 iFramePlus 窗口，不执行页面跳转
@@ -868,7 +697,7 @@ if (engine === 'iFramePlus') {
                 return; // 不执行页面跳转
             case 'iFramePlus':
                 // 创建新的 iFramePlus 窗口
-                // 【修改位置】如果已经是 http:// 或 https:// 开头，直接使用原URL
+                // 如果已经是 http:// 或 https:// 开头，直接使用原URL
                 if (url && (url.indexOf('http://') === 0 || url.indexOf('https://') === 0)) {
                     // 已有协议，直接使用
                     createIframePlusWindow(url);
@@ -1078,6 +907,176 @@ document.querySelector('label[for="redefineSearchBtn"]').addEventListener('click
     );
 });
 
+// iFramePlus 多窗口管理
+// 将变量挂载到 window 对象，确保全局可访问
+window.iframePlusWindows = window.iframePlusWindows || [];
+var iframePlusWindows = window.iframePlusWindows;
+var iframePlusNextId = 1;
+
+// 修改容器创建函数，确保容器引用全局可用
+function createIframePlusContainer() {
+    var container = document.getElementById('iframePlusContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'iframePlusContainer';
+        container.style.cssText = 'display:none;width:100%;margin-top:10px;text-align:center;';
+        
+        // 兼容所有浏览器的 flex 回退
+        container.style.display = '-webkit-box';
+        container.style.display = '-moz-box';
+        container.style.display = '-ms-flexbox';
+        container.style.display = '-webkit-flex';
+        container.style.display = 'flex';
+        container.style.flexWrap = 'wrap';
+        container.style.webkitFlexWrap = 'wrap';
+        container.style.msFlexWrap = 'wrap';
+        container.style.justifyContent = 'center';
+        container.style.webkitJustifyContent = 'center';
+        container.style.msFlexPack = 'center';
+        
+        // 插入到 iframeContainer 后面
+        var iframeContainer = document.getElementById('iframeContainer');
+        if (iframeContainer && iframeContainer.parentNode) {
+            iframeContainer.parentNode.insertBefore(container, iframeContainer.nextSibling);
+        } else {
+            document.body.appendChild(container);
+        }
+    }
+    return container;
+}
+
+// 创建新窗口时确保容器显示
+function createIframePlusWindow(url) {
+    var container = createIframePlusContainer();
+    container.style.display = 'block';
+    
+    var windowId = 'iframePlus_' + (iframePlusNextId++);
+    
+    // 创建窗口包装器
+    var wrapper = document.createElement('div');
+    wrapper.id = windowId;
+    wrapper.className = 'iframe-plus-wrapper';
+    
+    var isMobile = isMobileAndroidApple();
+    wrapper.style.cssText = 'display:inline-block;vertical-align:top;margin:5px;margin: 0 auto;';
+    var savedWidth = localStorage.getItem('iframePlusWidth');
+    var defaultWidth = isMobile ? '98%' : '390px';
+    wrapper.style.width = savedWidth ? savedWidth : defaultWidth;
+    wrapper.style.maxWidth = isMobile ? '100%' : '960px';
+    wrapper.style.boxSizing = 'border-box';
+    wrapper.style.marginRight = '7px';
+    
+    var iframe = document.createElement('iframe');
+    iframe.src = url || 'about:blank';
+    iframe.style.cssText = 'width:100%;height:500px;border:1px solid #ccc;background:#fff;';
+    iframe.style.width = '100%';
+    var savedHeight = localStorage.getItem('iframePlusHeight');
+    var defaultHeight = isMobile ? '500px' : '500px';
+    iframe.style.height = savedHeight ? savedHeight : defaultHeight;
+    
+    var closeContainer = document.createElement('div');
+    closeContainer.style.cssText = 'text-align:right;margin-top:7px;margin-bottom:5px;';
+    
+    // 添加刷新当前网址按钮
+    var refreshBtn = document.createElement('button');
+    refreshBtn.innerHTML = '<i class="fa fa-repeat" style="font-size: 18px;"><i>';
+    refreshBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
+    refreshBtn.onclick = function() {
+        var currentSrc = iframe.src;
+        iframe.src = currentSrc;
+    };
+    
+    // 添加编辑当前网址按钮
+    var editBtn = document.createElement('button');
+    editBtn.innerHTML = '<i class="fa fa-pencil" style="font-size: 18px;"><i>';
+    editBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
+    editBtn.onclick = function() {
+        var currentUrl = iframe.src;
+        showCustomModal('编辑窗口网址：', currentUrl, function(newUrl) {
+            if (newUrl !== null && newUrl.trim() !== '') {
+                iframe.src = newUrl;
+                if (window.iframePlusWindows) {
+                    for (var i = 0; i < window.iframePlusWindows.length; i++) {
+                        if (window.iframePlusWindows[i].id === windowId) {
+                            window.iframePlusWindows[i].url = newUrl;
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    };
+    
+    var closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '<i class="fa fa-close" style="font-size: 18px;"><i>';
+    closeBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
+    closeBtn.onclick = function() {
+        closeIframePlusWindow(windowId);
+    };
+    
+    closeContainer.appendChild(refreshBtn);
+    closeContainer.appendChild(editBtn);
+    closeContainer.appendChild(closeBtn);
+    wrapper.appendChild(iframe);
+    wrapper.appendChild(closeContainer);
+    container.appendChild(wrapper);
+    
+    window.iframePlusWindows.push({
+        id: windowId,
+        wrapper: wrapper,
+        iframe: iframe,
+        url: url
+    });
+    
+    var hitokoto = document.getElementById('hitokotoDisplay');
+    if (hitokoto) {
+        hitokoto.style.marginTop = '40px';
+    }
+    
+    return windowId;
+}
+
+// 关闭窗口，当没有窗口时隐藏容器
+function closeIframePlusWindow(windowId) {
+    var container = document.getElementById('iframePlusContainer');
+    if (!container) return;
+    
+    var wrapper = document.getElementById(windowId);
+    if (wrapper && wrapper.parentNode === container) {
+        container.removeChild(wrapper);
+    }
+    
+    for (var i = window.iframePlusWindows.length - 1; i >= 0; i--) {
+        if (window.iframePlusWindows[i].id === windowId) {
+            window.iframePlusWindows.splice(i, 1);
+            break;
+        }
+    }
+    
+    // 当没有窗口时隐藏容器
+    if (window.iframePlusWindows.length === 0) {
+        container.style.display = 'none';
+        var hitokoto = document.getElementById('hitokotoDisplay');
+        if (hitokoto) {
+            hitokoto.style.marginTop = '10px';
+        }
+    }
+}
+
+// 关闭所有窗口时隐藏容器
+function closeAllIframePlusWindows() {
+    var container = document.getElementById('iframePlusContainer');
+    if (container) {
+        container.innerHTML = '';
+        container.style.display = 'none';
+    }
+    window.iframePlusWindows = [];
+    var hitokoto = document.getElementById('hitokotoDisplay');
+    if (hitokoto) {
+        hitokoto.style.marginTop = '10px';
+    }
+}
+
 // 保存和加载clearOnSearchCheckbox状态
 var savedClearOnSearchState = localStorage.getItem('clearOnSearchChecked');
 if (savedClearOnSearchState === 'true') {
@@ -1100,7 +1099,7 @@ document.getElementById('clearOnBlurCheckbox').addEventListener('change', functi
 // 监听 clearOnBlurCheckbox 的 blur 事件处理
 document.getElementById('urlInput').addEventListener('blur', function(e) {
     if (document.getElementById('focusCheckbox').checked && document.getElementById('clearOnBlurCheckbox').checked) {
-        // 【修改位置】检查相关目标是否是快捷输入按钮区域内的元素
+        // 检查相关目标是否是快捷输入按钮区域内的元素
         var relatedTarget = e.relatedTarget;
         var isQuickInputBtnTarget = false;
         
@@ -1277,43 +1276,43 @@ document.getElementById('engineSelect').addEventListener('change', function() {
         // 隐藏 iFramePlus 容器
         var plusContainer = document.getElementById('iframePlusContainer');
         if (plusContainer) plusContainer.style.display = 'none';
-// 【修改位置 3】修复 iFramePlus 选项切换时的显示/隐藏逻辑
-} else if (this.value === 'iFramePlus') {
-    document.getElementById('iframeContainer').style.display = 'none';
-    document.getElementById('iframeControls').style.display = 'none';
-    var sizeBtn = document.getElementById('iframePlusSizeBtn');
-    if (sizeBtn) sizeBtn.style.display = 'block';
-    var refreshAllBtn = document.getElementById('refreshAllIframePlusBtn');
-    if (refreshAllBtn && refreshAllBtn.parentNode) {
-        refreshAllBtn.parentNode.style.display = 'block';
-    }
-    // 【修改位置 9】确保刷新按钮和关闭按钮容器显示
-    var btnContainer = document.getElementById('iframePlusSizeBtn');
-    if (btnContainer) btnContainer.style.display = 'block';
-    var plusContainer = document.getElementById('iframePlusContainer');
-    if (plusContainer) {
-        if (window.iframePlusWindows && window.iframePlusWindows.length > 0) {
-            plusContainer.style.display = 'block';
-        } else {
-            plusContainer.style.display = 'none';
+    // 修复 iFramePlus 选项切换时的显示/隐藏逻辑
+    } else if (this.value === 'iFramePlus') {
+        document.getElementById('iframeContainer').style.display = 'none';
+        document.getElementById('iframeControls').style.display = 'none';
+        var sizeBtn = document.getElementById('iframePlusSizeBtn');
+        if (sizeBtn) sizeBtn.style.display = 'block';
+        var refreshAllBtn = document.getElementById('refreshAllIframePlusBtn');
+        if (refreshAllBtn && refreshAllBtn.parentNode) {
+            refreshAllBtn.parentNode.style.display = 'block';
         }
+        // 确保刷新按钮和关闭按钮容器显示
+        var btnContainer = document.getElementById('iframePlusSizeBtn');
+        if (btnContainer) btnContainer.style.display = 'block';
+        var plusContainer = document.getElementById('iframePlusContainer');
+        if (plusContainer) {
+            if (window.iframePlusWindows && window.iframePlusWindows.length > 0) {
+                plusContainer.style.display = 'block';
+            } else {
+                plusContainer.style.display = 'none';
+            }
+        }
+    } else {
+        document.getElementById('iframeContainer').style.display = 'none';
+        document.getElementById('hitokotoDisplay').style.marginTop = '10px';
+        document.getElementById('iframeControls').style.display = 'none';
+        var sizeBtn = document.getElementById('iframePlusSizeBtn');
+        if (sizeBtn) sizeBtn.style.display = 'none';
+        var refreshAllBtn = document.getElementById('refreshAllIframePlusBtn');
+        if (refreshAllBtn && refreshAllBtn.parentNode) {
+            refreshAllBtn.parentNode.style.display = 'none';
+        }
+        // 隐藏按钮容器（包含编辑、刷新、关闭所有按钮）
+        var btnContainer = document.getElementById('iframePlusSizeBtn');
+        if (btnContainer) btnContainer.style.display = 'none';
+        var plusContainer = document.getElementById('iframePlusContainer');
+        if (plusContainer) plusContainer.style.display = 'none';
     }
-} else {
-    document.getElementById('iframeContainer').style.display = 'none';
-    document.getElementById('hitokotoDisplay').style.marginTop = '10px';
-    document.getElementById('iframeControls').style.display = 'none';
-    var sizeBtn = document.getElementById('iframePlusSizeBtn');
-    if (sizeBtn) sizeBtn.style.display = 'none';
-    var refreshAllBtn = document.getElementById('refreshAllIframePlusBtn');
-    if (refreshAllBtn && refreshAllBtn.parentNode) {
-        refreshAllBtn.parentNode.style.display = 'none';
-    }
-    // 【修改位置 10】隐藏按钮容器（包含编辑、刷新、关闭所有按钮）
-    var btnContainer = document.getElementById('iframePlusSizeBtn');
-    if (btnContainer) btnContainer.style.display = 'none';
-    var plusContainer = document.getElementById('iframePlusContainer');
-    if (plusContainer) plusContainer.style.display = 'none';
-}
     // 根据选择显示或隐藏 checkbox
     if (this.value === 'showCheckbox') {
         document.getElementById('autoFillhttps').style.display = 'block';
@@ -1398,6 +1397,20 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                 if (document.getElementById('engineSelect').value === 'iFrameFree') {
                     document.getElementById('iframeContainer').style.display = 'block';
                 }
+                var savedEngine = localStorage.getItem('selectedEngine');
+                if (savedEngine === 'iFramePlus') {
+                    var plusContainer = document.getElementById('iframePlusContainer');
+                    if (plusContainer && window.iframePlusWindows && window.iframePlusWindows.length > 0) {
+                        plusContainer.style.display = 'block';
+                        for (var i = 0; i < window.iframePlusWindows.length; i++) {
+                            if (window.iframePlusWindows[i].wrapper) {
+                                window.iframePlusWindows[i].wrapper.style.display = 'inline-block';
+                            }
+                        }
+                    }
+                    var sizeBtn = document.getElementById('iframePlusSizeBtn');
+                    if (sizeBtn) sizeBtn.style.display = 'block';
+                }
                 if (isMobileAndroidApple()) {
                     if (this.value === 'baiduTw' ||
                         this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
@@ -1476,7 +1489,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
 });
 
-// 【修改位置 5】添加刷新所有 iFramePlus 窗口功能
+// 添加刷新所有 iFramePlus 窗口功能
 (function() {
     var refreshBtn = document.getElementById('refreshAllIframePlusBtn');
     if (!refreshBtn) return;
@@ -1499,7 +1512,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
 })();
 
-// 【修改位置 8】添加关闭所有 iFramePlus 窗口功能（带二次确认，移除所有窗口元素）
+// 添加关闭所有 iFramePlus 窗口功能（带二次确认，移除所有窗口元素）
 (function() {
     var closeAllBtn = document.getElementById('closeAllIframePlusBtn');
     if (!closeAllBtn) return;
@@ -2823,7 +2836,7 @@ if (localStorage.getItem('focusCheckboxChecked') === 'true') {
                     document.getElementById('iframeContainer').style.display = 'block';
                 }
                 
-                // 【修改位置 2】新增：恢复 iFramePlus 相关元素的显示
+                // 新增：恢复 iFramePlus 相关元素的显示
                 var engineSelect = document.getElementById('engineSelect');
                 if (engineSelect && engineSelect.value === 'iFramePlus') {
                     var iframePlusSizeBtn = document.getElementById('iframePlusSizeBtn');
@@ -5305,7 +5318,7 @@ document.querySelector('label[for="customSearchListBtn"]').addEventListener('cli
     showCustomAlert('自定义搜索列表', html);
 });
 
-// ==================== 更多设置折叠/展开功能（兼容所有浏览器） ====================
+// 更多设置折叠/展开功能（兼容所有浏览器）
 (function() {
     // 获取需要控制的元素集合
     var container = document.getElementById('autoFillhttps');
@@ -5949,13 +5962,13 @@ if (savedIframeWidth && savedIframeHeight) {
     document.getElementById('iframeContainer').style.height = savedIframeHeight;
 }
 
-// 【修改位置 4】iFramePlus 编辑所有窗口尺寸功能
+// iFramePlus 编辑所有窗口尺寸功能
 var iframePlusSizeBtn = document.getElementById('iframePlusSizeBtn');
 if (iframePlusSizeBtn) {
     var sizeLabel = iframePlusSizeBtn.querySelector('label');
     if (sizeLabel) {
         sizeLabel.onclick = function() {
-            // 【修改位置 2】修复窗口检测逻辑，使用 window.iframePlusWindows
+            // 修复窗口检测逻辑，使用 window.iframePlusWindows
             var currentWindows = window.iframePlusWindows || [];
             var currentWidth = localStorage.getItem('iframePlusWidth') || '390px';
             var currentHeight = localStorage.getItem('iframePlusHeight') || '500px';
@@ -5978,7 +5991,7 @@ if (iframePlusSizeBtn) {
                             height = defaultHeight;
                         }
                         
-                        // 【修改位置 2】更新所有现有窗口的尺寸
+                        // 更新所有现有窗口的尺寸
                         for (var i = 0; i < currentWindows.length; i++) {
                             var wrapper = currentWindows[i].wrapper;
                             var iframe = currentWindows[i].iframe;
