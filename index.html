@@ -2,9 +2,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>搜索Easy V7.1</title>
+    <title>搜索Easy V7.2</title>
     
 <link rel="icon" href="https://wugdu27376.github.io/setsearchbox/favicon.ico">
+
+<script>
+    (function() {
+        var links = [
+            'https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css',
+            'https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.css',
+            'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.css',
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css',
+            'https://unpkg.com/font-awesome@4.7.0/css/font-awesome.css'
+        ];
+        
+        var currentIndex = 0;
+        var head = document.getElementsByTagName('head')[0];
+        var loadedSuccessfully = false;  // 【修改位置】添加加载成功标记
+        var timeoutId = null;  // 【修改位置】保存超时ID以便清除
+        
+        function loadCSS(url) {
+            if (loadedSuccessfully) return;  // 【修改位置】已加载成功则直接返回
+            
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.type = 'text/css';
+            link.href = url;
+            
+            // 清除之前的超时
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            
+            // 兼容 Chrome 7 及低版本浏览器的加载检测
+            var img = document.createElement('img');
+            img.onerror = function() {
+                if (!loadedSuccessfully) {  // 【修改位置】仅当未成功时才尝试下一个
+                    currentIndex++;
+                    if (currentIndex < links.length) {
+                        loadCSS(links[currentIndex]);
+                    }
+                }
+            };
+            img.src = url;
+            
+            // 使用 setTimeout 检测加载失败（兼容不支持 onerror 的浏览器）
+            timeoutId = setTimeout(function() {
+                if (!loadedSuccessfully && !link.sheet && !link.styleSheet) {  // 【修改位置】仅当未成功时才尝试下一个
+                    currentIndex++;
+                    if (currentIndex < links.length) {
+                        loadCSS(links[currentIndex]);
+                    }
+                }
+                timeoutId = null;
+            }, 3000);
+            
+            // 添加到 head
+            if (head) {
+                head.appendChild(link);
+            } else {
+                document.body.appendChild(link);
+            }
+            
+            // 清理超时并标记加载成功
+            link.onload = link.onreadystatechange = function() {
+                if (!this.readyState || this.readyState === 'loaded' || this.readyState === 'complete') {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    loadedSuccessfully = true;  // 【修改位置】标记加载成功，阻止后续备用链接加载
+                }
+            };
+        }
+        
+        // 开始加载第一个链接
+        if (links.length > 0) {
+            loadCSS(links[0]);
+        }
+    })();
+</script>
 
 <div id="centerBoxDisplay" style="height: 25% display: none;"></div>
 
@@ -22,54 +100,76 @@
         .search-container {
             max-width: 800px;
             margin: 0 auto;
-            display: flex; /* 使用flex布局让输入框和按钮同行 */
             
-            display: -webkit-box;      /* OLD: iOS 6-, Safari 3.1-6 */
-            display: -moz-box;         /* OLD: Firefox 19- */
-            display: -ms-flexbox;      /* TWEENER: IE 10 */
-            display: -webkit-flex;     /* NEW: Chrome 21-28, Safari 8- */
+            /* 最底层的回退方案：Table 布局 (兼容 IE6+, Chrome 1+, Firefox 1+, Safari 1+) */
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* 防止子元素溢出 */
             
-            -webkit-box-direction: normal;      /* OLD */
-            -webkit-box-orient: horizontal;     /* OLD */
-            -moz-box-direction: normal;         /* OLD */
-            -moz-box-orient: horizontal;        /* OLD */
-            -webkit-flex-direction: row;        /* NEW, Chrome 21-28 */
-            -ms-flex-direction: row;            /* IE 10 */
-            flex-direction: row;                /* NEW, Spec */
+            /* 旧版 Flexbox 回退方案 (Safari 3.1-6, iOS 6-) */
+            display: -webkit-box;
+            -webkit-box-direction: normal;
+            -webkit-box-orient: horizontal;
+            -webkit-box-pack: center;
+            -webkit-box-align: center;
             
-            -webkit-box-pack: center;           /* OLD */
-            -moz-box-pack: center;              /* OLD */
-            -ms-flex-pack: center;              /* IE 10 */
-            -webkit-justify-content: center;    /* Chrome 21-28 */
-            justify-content: center;            /* NEW, Spec */
+            /* 旧版 Flexbox 回退方案 (Firefox 2-21) */
+            display: -moz-box;
+            -moz-box-direction: normal;
+            -moz-box-orient: horizontal;
+            -moz-box-pack: center;
+            -moz-box-align: center;
             
-            -webkit-box-align: center;          /* OLD */
-            -moz-box-align: center;             /* OLD */
-            -ms-flex-align: center;             /* IE 10 */
-            -webkit-align-items: center;        /* Chrome 21-28 */
-            align-items: center;                /* NEW, Spec */
+            /* 过渡期 Flexbox 方案 (IE 10) */
+            display: -ms-flexbox;
+            -ms-flex-direction: row;
+            -ms-flex-pack: center;
+            -ms-flex-align: center;
+            -ms-flex-line-pack: stretch;
             
-            -webkit-align-content: stretch;     /* Chrome 21-28 */
-            -ms-flex-line-pack: stretch;        /* IE 10 */
-            align-content: stretch;             /* NEW, Spec */
+            /* 新版 Flexbox 方案 (Chrome 21+, Safari 8+, Firefox 22+) */
+            display: -webkit-flex;
+            -webkit-flex-direction: row;
+            -webkit-justify-content: center;
+            -webkit-align-items: center;
+            -webkit-align-content: stretch;
+            
+            /* 标准 Flexbox 方案 */
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            align-content: stretch;
         }
-        
+            
         #engineSelect {
             min-width: 75px;
             width: 15%;
             max-width: 15%;
+            display: table-cell;   /* 配合 table 布局 */
+            vertical-align: middle;
         }
         
         #urlInput {
-            flex: 1; /* 输入框占据剩余空间 */
+            display: table-cell;   /* 配合 table 布局 */
+            vertical-align: middle;
+            width: 100%;           /* 在 table 布局中占据剩余空间 */
+            
+            -webkit-box-flex: 1;
+            -moz-box-flex: 1;
+            flex: 1;
             min-width: 5%;
-            width: 100%;
         }
         
         #submitBtn {
-            margin-left: 3px; /* 按钮与输入框间距 */
+            margin-left: 3px;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
+            display: table-cell;   /* 配合 table 布局 */
+            vertical-align: middle;
+            white-space: nowrap;
+            overflow: hidden;
         }
         
         #autoFillhttps input[type="checkbox"] {
@@ -99,8 +199,21 @@
         /* 限制在 #autoFillhttps 和 #iframeContainer 区域内，排除与checkbox关联的label和指定ID */
         #autoFillhttps label:active:not([for*="Checkbox"]):not(#noActiveLab),
         #iframeContainer label:active:not([for*="Checkbox"]):not(#noActiveLab),
+        #iframePlusSizeBtn label:active:not([for*="Checkbox"]):not(#noActiveLab),
         #clearHistoryBtn label:active {
             color: #ff0000 !important;
+        }
+        
+        /* 修复下拉框选项文字变红的问题 */
+        .text-select-wrapper select option {
+            color: #000000 !important;
+        }
+        
+        .text-select-wrapper select option:active,
+        .text-select-wrapper select option:hover,
+        .text-select-wrapper select option:focus,
+        .text-select-wrapper select option:checked {
+            color: #000000 !important;
         }
         
         #autoFillhttps label, #iframeContainer label, #hitokotoDisplay, #searchSuggestions, #quickInputBtn1Head, #quickInputBtn2, #quickInputBtn3, #browserInfo, #engineSelect, #submitBtn, #userSelectModalDisabled {
@@ -150,6 +263,13 @@
                 right: 0;
                 margin: 0 auto;
             }
+        }
+        
+        /* 更多设置项默认隐藏 */
+        #autoFillhttps [id="showMoreCheckboxBlock"],
+        #autoFillhas [id="showMoreLabelBtns"],
+        #autoFillhttps .text-select-wrapper {
+            display: none;
         }
     </style>
 </head>
@@ -221,6 +341,7 @@
                 <option value="weixinSogou">搜狗微信</option>
                 <option value="baiduTw" id="baidutwOption">Baidu (繁体)</option>
                 <option value="iFrameFree">IFrame</option>
+                <option value="iFramePlus">IFrame+</option>
                 <option value="showCheckbox">工具</option>
             </optgroup>
             <optgroup label="我的搜索引擎">
@@ -228,7 +349,13 @@
             </optgroup>
         </select>
         <input type="search" id="urlInput" placeholder="输入网址" style="height: 24px;">
-        <input type="submit" style="height: 24px;" value="跳转" id="submitBtn">
+        <button type="submit" id="submitBtn" style="height: 24px; white-space: nowrap; overflow: hidden;">跳转</button>
+    </div>
+    
+    <div id="iframePlusSizeBtn" style="display: none; text-align: center; margin-top: 12px;">
+        <label style="display: inline-block; vertical-align: middle; cursor: pointer; user-select: none;">宽度/高度</label>
+        <label id="refreshAllIframePlusBtn" style="display: inline-block; vertical-align: middle; cursor: pointer; user-select: none;">刷新窗口</label>
+        <label id="closeAllIframePlusBtn" style="display: inline-block; vertical-align: middle; cursor: pointer; user-select: none;">关闭窗口</label>
     </div>
     
     <div id="autoFillhttps" style="display: none; text-align: center; margin-top: 10px;" aria-hidden="true">
@@ -263,108 +390,122 @@
             <label for="renameLinkBtn" style="vertical-align: middle; cursor: pointer;">链接名称: <span id="linkNameValue">Baidu.com</span></label>
             <label for="resetLinkColorBtn" style="vertical-align: middle; cursor: pointer;">重置链接样式</label>
             <input type="submit" id="resetLinkColorBtn" style="display: none;">
-            <label for="heightPicker" style="vertical-align: middle; cursor: pointer;">搜索框高度: <span id="heightValue">24px</span></label>
-            <label for="widthPicker" style="vertical-align: middle; cursor: pointer;">按钮宽度: <span id="widthValue">Default</span></label>
-            <label for="redefineSearchBtn" style="vertical-align: middle; cursor: pointer;">编辑自定义搜索</label>
-            <div style="display: inline-block;">
+            <label id="showMoreLabelBtns" for="heightPicker" style="vertical-align: middle; cursor: pointer;">搜索框高度: <span id="heightValue">24px</span></label>
+            <label id="showMoreLabelBtns" for="widthPicker" style="vertical-align: middle; cursor: pointer;">搜索按钮宽度: <span id="widthValue">Default</span></label>
+            <label id="showMoreLabelBtns" for="redefineSearchBtn" style="vertical-align: middle; cursor: pointer;">编辑自定义搜索</label>
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="saveInputCheckbox">
                 <label for="saveInputCheckbox">保留输入文本</label>
             </div>
-            <div style="display: inline-block; margin-left: 3px;">
+            <div id="showMoreCheckboxBlock" style="margin-left: 3px;">
                 <input type="checkbox" id="selectHttpsText" disabled>
                 <label for="selectHttpsText" id="noActiveLab">自动选择文本</label>
             </div>
-            <div style="display: inline-block;">
-                <label style="margin-left: -3px;" id="noActiveLab">用户设置: </label>
+            <div id="showMoreCheckboxBlock">
+                <label style="margin-left: -3px;" id="noActiveLab">用户数据: </label>
                 <label for="importSettingsBtn" style="vertical-align: middle; margin-left: -5px; cursor: pointer;">导入</label>
                 <input type="file" id="importSettingsInput" accept=".json" style="display: none;">
                 <label for="exportSettingsBtn" style="vertical-align: middle; margin-left: -7px; cursor: pointer;">导出</label>
             </div>
-            <label for="heightAdjustBtn" style="vertical-align: middle; cursor: pointer;">居中高度: <span id="heightPercentValue">25%</span></label>
-            <label for="fontSizePicker" style="vertical-align: middle; cursor: pointer;">字体大小: <span id="fontSizeValue">Default</span></label>
-            <label for="renameSubmitBtn" style="vertical-align: middle; cursor: pointer;">按钮名称: <span id="submitBtnNameValue">跳转</span></label>
-            <div style="display: inline-block;">
+            <label id="showMoreLabelBtns" for="heightAdjustBtn" style="vertical-align: middle; cursor: pointer;">居中高度: <span id="heightPercentValue">25%</span></label>
+            <label id="showMoreLabelBtns" for="fontSizePicker" style="vertical-align: middle; cursor: pointer;">字体大小: <span id="fontSizeValue">Default</span></label>
+            <label id="showMoreLabelBtns" for="renameSubmitBtn" style="vertical-align: middle; cursor: pointer;">搜索按钮名称: <span id="submitBtnNameValue">跳转</span></label>
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="autoNewTabCheckbox">
                 <label for="autoNewTabCheckbox">自动创建标签页</label>
             </div>
-            <label for="linkSizePicker" style="vertical-align: middle; cursor: pointer;">链接大小: <span id="linkSizeValue">30px</span></label>
+            <label id="showMoreLabelBtns" for="linkSizePicker" style="vertical-align: middle; cursor: pointer;">链接大小: <span id="linkSizeValue">30px</span></label>
             <input type="text" id="fontColorPicker" style="display: none;">
-            <label for="fontColorPicker" style="vertical-align: middle; cursor: pointer;">字体颜色: <span id="fontColorValue">#000000</span></label>
-            <label for="executeCssBtn" style="vertical-align: middle; cursor: pointer;">运行CSS代码</label>
-            <div style="display: inline-block;">
+            <label id="showMoreLabelBtns" for="fontColorPicker" style="vertical-align: middle; cursor: pointer;">字体颜色: <span id="fontColorValue">#000000</span></label>
+            <label id="showMoreLabelBtns" for="executeCssBtn" style="vertical-align: middle; cursor: pointer;">运行CSS代码</label>
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="searchHistoryCheckbox">
                 <label for="searchHistoryCheckbox">显示历史记录</label>
             </div>
             <input type="submit" id="executeCssBtn" style="display: none;">
-            <label for="renamePlaceholderBtn" style="vertical-align: middle; cursor: pointer;">输入提示: <span id="placeholderValue">输入网址</span></label>
-            <label for="clearCustomSearchesBtn" style="vertical-align: middle; cursor: pointer;">清除自定义搜索</label>
+            <label id="showMoreLabelBtns" for="renamePlaceholderBtn" style="vertical-align: middle; cursor: pointer;">输入框提示: <span id="placeholderValue">输入网址</span></label>
+            <label id="showMoreLabelBtns" for="customSearchListBtn" style="vertical-align: middle; cursor: pointer;">自定义搜索管理</label>
             <input type="submit" id="clearCustomSearchesBtn" style="display: none;">
-            <label for="quickLinksColorPicker" style="vertical-align: middle; cursor: pointer;">超链接颜色: <span id="quickLinksColorValue">#0000ee</span></label>
+            <label id="showMoreLabelBtns" for="quickLinksColorPicker" style="vertical-align: middle; cursor: pointer;">快捷链接颜色: <span id="quickLinksColorValue">#0000ee</span></label>
             <input type="text" id="quickLinksColorPicker" style="display: none;">
-            <label for="executeJsBtn" style="vertical-align: middle; cursor: pointer;">执行JS脚本</label>
+            <label id="showMoreLabelBtns" for="executeJsBtn" style="vertical-align: middle; cursor: pointer;">执行JS脚本</label>
             <input type="submit" id="executeJsBtn" style="display: none;">
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="trustJsCheckbox">
                 <label for="trustJsCheckbox">信任并保存脚本</label>
             </div>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="hitokotoCheckbox">
                 <label for="hitokotoCheckbox">显示随机一言</label>
             </div>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="searchEngineDisplayCheckbox">
                 <label for="searchEngineDisplayCheckbox">精简搜索引擎</label>
             </div>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="searchSuggestionsCheckbox">
                 <label for="searchSuggestionsCheckbox">显示搜索建议</label>
             </div>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="autoFocusCheckbox">
                 <label for="autoFocusCheckbox">自动聚焦输入框</label>
             </div>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="directUrlJumpCheckbox">
-                <label for="directUrlJumpCheckbox">直接跳转网址</label>
+                <label for="directUrlJumpCheckbox">域名跳转网址</label>
             </div>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="showVisitWebsiteCheckbox" checked disabled>
                 <label for="showVisitWebsiteCheckbox">显示访问建议</label>
             </div>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="autoFillAndJumpCheckbox" disabled>
                 <label for="autoFillAndJumpCheckbox">点建议直接搜索</label>
             </div>
-            <label for="searchContainerMarginPicker" style="vertical-align: middle; cursor: pointer;">框上边距: <span id="searchContainerMarginValue">Default</span></label>
+            <label id="showMoreLabelBtns" for="searchContainerMarginPicker" style="vertical-align: middle; cursor: pointer;">搜索框上边距: <span id="searchContainerMarginValue">Default</span></label>
             <input type="text" id="searchContainerMarginPicker" style="display: none;">
-            <label for="linkSpacingBtn" style="vertical-align: middle; cursor: pointer;">超链接间距设置</label>
+            <label id="showMoreLabelBtns" for="linkSpacingBtn" style="vertical-align: middle; cursor: pointer;">快捷链接间距</label>
             <input type="submit" id="linkSpacingBtn" style="display: none;">
-            <label for="quickLinksSizePicker" style="vertical-align: middle; cursor: pointer;">超链大小: <span id="quickLinksSizeValue">Default</span></label>
+            <label id="showMoreLabelBtns" for="quickLinksSizePicker" style="vertical-align: middle; cursor: pointer;">快捷链接大小: <span id="quickLinksSizeValue">Default</span></label>
             <input type="text" id="quickLinksSizePicker" style="display: none;">
             <label class="text-select-wrapper"><select id="searchApiSelect">
-                <option value="baidu_sugrec">建议API: 百度1</option>
-                <option value="baidu_su">建议API: 百度2</option>
+                <option value="baidu_sugrec">建议接口: 百度1</option>
+                <option value="baidu_su">建议接口: 百度2</option>
             </select></label>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="clearOnSearchCheckbox">
-                <label for="clearOnSearchCheckbox" style="user-select: none;">搜索后清空输入</label>
+                <label for="clearOnSearchCheckbox" style="user-select: none;">搜索后清空搜索框</label>
             </div>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="showTimeCheckbox">
-                <label for="showTimeCheckbox">显示时间链接</label>
+                <label for="showTimeCheckbox">显示为时间链接</label>
             </div>
             <label class="text-select-wrapper"><select id="timeFormatSelect" disabled>
                 <option value="12hours">时间小时制: 12H</option>
                 <option value="24hours" selected>时间小时制: 24H</option>
             </select></label>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="colonBlinkCheckbox" disabled>
                 <label for="colonBlinkCheckbox">时间冒号闪烁</label>
             </div>
-            <div style="display: inline-block;">
+            <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="showSecondsCheckbox" disabled>
                 <label for="showSecondsCheckbox">时间显示秒数</label>
             </div>
+            <div id="showMoreCheckboxBlock">
+                <input type="checkbox" id="clearOnBlurCheckbox" checked disabled>
+                <label for="clearOnBlurCheckbox" style="user-select: none;">失焦后清空搜索框</label>
+            </div>
+            <div id="showMoreCheckboxBlock">
+                <input type="checkbox" id="hideSearchContainerCheckbox">
+                <label for="hideSearchContainerCheckbox">停用搜索输入框</label>
+            </div>
+            <label class="text-select-wrapper"><select id="quickLinksAlignSelect">
+                <option value="left">快捷链接: 靠左</option>
+                <option value="center" selected>快捷链接: 居中</option>
+                <option value="right">快捷链接: 靠右</option>
+            </select></label>
+            <label id="showMoreSettingsBtn" style="vertical-align: middle; cursor: pointer;">展开更多设置</label>
             <label for="clearAllSettingsBtn" style="vertical-align: middle; cursor: pointer;">重置所有设置</label>
             <br/>
             <label style="margin-right: 0;" id="noActiveLab">超链接:</label>
@@ -449,6 +590,6 @@
     
     <div id="hitokotoDisplay" style="display: none; left: 0; right: 0; margin: 0 auto; margin-top: 10px; text-align: center; font-size: 14px; font-style: italic; top: 85%;"></div>
     
-    <script src='corescript.js' type='text/javascript'></script>
+    <script src="corescript.js" type="text/javascript"></script>
 </body>
 </html>

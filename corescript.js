@@ -52,6 +52,21 @@ document.addEventListener('DOMContentLoaded', function() {
             centerBox.style.textAlign = 'center';
         }
     }
+    // 恢复 iFramePlus 窗口显示
+    var savedEngine = localStorage.getItem('selectedEngine');
+    if (savedEngine === 'iFramePlus') {
+        var plusContainer = document.getElementById('iframePlusContainer');
+        if (plusContainer && window.iframePlusWindows && window.iframePlusWindows.length > 0) {
+            plusContainer.style.display = 'block';
+            for (var i = 0; i < window.iframePlusWindows.length; i++) {
+                if (window.iframePlusWindows[i].wrapper) {
+                    window.iframePlusWindows[i].wrapper.style.display = 'inline-block';
+                }
+            }
+        }
+        var sizeBtn = document.getElementById('iframePlusSizeBtn');
+        if (sizeBtn) sizeBtn.style.display = 'block';
+    }
     // 如果保存的选择是showCheckbox，则显示autoFillhttps div
     if (savedEngine === 'showCheckbox') {
         document.getElementById('autoFillhttps').style.display = 'block';
@@ -186,32 +201,32 @@ document.getElementById('submitBtn').addEventListener('click', function() {
     localStorage.setItem('selectedEngine', engine);
     
     // 检测是否启用直接跳转网址功能且输入符合网址格式
-if (document.getElementById('directUrlJumpCheckbox').checked) {
-    var inputText = url;
-    var isUrlPattern = false;
-    
-    // 排除纯数字、小数、负数等非网址格式
-    var isNumberPattern = /^[+-]?\d+(\.\d+)?$/;
-    if (isNumberPattern.test(inputText)) {
-        isUrlPattern = false;
-    } else {
-        // 检测网址格式（与搜索建议的检测逻辑保持一致）
-        var urlPatterns = [
-            /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+/,
-            /\.[a-zA-Z]{2,}/,
-            /^https?:\/\//,
-            /^www\./,
-            /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+\.[a-zA-Z]{2,}/
-        ];
+    if (document.getElementById('directUrlJumpCheckbox').checked) {
+        var inputText = url;
+        var isUrlPattern = false;
         
-        for (var i = 0; i < urlPatterns.length; i++) {
-            if (urlPatterns[i].test(inputText)) {
-                isUrlPattern = true;
-                break;
+        // 排除纯数字、小数、负数等非网址格式
+        var isNumberPattern = /^[+-]?\d+(\.\d+)?$/;
+        if (isNumberPattern.test(inputText)) {
+            isUrlPattern = false;
+        } else {
+            // 检测网址格式：要求域名后缀至少为2个字母，且域名部分不全是数字
+            var urlPatterns = [
+                /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(?:\/|$)/,
+                /^https?:\/\//,
+                /^www\.[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/,
+                /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}\.[a-zA-Z]{2,}/,
+                /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?::\d+)?(?:\/|$)/
+            ];
+            
+            for (var i = 0; i < urlPatterns.length; i++) {
+                if (urlPatterns[i].test(inputText)) {
+                    isUrlPattern = true;
+                    break;
+                }
             }
         }
-    }
-        
+            
         // 额外检测包含斜杠的网址格式（如 m.baidu.com/xxx）
         if (!isUrlPattern && inputText.indexOf('/') !== -1) {
             var slashIndex = inputText.indexOf('/');
@@ -309,10 +324,17 @@ if (document.getElementById('directUrlJumpCheckbox').checked) {
                 } else if (engine === 'autofillHttps') {
                     finalUrl = 'https://' + finalUrl;
                 } else if (engine === 'iFrameFree') {
-                    finalUrl = 'https://' + finalUrl;
-                    document.getElementById('webFrame').src = finalUrl;
-                    document.getElementById('iframeContainer').style.display = 'block';
-                    return;
+                finalUrl = 'https://' + finalUrl;
+                document.getElementById('webFrame').src = finalUrl;
+                document.getElementById('iframeContainer').style.display = 'block';
+                return;
+            } else if (engine === 'iFramePlus') {
+                finalUrl = 'https://' + finalUrl;
+                createIframePlusWindow(finalUrl);
+                // 切换到 iFramePlus 选项以显示容器
+                document.getElementById('engineSelect').value = 'iFramePlus';
+                localStorage.setItem('selectedEngine', 'iFramePlus');
+                return;
                 } else {
                     // 默认添加https://
                     finalUrl = 'https://' + finalUrl;
@@ -332,7 +354,7 @@ if (document.getElementById('directUrlJumpCheckbox').checked) {
             
             // 在submitBtn点击事件开始处添加：
             var isAutoNewTabChecked = document.getElementById('autoNewTabCheckbox').checked;
-            var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree'];
+            var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
             var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
             
             // 根据设置决定是否在新标签页打开
@@ -384,6 +406,186 @@ if (document.getElementById('directUrlJumpCheckbox').checked) {
         document.getElementById('webFrame').src = url;
         document.getElementById('iframeContainer').style.display = 'block';
         return; // 不执行后续跳转
+    }
+    
+    // ========== iFramePlus 多窗口管理 ==========
+// 【修改位置 1】将变量挂载到 window 对象，确保全局可访问
+window.iframePlusWindows = window.iframePlusWindows || [];
+var iframePlusWindows = window.iframePlusWindows;
+var iframePlusNextId = 1;
+
+// 【修改位置 1】修改容器创建函数，确保容器引用全局可用
+function createIframePlusContainer() {
+    var container = document.getElementById('iframePlusContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'iframePlusContainer';
+        container.style.cssText = 'display:none;width:100%;margin-top:10px;text-align:center;';
+        
+        // 兼容所有浏览器的 flex 回退
+        container.style.display = '-webkit-box';
+        container.style.display = '-moz-box';
+        container.style.display = '-ms-flexbox';
+        container.style.display = '-webkit-flex';
+        container.style.display = 'flex';
+        container.style.flexWrap = 'wrap';
+        container.style.webkitFlexWrap = 'wrap';
+        container.style.msFlexWrap = 'wrap';
+        container.style.justifyContent = 'center';
+        container.style.webkitJustifyContent = 'center';
+        container.style.msFlexPack = 'center';
+        
+        // 插入到 iframeContainer 后面
+        var iframeContainer = document.getElementById('iframeContainer');
+        if (iframeContainer && iframeContainer.parentNode) {
+            iframeContainer.parentNode.insertBefore(container, iframeContainer.nextSibling);
+        } else {
+            document.body.appendChild(container);
+        }
+    }
+    return container;
+}
+
+// 【修改位置 2】创建新窗口时确保容器显示
+function createIframePlusWindow(url) {
+    var container = createIframePlusContainer();
+    container.style.display = 'block';
+    
+    var windowId = 'iframePlus_' + (iframePlusNextId++);
+    
+    // 创建窗口包装器
+    var wrapper = document.createElement('div');
+    wrapper.id = windowId;
+    wrapper.className = 'iframe-plus-wrapper';
+    
+    var isMobile = isMobileAndroidApple();
+    wrapper.style.cssText = 'display:inline-block;vertical-align:top;margin:5px;margin: 0 auto;';
+    var savedWidth = localStorage.getItem('iframePlusWidth');
+    var defaultWidth = isMobile ? '98%' : '390px';
+    wrapper.style.width = savedWidth ? savedWidth : defaultWidth;
+    wrapper.style.maxWidth = isMobile ? '100%' : '960px';
+    wrapper.style.boxSizing = 'border-box';
+    wrapper.style.marginRight = '7px';
+    
+    var iframe = document.createElement('iframe');
+    iframe.src = url || 'about:blank';
+    iframe.style.cssText = 'width:100%;height:500px;border:1px solid #ccc;background:#fff;';
+    iframe.style.width = '100%';
+    var savedHeight = localStorage.getItem('iframePlusHeight');
+    var defaultHeight = isMobile ? '500px' : '500px';
+    iframe.style.height = savedHeight ? savedHeight : defaultHeight;
+    
+    var closeContainer = document.createElement('div');
+    closeContainer.style.cssText = 'text-align:right;margin-top:7px;margin-bottom:5px;';
+    
+    // 【修改位置 12】添加刷新当前网址按钮
+    var refreshBtn = document.createElement('button');
+    refreshBtn.innerHTML = '<i class="fa fa-repeat" style="font-size: 18px;"><i>';
+    refreshBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
+    refreshBtn.onclick = function() {
+        var currentSrc = iframe.src;
+        iframe.src = currentSrc;
+    };
+    
+    // 【修改位置 11】添加编辑当前网址按钮
+    var editBtn = document.createElement('button');
+    editBtn.innerHTML = '<i class="fa fa-pencil" style="font-size: 18px;"><i>';
+    editBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
+    editBtn.onclick = function() {
+        var currentUrl = iframe.src;
+        showCustomModal('编辑窗口网址：', currentUrl, function(newUrl) {
+            if (newUrl !== null && newUrl.trim() !== '') {
+                iframe.src = newUrl;
+                if (window.iframePlusWindows) {
+                    for (var i = 0; i < window.iframePlusWindows.length; i++) {
+                        if (window.iframePlusWindows[i].id === windowId) {
+                            window.iframePlusWindows[i].url = newUrl;
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    };
+    
+    var closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '<i class="fa fa-close" style="font-size: 18px;"><i>';
+    closeBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
+    closeBtn.onclick = function() {
+        closeIframePlusWindow(windowId);
+    };
+    
+    closeContainer.appendChild(refreshBtn);
+    closeContainer.appendChild(editBtn);
+    closeContainer.appendChild(closeBtn);
+    wrapper.appendChild(iframe);
+    wrapper.appendChild(closeContainer);
+    container.appendChild(wrapper);
+    
+    window.iframePlusWindows.push({
+        id: windowId,
+        wrapper: wrapper,
+        iframe: iframe,
+        url: url
+    });
+    
+    var hitokoto = document.getElementById('hitokotoDisplay');
+    if (hitokoto) {
+        hitokoto.style.marginTop = '40px';
+    }
+    
+    return windowId;
+}
+
+// 【修改位置 4】关闭窗口，当没有窗口时隐藏容器
+function closeIframePlusWindow(windowId) {
+    var container = document.getElementById('iframePlusContainer');
+    if (!container) return;
+    
+    var wrapper = document.getElementById(windowId);
+    if (wrapper && wrapper.parentNode === container) {
+        container.removeChild(wrapper);
+    }
+    
+    for (var i = window.iframePlusWindows.length - 1; i >= 0; i--) {
+        if (window.iframePlusWindows[i].id === windowId) {
+            window.iframePlusWindows.splice(i, 1);
+            break;
+        }
+    }
+    
+    // 当没有窗口时隐藏容器
+    if (window.iframePlusWindows.length === 0) {
+        container.style.display = 'none';
+        var hitokoto = document.getElementById('hitokotoDisplay');
+        if (hitokoto) {
+            hitokoto.style.marginTop = '10px';
+        }
+    }
+}
+
+// 【修改位置 5】关闭所有窗口时隐藏容器
+function closeAllIframePlusWindows() {
+    var container = document.getElementById('iframePlusContainer');
+    if (container) {
+        container.innerHTML = '';
+        container.style.display = 'none';
+    }
+    window.iframePlusWindows = [];
+    var hitokoto = document.getElementById('hitokotoDisplay');
+    if (hitokoto) {
+        hitokoto.style.marginTop = '10px';
+    }
+}
+// ========== iFramePlus 多窗口管理结束 ==========
+
+if (engine === 'iFramePlus') {
+        var urlToLoad = document.getElementById('urlInput').value.trim();
+        if (urlToLoad && (urlToLoad.indexOf('http://') === 0 || urlToLoad.indexOf('https://') === 0)) {
+            // 直接创建 iFramePlus 窗口，不执行页面跳转
+            createIframePlusWindow(urlToLoad);
+            return;
+        }
     }
     
     var searchText = document.getElementById('urlInput').value.trim();
@@ -661,6 +863,21 @@ if (document.getElementById('directUrlJumpCheckbox').checked) {
                 if (url) {
                     document.getElementById('webFrame').src = url;
                     document.getElementById('iframeContainer').style.display = 'block';
+                    if (sizeBtn) sizeBtn.style.display = 'block';
+                }
+                return; // 不执行页面跳转
+            case 'iFramePlus':
+                // 创建新的 iFramePlus 窗口
+                // 【修改位置】如果已经是 http:// 或 https:// 开头，直接使用原URL
+                if (url && (url.indexOf('http://') === 0 || url.indexOf('https://') === 0)) {
+                    // 已有协议，直接使用
+                    createIframePlusWindow(url);
+                } else if (url && url.indexOf('://') === -1) {
+                    // 无协议，默认添加 https://
+                    url = 'https://' + url;
+                    createIframePlusWindow(url);
+                } else if (url) {
+                    createIframePlusWindow(url);
                 }
                 return; // 不执行页面跳转
         }
@@ -682,6 +899,15 @@ if (document.getElementById('directUrlJumpCheckbox').checked) {
         if (document.getElementById('layoutCheckbox').checked) {
             document.getElementById('centerBoxDisplay').style.display = 'block';
         }
+        var engineSelect = document.getElementById('engineSelect');
+        if (engineSelect && engineSelect.value === 'iFramePlus') {
+            var iframePlusSizeBtn = document.getElementById('iframePlusSizeBtn');
+            if (iframePlusSizeBtn) iframePlusSizeBtn.style.display = 'block';
+            var iframePlusContainer = document.getElementById('iframePlusContainer');
+            if (iframePlusContainer && window.iframePlusWindows && window.iframePlusWindows.length > 0) {
+                iframePlusContainer.style.display = 'block';
+            }
+        }
     }
     
     // 在submitBtn点击事件开始处添加：
@@ -690,44 +916,49 @@ if (document.getElementById('directUrlJumpCheckbox').checked) {
     var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
     
     // 在最后的跳转逻辑处修改：
-if (url) {
-    // 对于新建标签页选项，如果输入为空则不执行任何操作
-    if (engine === 'newtabpage' && !url) {
-        return;
+    if (url) {
+        // 对于新建标签页选项，如果输入为空则不执行任何操作
+        if ((engine === 'newtabpageHttp1' || engine === 'newtabpageHttps') && !url) {
+            return;
+        }
+        
+        // 重新计算排除列表
+        var isAutoNewTabChecked = document.getElementById('autoNewTabCheckbox').checked;
+        var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
+        var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
+        
+        // 根据设置决定是否在新标签页打开
+        if (shouldOpenNewTab) {
+            window.open(url, '_blank');
+            // 修复：当在新标签页打开时，原标签页不跳转
+            return;
+        } if (engine === 'httpsAutoFill' && url) {
+            // 创建隐藏的表单提交
+            var form = document.createElement('form');
+            form.id = 'httpsForm';
+            form.action = url;
+            form.target = '_self';
+            form.method = 'post';
+            form.style.display = 'none';
+            
+            // 创建提交按钮
+            var submitButton = document.createElement('button');
+            submitButton.type = 'submit';
+            
+            // 将按钮添加到表单
+            form.appendChild(submitButton);
+            
+            // 将表单添加到页面并提交
+            document.body.appendChild(form);
+            form.submit();
+            
+            // 移除表单
+            document.body.removeChild(form);
+            return; // 直接返回，不执行后续跳转
+        } else {
+            window.location.href = url;
+        }
     }
-    
-    // 根据设置决定是否在新标签页打开
-    if (shouldOpenNewTab) {
-        window.open(url, '_blank');
-        // 修复：当在新标签页打开时，原标签页不跳转
-        return;
-    } if (engine === 'httpsAutoFill' && url) {
-        // 创建隐藏的表单提交
-        var form = document.createElement('form');
-        form.id = 'httpsForm';
-        form.action = url;
-        form.target = '_self';
-        form.method = 'post';
-        form.style.display = 'none';
-        
-        // 创建提交按钮
-        var submitButton = document.createElement('button');
-        submitButton.type = 'submit';
-        
-        // 将按钮添加到表单
-        form.appendChild(submitButton);
-        
-        // 将表单添加到页面并提交
-        document.body.appendChild(form);
-        form.submit();
-        
-        // 移除表单
-        document.body.removeChild(form);
-        return; // 直接返回，不执行后续跳转
-    } else {
-        window.location.href = url;
-    }
-}
 });
 // 重新自定义搜索网址文字点击事件
 document.querySelector('label[for="redefineSearchBtn"]').addEventListener('click', function() {
@@ -853,9 +1084,88 @@ if (savedClearOnSearchState === 'true') {
     document.getElementById('clearOnSearchCheckbox').checked = true;
 }
 
-// 监听clearOnSearchCheckbox变化
-document.getElementById('clearOnSearchCheckbox').addEventListener('change', function() {
-    localStorage.setItem('clearOnSearchChecked', this.checked);
+// 加载保存的clearOnBlurCheckbox状态
+var savedClearOnBlurState = localStorage.getItem('clearOnBlurChecked');
+if (savedClearOnBlurState === 'true') {
+    document.getElementById('clearOnBlurCheckbox').checked = true;
+} else if (savedClearOnBlurState === 'false') {
+    document.getElementById('clearOnBlurCheckbox').checked = false;
+}
+
+// 监听clearOnBlurCheckbox变化
+document.getElementById('clearOnBlurCheckbox').addEventListener('change', function() {
+    localStorage.setItem('clearOnBlurChecked', this.checked);
+});
+
+// 监听 clearOnBlurCheckbox 的 blur 事件处理
+document.getElementById('urlInput').addEventListener('blur', function(e) {
+    if (document.getElementById('focusCheckbox').checked && document.getElementById('clearOnBlurCheckbox').checked) {
+        // 【修改位置】检查相关目标是否是快捷输入按钮区域内的元素
+        var relatedTarget = e.relatedTarget;
+        var isQuickInputBtnTarget = false;
+        
+        if (relatedTarget) {
+            // 向上遍历检查是否属于快捷输入按钮区域
+            var target = relatedTarget;
+            while (target && target !== document.body) {
+                if (target.id === 'quickInputBtn' || 
+                    target.id === 'quickInputBtn1Head' || 
+                    target.id === 'quickInputBtn2' || 
+                    target.id === 'quickInputBtn3' ||
+                    (target.parentNode && (target.parentNode.id === 'quickInputBtn' || 
+                                           target.parentNode.id === 'quickInputBtn1Head' ||
+                                           target.parentNode.id === 'quickInputBtn2' ||
+                                           target.parentNode.id === 'quickInputBtn3'))) {
+                    isQuickInputBtnTarget = true;
+                    break;
+                }
+                target = target.parentNode;
+            }
+        }
+        
+        // 如果不是点击快捷输入按钮，才执行清空操作
+        if (!isQuickInputBtnTarget) {
+            setTimeout(function() {
+                var urlInput = document.getElementById('urlInput');
+                if (urlInput.value !== '') {
+                    urlInput.value = '';
+                    if (document.getElementById('saveInputCheckbox').checked) {
+                        localStorage.removeItem('savedInputText');
+                    }
+                }
+            }, 100);
+        }
+    }
+    if (document.getElementById('focusCheckbox').checked && document.getElementById('clearOnBlurCheckbox').checked && document.getElementById('customCheckbox').checked) {
+        // 同样需要检查快捷输入按钮
+        var relatedTarget = e.relatedTarget;
+        var isQuickInputBtnTarget = false;
+        
+        if (relatedTarget) {
+            var target = relatedTarget;
+            while (target && target !== document.body) {
+                if (target.id === 'quickInputBtn' || 
+                    target.id === 'quickInputBtn1Head' || 
+                    target.id === 'quickInputBtn2' || 
+                    target.id === 'quickInputBtn3' ||
+                    (target.parentNode && (target.parentNode.id === 'quickInputBtn' || 
+                                           target.parentNode.id === 'quickInputBtn1Head' ||
+                                           target.parentNode.id === 'quickInputBtn2' ||
+                                           target.parentNode.id === 'quickInputBtn3'))) {
+                    isQuickInputBtnTarget = true;
+                    break;
+                }
+                target = target.parentNode;
+            }
+        }
+        
+        if (!isQuickInputBtnTarget) {
+            setTimeout(function() {
+                var urlInput = document.getElementById('urlInput');
+                urlInput.value = 'https://';
+            }, 100);
+        }
+    }
 });
 
 // 更新自定义搜索选项
@@ -906,6 +1216,20 @@ function updateCustomSearchOptions() {
 // 在页面加载时更新自定义搜索选项
 document.addEventListener('DOMContentLoaded', function() {
     updateCustomSearchOptions();
+    // 加载order0自定义搜索隐藏状态
+    var isOrder0Hidden = localStorage.getItem('hideOrder0Search') === 'true';
+    if (isOrder0Hidden) {
+        var customSearchOption = document.getElementById('customSearchOption');
+        if (customSearchOption) {
+            customSearchOption.style.display = 'none';
+        }
+        // 如果当前选中的是自定义搜索且被隐藏，切换到百度
+        var savedEngine = localStorage.getItem('selectedEngine');
+        if (savedEngine === 'customSearch') {
+            document.getElementById('engineSelect').value = 'baidu';
+            localStorage.setItem('selectedEngine', 'baidu');
+        }
+    }
     // 恢复自定义搜索选项的选择状态
     var savedCustomSearch = localStorage.getItem('selectedCustomSearch');
     if (savedCustomSearch) {
@@ -923,23 +1247,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// 清除所有自定义搜索功能
-document.querySelector('label[for="clearCustomSearchesBtn"]').addEventListener('click', function() {
-    showCustomConfirm('确定要清除所有自定义搜索吗？', function(result) {
-        if (result) {
-            customSearchOption.textContent = '自定义';
-            localStorage.removeItem('customSearches');
-            localStorage.removeItem('customSearchUrl');
-            localStorage.removeItem('customSearchName');
-            localStorage.removeItem('selectedCustomSearch');
-            updateCustomSearchOptions();
-        }
-    });
-});
-
 // 监听选择变化并保存
 document.getElementById('engineSelect').addEventListener('change', function() {
     localStorage.setItem('selectedEngine', this.value);
+    // 检查order0自定义搜索是否被隐藏
+    var isOrder0Hidden = localStorage.getItem('hideOrder0Search') === 'true';
+    if (isOrder0Hidden && this.value === 'customSearch') {
+        var customSearchOption = document.getElementById('customSearchOption');
+        if (customSearchOption) {
+            customSearchOption.style.display = 'none';
+        }
+    }
     // 根据选择显示或隐藏 checkbox
     if (this.value === 'showCheckbox') {
         document.getElementById('autoFillhttps').style.display = 'block';
@@ -955,11 +1273,47 @@ document.getElementById('engineSelect').addEventListener('change', function() {
         document.getElementById('iframeContainer').style.display = 'block';
         document.getElementById('hitokotoDisplay').style.marginTop = '40px';
         document.getElementById('iframeControls').style.display = 'block';
-    } else {
-        document.getElementById('iframeContainer').style.display = 'none';
-        document.getElementById('hitokotoDisplay').style.marginTop = '10px';
-        document.getElementById('iframeControls').style.display = 'none';
+        document.getElementById('iframePlusSizeBtn').style.display = 'none';
+        // 隐藏 iFramePlus 容器
+        var plusContainer = document.getElementById('iframePlusContainer');
+        if (plusContainer) plusContainer.style.display = 'none';
+// 【修改位置 3】修复 iFramePlus 选项切换时的显示/隐藏逻辑
+} else if (this.value === 'iFramePlus') {
+    document.getElementById('iframeContainer').style.display = 'none';
+    document.getElementById('iframeControls').style.display = 'none';
+    var sizeBtn = document.getElementById('iframePlusSizeBtn');
+    if (sizeBtn) sizeBtn.style.display = 'block';
+    var refreshAllBtn = document.getElementById('refreshAllIframePlusBtn');
+    if (refreshAllBtn && refreshAllBtn.parentNode) {
+        refreshAllBtn.parentNode.style.display = 'block';
     }
+    // 【修改位置 9】确保刷新按钮和关闭按钮容器显示
+    var btnContainer = document.getElementById('iframePlusSizeBtn');
+    if (btnContainer) btnContainer.style.display = 'block';
+    var plusContainer = document.getElementById('iframePlusContainer');
+    if (plusContainer) {
+        if (window.iframePlusWindows && window.iframePlusWindows.length > 0) {
+            plusContainer.style.display = 'block';
+        } else {
+            plusContainer.style.display = 'none';
+        }
+    }
+} else {
+    document.getElementById('iframeContainer').style.display = 'none';
+    document.getElementById('hitokotoDisplay').style.marginTop = '10px';
+    document.getElementById('iframeControls').style.display = 'none';
+    var sizeBtn = document.getElementById('iframePlusSizeBtn');
+    if (sizeBtn) sizeBtn.style.display = 'none';
+    var refreshAllBtn = document.getElementById('refreshAllIframePlusBtn');
+    if (refreshAllBtn && refreshAllBtn.parentNode) {
+        refreshAllBtn.parentNode.style.display = 'none';
+    }
+    // 【修改位置 10】隐藏按钮容器（包含编辑、刷新、关闭所有按钮）
+    var btnContainer = document.getElementById('iframePlusSizeBtn');
+    if (btnContainer) btnContainer.style.display = 'none';
+    var plusContainer = document.getElementById('iframePlusContainer');
+    if (plusContainer) plusContainer.style.display = 'none';
+}
     // 根据选择显示或隐藏 checkbox
     if (this.value === 'showCheckbox') {
         document.getElementById('autoFillhttps').style.display = 'block';
@@ -993,6 +1347,10 @@ document.getElementById('engineSelect').addEventListener('change', function() {
             document.getElementById('submitBtn').disabled = false;
             document.getElementById('urlInput').disabled = false;
         }
+    }
+    if (savedEngine === 'iFramePlus') {
+        createIframePlusContainer();
+        // 如果有之前保存的窗口，可以在这里恢复（可选）
     }
     if (this.value === 'showCheckbox') {
         document.getElementById('autoFillhttps').style.display = 'block';
@@ -1118,11 +1476,84 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
 });
 
+// 【修改位置 5】添加刷新所有 iFramePlus 窗口功能
+(function() {
+    var refreshBtn = document.getElementById('refreshAllIframePlusBtn');
+    if (!refreshBtn) return;
+    
+    function refreshAllIframePlusWindows() {
+        var windows = window.iframePlusWindows || [];
+        for (var i = 0; i < windows.length; i++) {
+            var iframe = windows[i].iframe;
+            if (iframe && iframe.src) {
+                var currentSrc = iframe.src;
+                iframe.src = currentSrc;
+            }
+        }
+    }
+    
+    if (refreshBtn.addEventListener) {
+        refreshBtn.addEventListener('click', refreshAllIframePlusWindows);
+    } else if (refreshBtn.attachEvent) {
+        refreshBtn.attachEvent('onclick', refreshAllIframePlusWindows);
+    }
+})();
+
+// 【修改位置 8】添加关闭所有 iFramePlus 窗口功能（带二次确认，移除所有窗口元素）
+(function() {
+    var closeAllBtn = document.getElementById('closeAllIframePlusBtn');
+    if (!closeAllBtn) return;
+    
+    function removeAllIframePlusWindows() {
+        var windows = window.iframePlusWindows || [];
+        
+        for (var i = 0; i < windows.length; i++) {
+            if (windows[i].iframe) {
+                windows[i].iframe.src = 'about:blank';
+            }
+            if (windows[i].wrapper && windows[i].wrapper.parentNode) {
+                windows[i].wrapper.parentNode.removeChild(windows[i].wrapper);
+            }
+        }
+        
+        window.iframePlusWindows = [];
+        
+        var container = document.getElementById('iframePlusContainer');
+        if (container) {
+            container.style.display = 'none';
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+        }
+        
+        var hitokoto = document.getElementById('hitokotoDisplay');
+        if (hitokoto) {
+            hitokoto.style.marginTop = '10px';
+        }
+    }
+    
+    function closeAllIframePlusWindowsWithConfirm() {
+        var windows = window.iframePlusWindows || [];
+        showCustomConfirm('确定要关闭所有iFrame窗口吗？', function(result) {
+            if (result) {
+                removeAllIframePlusWindows();
+            }
+        });
+    }
+    
+    if (closeAllBtn.addEventListener) {
+        closeAllBtn.addEventListener('click', closeAllIframePlusWindowsWithConfirm);
+    } else if (closeAllBtn.attachEvent) {
+        closeAllBtn.attachEvent('onclick', closeAllIframePlusWindowsWithConfirm);
+    }
+})();
+
 // 保存和加载focusCheckbox状态
 var savedFocusCheckboxState = localStorage.getItem('focusCheckboxChecked');
 if (savedFocusCheckboxState === 'true') {
     document.getElementById('focusCheckbox').checked = true;
     document.getElementById('quickInputCheckbox').disabled = false;
+    document.getElementById('clearOnBlurCheckbox').disabled = false;
     // 监听输入框聚焦时的高度变化，调整quickInputUi位置
     document.getElementById('urlInput').addEventListener('focus', function() {
         adjustQuickInputPosition();
@@ -1161,6 +1592,7 @@ if (savedFocusCheckboxState === 'true') {
 document.getElementById('focusCheckbox').addEventListener('change', function() {
     localStorage.setItem('focusCheckboxChecked', this.checked);
     document.getElementById('quickInputCheckbox').disabled = !this.checked;
+    document.getElementById('clearOnBlurCheckbox').disabled = !this.checked;
 });
 
 var urlInput = document.getElementById('urlInput');
@@ -1267,7 +1699,7 @@ document.querySelector('label[for="linkColorPicker"]').addEventListener('click',
     }
     var currentColor = localStorage.getItem('linkColor') || '#0000ee';
     var currentLinkValue = localStorage.getItem('linkColor') || '#0000ee';
-    showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);try{var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';colorPicker.value=\'' + currentColor + '\';colorPicker.style.position=\'fixed\';colorPicker.style.left=\'50%\';colorPicker.style.top=\'50%\';colorPicker.style.transform=\'translate(-50%,-50%)\';colorPicker.style.MozTransform=\'translate(-50%,-50%)\';colorPicker.style.WebkitTransform=\'translate(-50%,-50%)\';colorPicker.style.msTransform=\'translate(-50%,-50%)\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0.001\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){colorPicker.focus&&colorPicker.focus();colorPicker.click&&colorPicker.click();},50);}catch(e){}}return false;">调色盘</a>。或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){input.value=\'image url\';var labels=document.querySelectorAll(\'label[onclick*=\\\'modalCallback_\\\']\');if(labels.length>0){labels[labels.length-1].click();}}}return false;">图片</a> <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentLinkValue, function(newValue) {
+    showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}colorPicker.style.position=\'fixed\';colorPicker.style.left=\'0\';colorPicker.style.top=\'0\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a>。或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){input.value=\'image url\';var labels=document.querySelectorAll(\'label[onclick*=\\\'modalCallback_\\\']\');if(labels.length>0){labels[labels.length-1].click();}}}return false;">图片</a> <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentLinkValue, function(newValue) {
         if (newValue !== null) {
             if (newValue === '') {
                 // 输入为空时恢复默认颜色
@@ -1368,7 +1800,7 @@ document.querySelector('label[for="renameLinkBtn"]').addEventListener('click', f
         return;
     }
     var linkElement = document.getElementById('85727544071588039023');
-    var currentName = linkElement.textContent;
+    var currentName = linkElement.innerHTML;
     showCustomModal('请输入链接名称：', currentName, function(newName) {
         if (newName === null) {
             return;
@@ -1376,14 +1808,13 @@ document.querySelector('label[for="renameLinkBtn"]').addEventListener('click', f
         if (newName === '') {
             // 输入为空时恢复默认名称
             var defaultName = 'Baidu.com';
-            linkElement.textContent = defaultName;
-            document.getElementById('linkNameValue').textContent = defaultName;
+            linkElement.innerHTML = defaultName;
+            document.getElementById('linkNameValue').innerHTML = defaultName;
             localStorage.setItem('linkName', defaultName);
         } else if (newName.trim() !== '') {
-            linkElement.textContent = newName.trim();
-            document.getElementById('linkNameValue').textContent = newName.trim();
-            localStorage.setItem('linkName', newName.trim());
-            truncateText('linkNameValue', newName.trim(), 100);
+            linkElement.innerHTML = newName;
+            document.getElementById('linkNameValue').innerHTML = newName;
+            localStorage.setItem('linkName', newName);
             if (!localStorage.getItem('36156798756549916136')) {
                 localStorage.setItem('36156798756549916136', 'true');
             }
@@ -1422,8 +1853,8 @@ document.getElementById('resetLinkColorBtn').addEventListener('click', function(
 var savedLinkName = localStorage.getItem('linkName');
 if (savedLinkName) {
     var linkElement = document.getElementById('85727544071588039023');
-    linkElement.textContent = savedLinkName;
-    document.getElementById('linkNameValue').textContent = savedLinkName;
+    linkElement.innerHTML = savedLinkName;
+    document.getElementById('linkNameValue').innerHTML = savedLinkName;
 }
 
 // searchContainer边距调整功能
@@ -1458,8 +1889,8 @@ document.querySelector('label[for="renameSubmitBtn"]').addEventListener('click',
     if (!document.getElementById('showSendCheckbox').checked) {
         return;
     }
-    var currentName = document.getElementById('submitBtn').value;
-    showCustomModal('请输入按钮名称（六字以内，输入为空时恢复默认）：', currentName, function(newName) {
+    var currentName = document.getElementById('submitBtn').innerHTML;
+    showCustomModal('请输入搜索按钮名称（输入为空时恢复默认）：', currentName, function(newName) {
         // 当点击取消时，newName 为 null，不执行任何操作
         if (newName === null) {
             return;
@@ -1467,12 +1898,12 @@ document.querySelector('label[for="renameSubmitBtn"]').addEventListener('click',
         if (newName === '') {
             // 输入为空时恢复默认名称
             var defaultName = '跳转';
-            document.getElementById('submitBtn').value = defaultName;
-            document.getElementById('submitBtnNameValue').textContent = defaultName;
+            document.getElementById('submitBtn').innerHTML = defaultName;
+            document.getElementById('submitBtnNameValue').innerHTML = defaultName;
             localStorage.setItem('submitBtnName', defaultName);
-        } else if (newName.length <= 6) { //>
-            document.getElementById('submitBtn').value = newName;
-            document.getElementById('submitBtnNameValue').textContent = newName;
+        } else {
+            document.getElementById('submitBtn').innerHTML = newName;
+            document.getElementById('submitBtnNameValue').innerHTML = newName;
             localStorage.setItem('submitBtnName', newName);
         }
     });
@@ -1481,8 +1912,8 @@ document.querySelector('label[for="renameSubmitBtn"]').addEventListener('click',
 // 加载保存的submitBtn名称
 var savedSubmitBtnName = localStorage.getItem('submitBtnName');
 if (savedSubmitBtnName) {
-    document.getElementById('submitBtn').value = savedSubmitBtnName;
-    document.getElementById('submitBtnNameValue').textContent = savedSubmitBtnName;
+    document.getElementById('submitBtn').innerHTML = savedSubmitBtnName;
+    document.getElementById('submitBtnNameValue').innerHTML = savedSubmitBtnName;
 }
 
 // 执行JavaScript代码功能 - 修改modal部分
@@ -1521,7 +1952,7 @@ document.querySelector('label[for="executeJsBtn"]').addEventListener('click', fu
 // 信任保存JavaScript代码checkbox事件监听
 document.getElementById('trustJsCheckbox').addEventListener('change', function() {
     if (this.checked) {
-        showCustomConfirm('警告：启用此功能后，保存的JavaScript脚本将在每次页面加载时自动运行，在启用此功能后请勿运行对本网站造成威胁的代码，否则无法恢复！', function(result) {
+        showCustomConfirm('警告：启用此功能后，保存的JavaScript脚本将在每次页面加载时自动运行，在启用此功能后请勿运行危险代码！', function(result) {
             if (!result) {
                 document.getElementById('trustJsCheckbox').checked = false;
             } else {
@@ -1627,6 +2058,38 @@ function showCustomCodeModal(title, currentCode, callback, placeholder) {
     
     document.body.appendChild(modal);
     
+    // 兼容低版本浏览器的定时器轮询检测弹窗大小变化并重新居中
+    var modalContent = modal.firstChild;
+    if (modalContent) {
+        var lastWidth = 0;
+        var lastHeight = 0;
+        var checkInterval = setInterval(function() {
+            if (modalContent && modal.parentNode) {
+                var currentWidth = modalContent.offsetWidth;
+                var currentHeight = modalContent.offsetHeight;
+                if (currentWidth !== lastWidth || currentHeight !== lastHeight) {
+                    lastWidth = currentWidth;
+                    lastHeight = currentHeight;
+                    centerModalElement(modal);
+                }
+            } else {
+                clearInterval(checkInterval);
+            }
+        }, 100);
+        
+        // 保存interval以便清理
+        modal._checkInterval = checkInterval;
+    }
+    
+    // 在移除modal时清理事件监听
+    var originalCallback = window[callbackName];
+    window[callbackName] = function(code) {
+        if (modal._checkInterval) {
+            clearInterval(modal._checkInterval);
+        }
+        originalCallback(code);
+    };
+    
     var textarea = document.getElementById('codeInput_' + callbackName);
     if (textarea) {
         executeCodeAutoResize(textarea);
@@ -1693,7 +2156,7 @@ function showCustomAlert(title, prompts) {
         '<div id="userSelectModalDisabled" style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px; text-align: left; max-height: 220px;">',
         '<h3 style="margin-top: 0; user-select: none; margin-bottom: 15px;">' + (title || '提示') + '</h3>',
         '<div style="max-height: 150px; overflow: auto; margin-top: -7px; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;">',
-        '<p style="user-select: none; margin-bottom: 15px; margin-left: 5px; font-size: 15px; margin-top: -2px;">' + (prompts || '') + '</p>',
+        '<p style="user-select: none; margin-bottom: 0px; margin-left: 5px; font-size: 15px; margin-top: -2px;">' + (prompts || '') + '</p>',
         '</div>',
         '<div style="text-align: right; margin-top: 15px;">',
         '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="window.' + callbackName + '()">' + (isDesktop() ? '关闭(Esc)' : '确定') + '</label>',
@@ -1701,30 +2164,119 @@ function showCustomAlert(title, prompts) {
         '</div>'
     ].join('');
     
-    // 添加键盘事件处理函数（仅电脑端支持Esc键）
+    // 添加键盘事件处理函数（支持所有浏览器版本的Esc键关闭）
     modal._keyHandler = function(e) {
         e = e || window.event;
         var keyCode = e.keyCode || e.which;
         
-        // 按Esc键关闭提示（仅电脑端）
-        if (keyCode === 27 && isDesktop()) { // 27是Esc键的keyCode
+        // 按Esc键关闭提示（keyCode 27）
+        if (keyCode === 27) {
             window[callbackName]();
-            e.preventDefault();
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+            }
             return false;
         }
     };
     
-    // 添加键盘事件监听
-    document.addEventListener('keydown', modal._keyHandler);
+    // 兼容所有浏览器版本的事件监听
+    if (document.addEventListener) {
+        document.addEventListener('keydown', modal._keyHandler);
+    } else if (document.attachEvent) {
+        document.attachEvent('onkeydown', modal._keyHandler);
+    }
     
     document.body.appendChild(modal);
+    
+    // 兼容低版本浏览器的定时器轮询检测弹窗大小变化并重新居中
+    var modalContent = modal.firstChild;
+    if (modalContent) {
+        var lastWidth = 0;
+        var lastHeight = 0;
+        var checkInterval = setInterval(function() {
+            if (modalContent && modal.parentNode) {
+                var currentWidth = modalContent.offsetWidth;
+                var currentHeight = modalContent.offsetHeight;
+                if (currentWidth !== lastWidth || currentHeight !== lastHeight) {
+                    lastWidth = currentWidth;
+                    lastHeight = currentHeight;
+                    centerModalElement(modal);
+                }
+            } else {
+                clearInterval(checkInterval);
+            }
+        }, 100);
+        
+        // 保存interval以便清理
+        modal._checkInterval = checkInterval;
+    }
     
     // 在移除modal时清理事件监听
     var originalCallback = window[callbackName];
     window[callbackName] = function() {
+        if (modal._checkInterval) {
+            clearInterval(modal._checkInterval);
+        }
         document.removeEventListener('keydown', modal._keyHandler);
+        // 移除键盘事件监听（兼容所有浏览器版本）
+        if (document.removeEventListener) {
+            document.removeEventListener('keydown', modal._keyHandler);
+        } else if (document.detachEvent) {
+            document.detachEvent('onkeydown', modal._keyHandler);
+        }
         originalCallback();
     };
+    
+    // 兼容低版本浏览器的内容变化监听并重新居中
+    var modalContent = modal.firstChild;
+    if (modalContent) {
+        // 保存原始innerHTML方法
+        var originalSetInnerHTML = modalContent.innerHTML;
+        Object.defineProperty(modalContent, 'innerHTML', {
+            get: function() {
+                return originalSetInnerHTML;
+            },
+            set: function(value) {
+                originalSetInnerHTML = value;
+                var div = document.createElement('div');
+                div.innerHTML = value;
+                while (modalContent.firstChild) {
+                    modalContent.removeChild(modalContent.firstChild);
+                }
+                while (div.firstChild) {
+                    modalContent.appendChild(div.firstChild);
+                }
+                setTimeout(function() {
+                    centerModalElement(modal);
+                }, 0);
+            },
+            configurable: true
+        });
+        
+        // 兼容低版本浏览器的DOMNodeInserted事件
+        if (modalContent.addEventListener) {
+            modalContent.addEventListener('DOMNodeInserted', function() {
+                setTimeout(function() {
+                    centerModalElement(modal);
+                }, 0);
+            }, false);
+            modalContent.addEventListener('DOMNodeRemoved', function() {
+                setTimeout(function() {
+                    centerModalElement(modal);
+                }, 0);
+            }, false);
+        } else if (modalContent.attachEvent) {
+            modalContent.attachEvent('onpropertychange', function() {
+                if (event.propertyName === 'innerHTML') {
+                    setTimeout(function() {
+                        centerModalElement(modal);
+                    }, 0);
+                }
+            });
+        }
+    }
 }
 
 function executeCodeAutoResize(textarea) {
@@ -1969,7 +2521,7 @@ function updateSearchHistory() {
     
     history.forEach(function(item, index) {
         var linkElement = document.createElement('a');
-        linkElement.href = '#';
+        linkElement.href = 'javascript:void(0)';
         
         // 处理显示文本，超过150px时显示...
         var displayText = item.text;
@@ -2025,10 +2577,82 @@ if (savedHitokotoState === 'true') {
     fetchHitokoto();
 }
 
+// 添加页面右键/长按恢复搜索框功能
+document.addEventListener('contextmenu', function(e) {
+    if (document.getElementById('hideSearchContainerCheckbox').checked) {
+        e = e || window.event;
+        if (e.preventDefault) {
+            e.preventDefault();
+        } else {
+            e.returnValue = false;
+        }
+        
+        var confirmResult = confirm('是否恢复搜索框？');
+        if (confirmResult) {
+            document.getElementById('hideSearchContainerCheckbox').checked = false;
+            localStorage.setItem('hideSearchContainerChecked', 'false');
+            document.getElementById('searchContainer').style.display = 'flex';
+            document.getElementById('showLinkCheckbox').checked = true;
+            localStorage.setItem('showLinkChecked', 'true');
+            location.reload();
+        }
+        return false;
+    } else {
+        var target = e.target || e.srcElement;
+        var tagName = target.tagName.toLowerCase();
+        if (tagName === 'head' || tagName === 'p' || tagName === 'span' || tagName === 'label' || tagName === 'div' || tagName === 'select' || tagName === 'button' || tagName === 'body' || tagName === 'html' || target.id === 'quickLinks' || target.id === 'autoFillhttps' || target.className === 'search-container') {
+            e = e || window.event;
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+            }
+            return false;
+        }
+    }
+});
+
+// 添加一言复制功能（支持电脑右键和手机长按）
+document.getElementById('hitokotoDisplay').addEventListener('contextmenu', function(e) {
+    e = e || window.event;
+    if (e.preventDefault) {
+        e.preventDefault();
+    } else {
+        e.returnValue = false;
+    }
+    
+    var hitokotoText = this.getAttribute('data-hitokoto') || this.textContent;
+    if (hitokotoText && hitokotoText !== 'Network Error') {
+        var confirmResult = confirm('是否复制此一言？');
+        if (confirmResult) {
+            var textArea = document.createElement('textarea');
+            textArea.value = hitokotoText;
+            textArea.style.position = 'fixed';
+            textArea.style.top = '0';
+            textArea.style.left = '0';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                var successful = document.execCommand('copy');
+                if (successful) {
+                    alert('复制成功');
+                } else {
+                    prompt('Copy Text', hitokotoText);
+                }
+            } catch (err) {
+                prompt('Copy Text', hitokotoText);
+            }
+            document.body.removeChild(textArea);
+        }
+    }
+    return false;
+});
+
 // 监听一言显示checkbox变化
 document.getElementById('hitokotoCheckbox').addEventListener('change', function() {
     if (this.checked) {
-        showCustomConfirm('启用后，会在下方显示随机生成一条一言，生成的一言内容与本网站无关，确定要启用此功能吗？', function(result) {
+        showCustomConfirm('启用后，会加载一个额外接口，在下方显示随机生成一条一言，生成的一言内容与本网站无关', function(result) {
             if (result) {
                 localStorage.setItem('hitokotoChecked', 'true');
                 document.getElementById('hitokotoDisplay').style.display = 'block';
@@ -2051,7 +2675,9 @@ function fetchHitokoto() {
         if (xhr.readyState === 4 && xhr.status === 200) {
             try {
                 var data = JSON.parse(xhr.responseText);
-                document.getElementById('hitokotoDisplay').textContent = '「' + data.hitokoto + '」—— ' + data.from;
+                var hitokotoText = '「' + data.hitokoto + '」—— ' + data.from;
+                document.getElementById('hitokotoDisplay').textContent = hitokotoText;
+                document.getElementById('hitokotoDisplay').setAttribute('data-hitokoto', hitokotoText);
             } catch (e) {
                 document.getElementById('hitokotoDisplay').textContent = 'Network Error';
             }
@@ -2105,7 +2731,7 @@ function hideSearchEngineOptions() {
         'taobaoWeb', 'jdWebPage',
         'biliTv', 'dyIsWindows', 'haokanVideo', 'enUsYoutubeVideo',
         'githubCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
-        'kfBaidu', 'weixinSogou', 'baiduTw', 'iFrameFree', 'httpsAutoFill'];
+        'kfBaidu', 'weixinSogou', 'baiduTw', 'iFrameFree', 'iFramePlus', 'httpsAutoFill'];
     for (var i = 0; i < engineSelect.options.length; i++) {
         if (optionsToHide.indexOf(engineSelect.options[i].value) !== -1 && engineSelect.options[i].id !== 'nullBaidu') {
             engineSelect.options[i].style.display = 'none';
@@ -2165,11 +2791,17 @@ if (localStorage.getItem('focusCheckboxChecked') === 'true') {
         document.getElementById('centerBoxDisplay').style.display = 'none';
         document.getElementById('hitokotoDisplay').style.display = 'none';
         document.getElementById('searchContainer').style.marginTop = '0';
+        var engineSelect = document.getElementById('engineSelect');
+        if (engineSelect && engineSelect.value === 'iFramePlus') {
+            var iframePlusSizeBtn = document.getElementById('iframePlusSizeBtn');
+            if (iframePlusSizeBtn) iframePlusSizeBtn.style.display = 'none';
+            var iframePlusContainer = document.getElementById('iframePlusContainer');
+            if (iframePlusContainer) iframePlusContainer.style.display = 'none';
+        }
     });
     
     // 添加延迟恢复
     document.getElementById('urlInput').addEventListener('blur', function(e) {
-        // 检查相关目标是否是quickInputBtn内的按钮
         var relatedTarget = e.relatedTarget;
         var isQuickInputBtnTarget = relatedTarget &&
             (relatedTarget.parentNode &&
@@ -2179,19 +2811,29 @@ if (localStorage.getItem('focusCheckboxChecked') === 'true') {
                     relatedTarget.parentNode.id === 'quickInputBtn3' ||
                     relatedTarget.parentNode.id === 'quickInputBtn4'));
         
-        // 如果不是quickInputBtn内的按钮，才执行恢复操作
         if (!isQuickInputBtnTarget) {
-            // 添加延迟恢复
             setTimeout(function() {
                 document.body.classList.remove('focused');
                 document.querySelector('.search-container').classList.remove('focused');
                 document.getElementById('quickInputBtn').style.display = 'none';
                 document.getElementById('hitokotoDisplay').style.display = 'block';
                 document.getElementById('searchContainer').style.marginTop = savedSearchContainerMargin;
-                // 恢复iframe显示（仅在iFrameFree选中时）
+                
                 if (document.getElementById('engineSelect').value === 'iFrameFree') {
                     document.getElementById('iframeContainer').style.display = 'block';
                 }
+                
+                // 【修改位置 2】新增：恢复 iFramePlus 相关元素的显示
+                var engineSelect = document.getElementById('engineSelect');
+                if (engineSelect && engineSelect.value === 'iFramePlus') {
+                    var iframePlusSizeBtn = document.getElementById('iframePlusSizeBtn');
+                    if (iframePlusSizeBtn) iframePlusSizeBtn.style.display = 'block';
+                    var iframePlusContainer = document.getElementById('iframePlusContainer');
+                    if (iframePlusContainer && window.iframePlusWindows && window.iframePlusWindows.length > 0) {
+                        iframePlusContainer.style.display = 'block';
+                    }
+                }
+                
                 if (document.getElementById('layoutCheckbox').checked) {
                     document.getElementById('centerBoxDisplay').style.display = 'block';
                 }
@@ -2590,6 +3232,17 @@ if (savedShowSendCheckboxState === 'true') {
     document.getElementById('submitBtn').style.display = 'none';
 }
 
+// 加载保存的隐藏搜索框状态
+var savedHideSearchContainerState = localStorage.getItem('hideSearchContainerChecked');
+if (savedHideSearchContainerState === 'true') {
+    document.getElementById('hideSearchContainerCheckbox').checked = true;
+    document.getElementById('searchContainer').style.display = 'none';
+    document.title = '导航页';
+} else {
+    document.getElementById('hideSearchContainerCheckbox').checked = false;
+    document.getElementById('searchContainer').style.display = 'flex';
+}
+
 // 监听showSendCheckbox变化
 document.getElementById('showSendCheckbox').addEventListener('change', function() {
     localStorage.setItem('showSendCheckboxChecked', this.checked);
@@ -2597,6 +3250,40 @@ document.getElementById('showSendCheckbox').addEventListener('change', function(
         document.getElementById('submitBtn').style.display = 'inline-block';
     } else {
         document.getElementById('submitBtn').style.display = 'none';
+    }
+});
+
+// 监听hideSearchContainerCheckbox变化
+document.getElementById('hideSearchContainerCheckbox').addEventListener('change', function() {
+    if (this.checked) {
+        var confirmResult = confirm('提示：你确定要停用搜索框吗？停用后，你仍然可以鼠标右键启用搜索框');
+            if (confirmResult) {
+                localStorage.setItem('hideSearchContainerChecked', 'true');
+                document.getElementById('searchContainer').style.display = 'none';
+                document.getElementById('engineSelect').value = 'baidu';
+                localStorage.setItem('selectedEngine', 'baidu');
+                // 取消勾选showLinkCheckbox
+                document.getElementById('showLinkCheckbox').checked = false;
+                localStorage.setItem('showLinkChecked', 'false');
+                toggleLinkDisplay(false);
+                // 取消勾选hitokotoCheckbox
+                document.getElementById('hitokotoCheckbox').checked = false;
+                localStorage.setItem('hitokotoChecked', 'false');
+                document.getElementById('hitokotoDisplay').style.display = 'none';
+                // 清空搜索历史记录
+                localStorage.removeItem('searchHistory');
+                document.getElementById('searchHistory').innerHTML = '';
+                document.getElementById('searchHistory').style.display = 'none';
+                document.getElementById('clearHistoryBtn').style.display = 'none';
+                
+                location.reload();
+            } else {
+                document.getElementById('hideSearchContainerCheckbox').checked = false;
+            }
+        
+    } else {
+        localStorage.setItem('hideSearchContainerChecked', 'false');
+        document.getElementById('searchContainer').style.display = 'flex';
     }
 });
 
@@ -2662,7 +3349,7 @@ document.querySelector('label[for="bgColorPicker"]').addEventListener('click', f
     }
     var currentColor = localStorage.getItem('backgroundColor') || '#ffffff';
     var currentBgValue = localStorage.getItem('backgroundColor') || '#ffffff';
-    showCustomModal('请输入颜色值（如 #ffffff 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);try{var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';colorPicker.value=\'' + currentColor + '\';colorPicker.style.position=\'fixed\';colorPicker.style.left=\'50%\';colorPicker.style.top=\'50%\';colorPicker.style.transform=\'translate(-50%,-50%)\';colorPicker.style.MozTransform=\'translate(-50%,-50%)\';colorPicker.style.WebkitTransform=\'translate(-50%,-50%)\';colorPicker.style.msTransform=\'translate(-50%,-50%)\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0.001\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){colorPicker.focus&&colorPicker.focus();colorPicker.click&&colorPicker.click();},50);}catch(e){}}return false;">调色盘</a>。或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){input.value=\'image url\';var labels=document.querySelectorAll(\'label[onclick*=\\\'modalCallback_\\\']\');if(labels.length>0){labels[labels.length-1].click();}}}return false;">图片</a> <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentBgValue, function(newValue) {
+    showCustomModal('请输入颜色值（如 #ffffff 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}colorPicker.style.position=\'fixed\';colorPicker.style.left=\'0\';colorPicker.style.top=\'0\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a>。或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){input.value=\'image url\';var labels=document.querySelectorAll(\'label[onclick*=\\\'modalCallback_\\\']\');if(labels.length>0){labels[labels.length-1].click();}}}return false;">图片</a> <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentBgValue, function(newValue) {
         if (newValue === null) {
             return;
         }
@@ -2728,7 +3415,7 @@ if (savedCheckboxState === 'true') {
 // 字体颜色控制
 document.querySelector('label[for="fontColorPicker"]').addEventListener('click', function() {
     var currentColor = localStorage.getItem('fontColor') || '#000000';
-    showCustomModal('请输入字体颜色值（如 #000000 或 black）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);try{var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';colorPicker.value=\'' + currentColor + '\';colorPicker.style.position=\'fixed\';colorPicker.style.left=\'50%\';colorPicker.style.top=\'50%\';colorPicker.style.transform=\'translate(-50%,-50%)\';colorPicker.style.MozTransform=\'translate(-50%,-50%)\';colorPicker.style.WebkitTransform=\'translate(-50%,-50%)\';colorPicker.style.msTransform=\'translate(-50%,-50%)\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0.001\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){colorPicker.focus&&colorPicker.focus();colorPicker.click&&colorPicker.click();},50);}catch(e){}}return false;">调色盘</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;margin-left:2px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newColor) {
+    showCustomModal('请输入字体颜色值（如 #000000 或 black）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}colorPicker.style.position=\'fixed\';colorPicker.style.left=\'0\';colorPicker.style.top=\'0\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;margin-left:2px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newColor) {
         if (newColor === null) {
             return;
         }
@@ -2763,7 +3450,7 @@ document.querySelector('label[for="linkCreatorBtn0"]').addEventListener('click',
         '创建快捷链接',
         '输入链接显示文本',
         '输入URL地址（必须以 https://、http:// 开头）',
-        '快捷方式',
+        '百度',
         'https://baidu.com',
         function(text, url) {
             if (text && url) {
@@ -2772,9 +3459,9 @@ document.querySelector('label[for="linkCreatorBtn0"]').addEventListener('click',
                     return;
                 }
                 
-                // 保存链接
+                // 保存链接（支持HTML内容）
                 var links = JSON.parse(localStorage.getItem('quickLinks') || '[]');
-                links.push({ url: url, text: text });
+                links.push({ url: url, text: text, isHtml: true });
                 localStorage.setItem('quickLinks', JSON.stringify(links));
                 
                 // 更新显示
@@ -2796,6 +3483,7 @@ document.querySelector('label[for="defaultLinksBtn"]').addEventListener('click',
                 { url: 'https://zhihu.com', text: '知乎' },
                 { url: 'https://weibo.com', text: '微博' },
                 { url: 'https://music.163.com', text: '网易云音乐' },
+                { url: 'https://doubao.com/chat', text: '豆包' },
                 { url: 'https://taobao.com', text: '淘宝' },
                 { url: 'https://jd.com', text: '京东' },
                 { url: 'https://youtube.com', text: 'YouTube' },
@@ -2869,7 +3557,7 @@ document.querySelector('label[for="widthPicker"]').addEventListener('click', fun
     if (!document.getElementById('showSendCheckbox').checked) {
         return;
     }
-    showCustomModal('请输入按钮宽度值（如 50px，输入空值恢复默认）：', currentWidth === 'Default' ? '' : currentWidth, function(newWidth) {
+    showCustomModal('请输入搜索按钮宽度值（如 50px，输入空值恢复默认）：', currentWidth === 'Default' ? '' : currentWidth, function(newWidth) {
         if (newWidth === '') {
             // 输入为空时恢复默认宽度
             document.getElementById('submitBtn').style.width = '';
@@ -2915,6 +3603,7 @@ function exportSettingsData() {
         layoutChecked: localStorage.getItem('layoutChecked') || 'false',
         showLinkChecked: localStorage.getItem('showLinkChecked') || 'true',
         showSendCheckboxChecked: localStorage.getItem('showSendCheckboxChecked') || 'true',
+        hideSearchContainerChecked: localStorage.getItem('hideSearchContainerChecked') || 'false',
         backgroundColor: localStorage.getItem('backgroundColor') || '#ffffff',
         quickInputChecked: localStorage.getItem('quickInputChecked') || 'false',
         linkColor: localStorage.getItem('linkColor') || '#0000ee',
@@ -2946,6 +3635,7 @@ function exportSettingsData() {
         searchHistoryChecked: localStorage.getItem('searchHistoryChecked') || 'false',
         urlInputPlaceholder: localStorage.getItem('urlInputPlaceholder') || '输入网址',
         quickLinksColor: localStorage.getItem('quickLinksColor') || '#0000ee',
+        quickLinksAlign: localStorage.getItem('quickLinksAlign') || 'center',
         trustJsChecked: localStorage.getItem('trustJsChecked') || 'false',
         customJs: localStorage.getItem('customJs') || '',
         hitokotoChecked: localStorage.getItem('hitokotoChecked') || 'false',
@@ -2961,11 +3651,14 @@ function exportSettingsData() {
         quickLinksFontSize: localStorage.getItem('quickLinksFontSize') || 'Default',
         selectedSearchApi: localStorage.getItem('selectedSearchApi') || 'baidu_sugrec',
         clearOnSearchChecked: localStorage.getItem('clearOnSearchChecked') || 'false',
+        clearOnBlurChecked: localStorage.getItem('clearOnBlurChecked') || 'true',
         showTimeChecked: localStorage.getItem('showTimeChecked') || 'false',
         timeLinkOriginalImage: localStorage.getItem('timeLinkOriginalImage'),
         timeFormat: localStorage.getItem('timeFormat') || '24hours',
         colonBlinkChecked: localStorage.getItem('colonBlinkChecked') || 'false',
-        showSecondsChecked: localStorage.getItem('colonBlinkChecked') || 'false'
+        showSecondsChecked: localStorage.getItem('colonBlinkChecked') || 'false',
+        '36156798756549916136': localStorage.getItem('36156798756549916136') || 'false',
+        hideOrder0Search: localStorage.getItem('hideOrder0Search') || 'false'
     };
     
     var jsonContent = JSON.stringify(settings, null, 2);
@@ -2993,18 +3686,23 @@ document.getElementById('importSettingsInput').addEventListener('change', functi
             var content = event.target.result;
             var settings = JSON.parse(content);
             
-            // 恢复所有设置到localStorage
-            var settingsKeys = Object.keys(settings);
-            for (var k = 0; k < settingsKeys.length; k++) {
-                var key = settingsKeys[k];
-                if (settings[key] !== null) {
-                    localStorage.setItem(key, settings[key]);
+            // 弹出二次确认对话框
+            showCustomConfirm('确定要导入该配置文件吗？导入后将覆盖当前所有设置并刷新页面。', function(result) {
+                if (result) {
+                    // 恢复所有设置到localStorage
+                    var settingsKeys = Object.keys(settings);
+                    for (var k = 0; k < settingsKeys.length; k++) {
+                        var key = settingsKeys[k];
+                        if (settings[key] !== null) {
+                            localStorage.setItem(key, settings[key]);
+                        }
+                    }
+                    // 重新加载页面应用设置
+                    location.reload();
                 }
-            }
-            
-            // 重新加载页面应用设置
-            location.reload();
+            });
         } catch (error) {
+            // JSON解析失败，静默处理
         }
         e.target.value = '';
     };
@@ -3020,18 +3718,23 @@ setupDragDrop(importSettingsLabel, function(file) {
             var content = event.target.result;
             var settings = JSON.parse(content);
             
-            // 恢复所有设置到localStorage
-            var settingsKeys = Object.keys(settings);
-            for (var k = 0; k < settingsKeys.length; k++) {
-                var key = settingsKeys[k];
-                if (settings[key] !== null) {
-                    localStorage.setItem(key, settings[key]);
+            // 弹出二次确认对话框
+            showCustomConfirm('确定要导入该配置文件吗？导入后将覆盖当前所有设置并刷新页面。', function(result) {
+                if (result) {
+                    // 恢复所有设置到localStorage
+                    var settingsKeys = Object.keys(settings);
+                    for (var k = 0; k < settingsKeys.length; k++) {
+                        var key = settingsKeys[k];
+                        if (settings[key] !== null) {
+                            localStorage.setItem(key, settings[key]);
+                        }
+                    }
+                    // 重新加载页面应用设置
+                    location.reload();
                 }
-            }
-            
-            // 重新加载页面应用设置
-            location.reload();
+            });
         } catch (error) {
+            // JSON解析失败
         }
     };
     reader.readAsText(file);
@@ -3130,12 +3833,13 @@ function showSearchSuggestions(suggestions) {
     if (isNumberPattern.test(inputText)) {
         isUrlPattern = false;
     } else {
+        // 检测网址格式：要求域名后缀至少为2个字母，且域名部分不全是数字
         var urlPatterns = [
-            /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+/,
-            /\.[a-zA-Z]{2,}/,
+            /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(?:\/|$)/,
             /^https?:\/\//,
-            /^www\./,
-            /^[a-zA-Z0-9]+\.[a-zA-Z0-9]+\.[a-zA-Z]{2,}/
+            /^www\.[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/,
+            /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}\.[a-zA-Z]{2,}/,
+            /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?::\d+)?(?:\/|$)/
         ];
         
         for (var i = 0; i < urlPatterns.length; i++) {
@@ -3232,7 +3936,8 @@ function showSearchSuggestions(suggestions) {
             altEnterText.textContent = 'Alt+Enter';
             altEnterText.style.color = '#666';
             altEnterText.style.fontSize = '10px';
-            altEnterText.style.marginLeft = '10px';
+            altEnterText.style.float = 'right';
+            altEnterText.style.marginTop = '2px';
         }
         
         visitDiv.appendChild(visitText);
@@ -3246,15 +3951,17 @@ function showSearchSuggestions(suggestions) {
         visitDiv.style.fontWeight = 'bold';
         visitDiv.style.fontSize = isDesktop() ? '11px' : '13px';
         visitDiv.style.backgroundColor = '#f8f8f8';
-        visitDiv.style.display = 'flex';
-        visitDiv.style.justifyContent = 'space-between';
-        visitDiv.style.alignItems = 'center';
+        visitDiv.style.display = 'block';
+        visitDiv.style.overflow = 'hidden';
+        visitDiv.style.position = 'relative';
         
         visitText.style.overflow = 'hidden';
         visitText.style.textOverflow = 'ellipsis';
         visitText.style.whiteSpace = 'nowrap';
         visitText.style.display = 'inline-block';
         visitText.style.verticalAlign = 'middle';
+        visitText.style.float = 'left';
+        visitText.style.maxWidth = '70%';
         
         visitDiv.onclick = function() {
             var engine = document.getElementById('engineSelect').value;
@@ -3451,7 +4158,8 @@ document.getElementById('urlInput').addEventListener('keydown', function(e) {
 // 获取搜索建议
 function fetchSearchSuggestions(query) {
     // 检查是否启用搜索建议功能
-    if (!document.getElementById('searchSuggestionsCheckbox').checked || document.getElementById('engineSelect').value === 'iFrameFree') return;
+    var currentEngine = document.getElementById('engineSelect').value;
+    if (!document.getElementById('searchSuggestionsCheckbox').checked || currentEngine === 'iFrameFree' || currentEngine === 'iFramePlus') return;
     
     if (!query || query.trim() === '') {
         // 空查询时显示搜索热词
@@ -3768,17 +4476,28 @@ function updateQuickLinks() {
     var container = document.createElement('div');
     container.style.display = 'flex';
     container.style.width = '100%';
-    container.style.justifyContent = 'center';
-    container.style.flexWrap = 'wrap';
-    container.style.margin = '10px';
-    container.style.left = '0';
-    container.style.right = '0';
-    container.style.margin = '0 auto';
-    
+    var alignValue = localStorage.getItem('quickLinksAlign') || 'center';
+    if (alignValue === 'left') {
+        container.style.textAlign = 'left';
+    } else if (alignValue === 'right') {
+        container.style.textAlign = 'right';
+    } else {
+        container.style.textAlign = 'center';
+    }
+    container.style.display = 'block';
+    container.style.width = '100%';
+    container.style.margin = '0';
+    container.style.padding = '0';
+        
     links.forEach(function(link, index) {
         var linkElement = document.createElement('a');
         linkElement.href = link.url.indexOf('http') === 0 ? link.url : '#';
-        linkElement.textContent = link.text;
+        // 支持innerHTML插入，同时兼容旧数据
+        if (link.isHtml === true) {
+            linkElement.innerHTML = link.text;
+        } else {
+            linkElement.textContent = link.text;
+        }
         linkElement.style.margin = '0 5px';
         linkElement.target = '_blank';
         
@@ -3795,7 +4514,7 @@ function updateQuickLinks() {
                 e.preventDefault();
                 
                 showCustomDoubleInput(
-                    '编辑快捷链接-<a href="' + link.url + '" target="_blank" onclick="setTimeout(function(){var cancelBtn=document.querySelector(\'label[onclick*=\\\'doubleInputCallback_\\\']\');if(cancelBtn)cancelBtn.click();},100)">直达</a>',
+                    '编辑快捷链接-<a href="' + link.url + '" target="_blank" onclick="setTimeout(function(){var cancelBtn=document.querySelector(\'label[onclick*=\\\'doubleInputCallback_\\\']\');if(cancelBtn)cancelBtn.click();},100)">跳转该链接</a>',
                     '输入链接显示文本',
                     '输入URL地址（必须以 https://、http:// 开头）',
                     link.text,
@@ -3807,9 +4526,9 @@ function updateQuickLinks() {
                                 return;
                             }
                             
-                            // 更新链接
+                            // 更新链接（保留isHtml标记）
                             var updatedLinks = JSON.parse(localStorage.getItem('quickLinks') || '[]');
-                            updatedLinks[index] = { url: url, text: text };
+                            updatedLinks[index] = { url: url, text: text, isHtml: true };
                             localStorage.setItem('quickLinks', JSON.stringify(updatedLinks));
                             
                             // 更新显示
@@ -3829,8 +4548,12 @@ function updateQuickLinks() {
         // 只在showCheckbox时显示删除按钮
         if (isShowCheckbox) {
             var deleteBtn = document.createElement('button');
-            deleteBtn.textContent = '×';
+            deleteBtn.innerHTML = '<i class="fa fa-close" style="margin-left: -3px;"><i>';
             deleteBtn.style.marginLeft = '5px';
+            deleteBtn.style.width = '100%';
+            deleteBtn.style.maxWidth = '21px';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.WebkitTapHighlightColor = 'transparent';
             deleteBtn.onclick = function(e) {
                 e.preventDefault();
                 var updatedLinks = links.filter(function(_, i) {
@@ -3896,7 +4619,7 @@ document.querySelector('label[for="linkSpacingBtn"]').addEventListener('click', 
     var savedVerticalSpacing = localStorage.getItem('linkVerticalSpacing') || '0';
     
     showCustomDoubleInput(
-        '设置超链接间距',
+        '设置快捷链接间距',
         '输入左右间距（如 10px，输入空值恢复默认）',
         '输入上下间距（如 5px，输入空值恢复默认）',
         savedHorizontalSpacing === '0' ? '' : savedHorizontalSpacing,
@@ -3971,7 +4694,7 @@ function applyLinkSpacing() {
 
 document.querySelector('label[for="quickLinksColorPicker"]').addEventListener('click', function() {
     var currentColor = localStorage.getItem('quickLinksColor') || '#0000ee';
-    showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);try{var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';colorPicker.value=\'' + currentColor + '\';colorPicker.style.position=\'fixed\';colorPicker.style.left=\'50%\';colorPicker.style.top=\'50%\';colorPicker.style.transform=\'translate(-50%,-50%)\';colorPicker.style.MozTransform=\'translate(-50%,-50%)\';colorPicker.style.WebkitTransform=\'translate(-50%,-50%)\';colorPicker.style.msTransform=\'translate(-50%,-50%)\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0.001\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){colorPicker.focus&&colorPicker.focus();colorPicker.click&&colorPicker.click();},50);}catch(e){}}return false;">调色盘</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;margin-left:2px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
+    showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}colorPicker.style.position=\'fixed\';colorPicker.style.left=\'0\';colorPicker.style.top=\'0\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;margin-left:2px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
         if (newValue !== null) {
             if (newValue === '') {
                 // 输入为空时恢复默认颜色
@@ -4006,8 +4729,28 @@ if (savedQuickLinksColor) {
     updateQuickLinksColor(savedQuickLinksColor);
 }
 
+// 加载保存的快捷链接对齐方式
+var savedQuickLinksAlign = localStorage.getItem('quickLinksAlign');
+if (savedQuickLinksAlign) {
+    document.getElementById('quickLinksAlignSelect').value = savedQuickLinksAlign;
+} else {
+    document.getElementById('quickLinksAlignSelect').value = 'center';
+}
+
+// 监听快捷链接对齐方式变化
+document.getElementById('quickLinksAlignSelect').addEventListener('change', function() {
+    localStorage.setItem('quickLinksAlign', this.value);
+    updateQuickLinks();
+});
+
 // 通用弹窗函数（兼容所有浏览器版本）
 function showCustomModal(title, currentValue, callback) {
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        text = String(text);
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+    
     // 禁止页面滚动（兼容所有浏览器）
     var originalBodyOverflow = document.body.style.overflow;
     var originalHtmlOverflow = document.documentElement.style.overflow;
@@ -4080,13 +4823,35 @@ function showCustomModal(title, currentValue, callback) {
     modal.innerHTML = [
         '<div id="userSelectModalDisabled" style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
         '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
-        '<input type="search" id="modalInput_' + callbackName + '" placeholder="请输入" value="' + (currentValue || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+        '<input type="search" id="modalInput_' + callbackName + '" placeholder="请输入" value="' + escapeHtml(currentValue || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
         '<div style="margin-top: 15px; text-align: right;">',
         '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null)">取消</label>',
-        '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input=document.getElementById(\'modalInput_' + callbackName + '\');window.' + callbackName + '(input?input.value:null)">确定</label>',
+        '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input=document.getElementById(\'modalInput_' + callbackName + '\');window.' + callbackName + '(input?input.value:null)">' + (isDesktop() ? '确定(Y)' : '确定') + '</label>',
         '</div>',
         '</div>'
     ].join('');
+    
+    // 电脑端添加快捷键支持
+    if (isDesktop()) {
+        modal._keyHandler = function(e) {
+            e = e || window.event;
+            var keyCode = e.keyCode || e.which;
+            // Esc键取消
+            if (keyCode === 27) {
+                window[callbackName](null);
+                e.preventDefault();
+                return false;
+            }
+            // Alt+Y 确定（Y键码89，需同时按Alt）
+            if (keyCode === 89 && e.altKey) {
+                var input = document.getElementById('modalInput_' + callbackName);
+                window[callbackName](input ? input.value : null);
+                e.preventDefault();
+                return false;
+            }
+        };
+        document.addEventListener('keydown', modal._keyHandler);
+    }
     
     document.body.appendChild(modal);
 }
@@ -4155,8 +4920,8 @@ function showCustomConfirm(title, callback) {
         '<div id="userSelectModalDisabled" style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
         '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
         '<div style="margin-top: 15px; text-align: right;">',
-        '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(false)">取消' + (isDesktop() ? '(1)' : '') + '</label>',
-        '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="window.' + callbackName + '(true)">确定' + (isDesktop() ? '(2)' : '') + '</label>',
+        '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(false)">取消' + (isDesktop() ? '(N)' : '') + '</label>',
+        '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="window.' + callbackName + '(true)">确定' + (isDesktop() ? '(Y)' : '') + '</label>',
         '</div>',
         '</div>'
     ].join('');
@@ -4166,29 +4931,57 @@ function showCustomConfirm(title, callback) {
         e = e || window.event;
         var keyCode = e.keyCode || e.which;
         
-        // 按数字键1 (keyCode 49) 或 数字小键盘1 (keyCode 97) 为取消
-        if (keyCode === 49 || keyCode === 97) {
+        // 按Esc键 (keyCode 27) 关闭
+        if (keyCode === 27) {
             window[callbackName](false);
-            e.preventDefault();
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+            }
             return false;
         }
         
-        // 按数字键2 (keyCode 50) 或 数字小键盘2 (keyCode 98) 为确定
-        if (keyCode === 50 || keyCode === 98) {
+        // 按N键 (keyCode 78) 或 n键 (keyCode 110) 为取消
+        if (keyCode === 78 || keyCode === 110) {
+            window[callbackName](false);
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+            }
+            return false;
+        }
+        
+        // 按Y键 (keyCode 89) 或 y键 (keyCode 121) 为确定
+        if (keyCode === 89 || keyCode === 121) {
             window[callbackName](true);
-            e.preventDefault();
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+                }
             return false;
         }
     };
     
     // 添加键盘事件监听
-    document.addEventListener('keydown', modal._keyHandler);
+    if (document.addEventListener) {
+        document.addEventListener('keydown', modal._keyHandler);
+    } else if (document.attachEvent) {
+        document.attachEvent('onkeydown', modal._keyHandler);
+    }
     
     document.body.appendChild(modal);
 }
 
 // 双输入框通用弹窗函数（兼容所有浏览器版本）
 function showCustomDoubleInput(title, label1, label2, currentValue1, currentValue2, callback) {
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        text = String(text);
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
     // 禁止页面滚动（兼容所有浏览器）
     var originalBodyOverflow = document.body.style.overflow;
     var originalHtmlOverflow = document.documentElement.style.overflow;
@@ -4249,21 +5042,98 @@ function showCustomDoubleInput(title, label1, label2, currentValue1, currentValu
     
     modal.innerHTML = [
         '<div id="userSelectModalDisabled" style="background: #ffffff; padding: 20px; border-radius: 3px; width: 72%; max-width: 320px;">',
-        '<p style="margin-top: 0; user-select: none; text-align: left;">' + title + '</p>',
+        '<p style="margin-top: 0; user-select: none; text-align: left; font-weight: 500;">' + title + '</p>',
         '<div style="text-align: left; margin-bottom: 10px;">',
         '<div style="font-size: 12px; user-select: none; color: #666; margin-bottom: 5px;">' + label1 + '</div>',
-        '<input type="text" id="doubleInput1_' + callbackName + '" placeholder="请输入" value="' + (currentValue1 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+        '<input type="text" id="doubleInput1_' + callbackName + '" placeholder="请输入" value="' + escapeHtml(currentValue1 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
         '</div>',
         '<div style="text-align: left; margin-bottom: 15px;">',
         '<div style="font-size: 12px; user-select: none; color: #666; margin-bottom: 5px;">' + label2 + '</div>',
-        '<input type="text" id="doubleInput2_' + callbackName + '" placeholder="请输入" value="' + (currentValue2 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
+        '<input type="text" id="doubleInput2_' + callbackName + '" placeholder="请输入" value="' + escapeHtml(currentValue2 || '') + '" style="width: 100%; border: 1px solid #ccc; height: 24px; padding: 0 5px; box-sizing: border-box;">',
         '</div>',
         '<div style="margin-top: 15px; text-align: right;">',
         '<label style="vertical-align: middle; cursor: pointer; margin-right: 15px; user-select: none;" onclick="window.' + callbackName + '(null, null)">取消</label>',
-        '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input1=document.getElementById(\'doubleInput1_' + callbackName + '\'),input2=document.getElementById(\'doubleInput2_' + callbackName + '\');window.' + callbackName + '(input1?input1.value:null,input2?input2.value:null)">确定</label>',
+        '<label style="vertical-align: middle; cursor: pointer; user-select: none;" onclick="var input1=document.getElementById(\'doubleInput1_' + callbackName + '\'),input2=document.getElementById(\'doubleInput2_' + callbackName + '\');window.' + callbackName + '(input1?input1.value:null,input2?input2.value:null)">' + (isDesktop() ? '确定(Y)' : '确定') + '</label>',
         '</div>',
         '</div>'
     ].join('');
+    
+    // 电脑端添加快捷键支持
+    if (isDesktop()) {
+        modal._keyHandler = function(e) {
+            e = e || window.event;
+            var keyCode = e.keyCode || e.which;
+            // Shift+Esc 取消
+            if (keyCode === 27 && e.shiftKey) {
+                window[callbackName](null, null);
+                e.preventDefault();
+                return false;
+            }
+            // Alt+Shift+Y 确定
+            if (keyCode === 89 && e.altKey && e.shiftKey) {
+                var input1 = document.getElementById('doubleInput1_' + callbackName);
+                var input2 = document.getElementById('doubleInput2_' + callbackName);
+                window[callbackName](input1 ? input1.value : null, input2 ? input2.value : null);
+                e.preventDefault();
+                return false;
+            }
+        };
+        document.addEventListener('keydown', modal._keyHandler);
+    }
+    
+    // 添加输入框键盘事件支持
+    setTimeout(function() {
+        var input1 = document.getElementById('doubleInput1_' + callbackName);
+        var input2 = document.getElementById('doubleInput2_' + callbackName);
+        
+        if (input1) {
+            input1.addEventListener('keydown', function(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which;
+                if (keyCode === 13) {
+                    if (input2) {
+                        input2.focus();
+                        if (input2.value !== undefined) {
+                            var len = input2.value.length;
+                            if (input2.setSelectionRange) {
+                                input2.setSelectionRange(len, len);
+                            }
+                        }
+                    }
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    } else {
+                        e.returnValue = false;
+                    }
+                    return false;
+                }
+            });
+        }
+        
+        if (input2) {
+            input2.addEventListener('keydown', function(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which;
+                if (keyCode === 13) {
+                    if (input1) {
+                        input1.focus();
+                        if (input1.value !== undefined) {
+                            var len = input1.value.length;
+                            if (input1.setSelectionRange) {
+                                input1.setSelectionRange(len, len);
+                            }
+                        }
+                    }
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    } else {
+                        e.returnValue = false;
+                    }
+                    return false;
+                }
+            });
+        }
+    }, 10);
     
     document.body.appendChild(modal);
 }
@@ -4306,6 +5176,246 @@ function centerModalElement(modal) {
         window.addEventListener('resize', resizeHandler);
     }
 }
+
+document.querySelector('label[for="customSearchListBtn"]').addEventListener('click', function() {
+    var customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]');
+    var html = '<div style="font-size: 14px;">';
+    
+    // 在 setTimeout 中添加按钮事件监听（在 setTimeout 函数内部，hideCheckbox 事件监听之后添加）
+    setTimeout(function() {
+        var hideCheckbox = document.getElementById('hideOrder0Checkbox');
+        if (hideCheckbox) {
+            hideCheckbox.onclick = function() {
+                localStorage.setItem('hideOrder0Search', this.checked);
+                var customSearchOption = document.getElementById('customSearchOption');
+                if (customSearchOption) {
+                    customSearchOption.style.display = this.checked ? 'none' : '';
+                }
+                if (this.checked && document.getElementById('engineSelect').value === 'customSearch') {
+                    document.getElementById('engineSelect').value = 'baidu';
+                    localStorage.setItem('selectedEngine', 'baidu');
+                }
+            };
+        }
+        
+        // 添加一键清空按钮事件
+        var clearAllBtn = document.getElementById('clearAllCustomSearchesBtn');
+        if (clearAllBtn) {
+            clearAllBtn.onclick = function() {
+                if (confirm('确定要清空所有自定义搜索吗？')) {
+                    localStorage.removeItem('customSearches');
+                    localStorage.removeItem('customSearchUrl');
+                    localStorage.removeItem('customSearchName');
+                    localStorage.removeItem('selectedCustomSearch');
+                    localStorage.removeItem('hideOrder0Search');
+                    var customSearchOption = document.getElementById('customSearchOption');
+                    if (customSearchOption) {
+                        customSearchOption.textContent = '自定义';
+                        customSearchOption.style.display = '';
+                    }
+                    updateCustomSearchOptions();
+                    // 关闭当前弹窗并重新打开
+                    var closeBtn = document.querySelector('label[onclick*="alertCallback_"]');
+                    if (closeBtn) closeBtn.click();
+                    setTimeout(function() {
+                        document.querySelector('label[for="customSearchListBtn"]').click();
+                    }, 100);
+                }
+            };
+        }
+    }, 10);
+    
+    // 添加默认order0自定义搜索项
+    var defaultOrder0Item = null;
+    for (var i = 0; i < customSearches.length; i++) {
+        if (customSearches[i].order === 0) {
+            defaultOrder0Item = customSearches[i];
+            break;
+        }
+    }
+    if (!defaultOrder0Item) {
+        var savedName = localStorage.getItem('customSearchName') || '自定义';
+        var savedUrl = localStorage.getItem('customSearchUrl') || 'https://www.baidu.com/s?wd={keywords}';
+        defaultOrder0Item = { name: savedName, url: savedUrl, order: 0 };
+    }
+    var isOrder0Hidden = localStorage.getItem('hideOrder0Search') === 'true';
+    html += '<div style="display: table; width: 100%; padding: 8px 0; border-bottom: 1px solid #eee;">';
+    html += '<span style="display: table-cell; vertical-align: middle; text-align: left;"><strong>0.</strong> ' + defaultOrder0Item.name + '</span>';
+    html += '<span style="display: table-cell; vertical-align: middle; text-align: right; white-space: nowrap;">';
+    html += '<input type="checkbox" id="hideOrder0Checkbox" ' + (isOrder0Hidden ? 'checked' : '') + ' style="margin-right: 5px;">';
+    html += '<label for="hideOrder0Checkbox" style="margin-right: 8px; position: relative; bottom: 2px; user-select: none;">隐藏此项</label>';
+    html += '<button id="clearAllCustomSearchesBtn" style="background: #ffffff; float: right; border: 1px solid #ccc; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'">一键清空</button>';
+    html += '</span>';
+    html += '</div>';
+    
+    // 添加checkbox事件监听（在showCustomAlert调用后执行）
+    setTimeout(function() {
+        var hideCheckbox = document.getElementById('hideOrder0Checkbox');
+        if (hideCheckbox) {
+            hideCheckbox.onclick = function() {
+                localStorage.setItem('hideOrder0Search', this.checked);
+                var customSearchOption = document.getElementById('customSearchOption');
+                if (customSearchOption) {
+                    customSearchOption.style.display = this.checked ? 'none' : '';
+                }
+                // 如果当前选中的是自定义搜索且被隐藏，切换到百度
+                if (this.checked && document.getElementById('engineSelect').value === 'customSearch') {
+                    document.getElementById('engineSelect').value = 'baidu';
+                    localStorage.setItem('selectedEngine', 'baidu');
+                }
+            };
+        }
+    }, 10);
+    
+    if (customSearches.length === 0) {
+    } else {
+        // 按order排序
+        customSearches.sort(function(a, b) {
+            return a.order - b.order;
+        });
+        
+        for (var i = 0; i < customSearches.length; i++) {
+            var item = customSearches[i];
+            var order = item.order;
+            var name = item.name;
+            var url = item.url;
+            
+            html += '<div style="display: table; width: 100%; padding: 8px 0; border-bottom: 1px solid #eee;">';
+            html += '<span style="display: table-cell; vertical-align: middle; text-align: left;"><strong>' + order + '.</strong> ' + name + '</span>';
+            html += '<span style="display: table-cell; vertical-align: middle; text-align: right; white-space: nowrap;">';
+
+            // 修改order按钮
+            html += '<button onclick="var btn=this; var newOrder=prompt(\'修改排序ID\', this.getAttribute(\'data-order\')); if(newOrder!==null && !isNaN(newOrder) && parseInt(newOrder)>0){var searches=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); var targetOrder=parseInt(newOrder); var currentOrder=' + order + '; var targetIndex=-1; var currentIndex=-1; for(var j=0;j<searches.length;j++){if(searches[j].order===targetOrder){targetIndex=j;} if(searches[j].order===currentOrder){currentIndex=j;}} if(targetIndex!==-1 && targetIndex!==currentIndex){if(confirm(\'排序ID \'+targetOrder+\' 已存在，是否替换？\')){var tempOrder=searches[currentIndex].order; searches[currentIndex].order=searches[targetIndex].order; searches[targetIndex].order=tempOrder; searches.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches)); updateCustomSearchOptions(); location.reload(true); }}else if(targetIndex===-1){searches[currentIndex].order=targetOrder; searches.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches)); updateCustomSearchOptions(); btn.setAttribute(\'data-order\', targetOrder); var parentRow=this.parentNode.parentNode; var leftSpan=null; for(var m=0;m<parentRow.childNodes.length;m++){if(parentRow.childNodes[m].nodeType===1&&parentRow.childNodes[m].tagName===\'SPAN\'){leftSpan=parentRow.childNodes[m];break;}} if(leftSpan){var nameText=\'\'; for(var n=0;n<leftSpan.childNodes.length;n++){if(leftSpan.childNodes[n].nodeType===3){nameText=leftSpan.childNodes[n].nodeValue;break;}} if(!nameText){nameText=leftSpan.innerHTML.replace(/<[^>]+>/g,\'\');} leftSpan.innerHTML=\'<strong>\'+targetOrder+\'.</strong> \'+nameText;} btn.onclick = function(){var btn2=this; var newOrder2=prompt(\'修改排序ID\', this.getAttribute(\'data-order\')); if(newOrder2!==null && !isNaN(newOrder2) && parseInt(newOrder2)>0){var searches2=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); var targetOrder2=parseInt(newOrder2); var currentOrder2=parseInt(btn2.getAttribute(\'data-order\')); var targetIndex2=-1; var currentIndex2=-1; for(var p=0;p<searches2.length;p++){if(searches2[p].order===targetOrder2){targetIndex2=p;} if(searches2[p].order===currentOrder2){currentIndex2=p;}} if(targetIndex2!==-1 && targetIndex2!==currentIndex2){if(confirm(\'排序ID \'+targetOrder2+\' 已存在，是否替换？\')){var tempOrder2=searches2[currentIndex2].order; searches2[currentIndex2].order=searches2[targetIndex2].order; searches2[targetIndex2].order=tempOrder2; searches2.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches2)); updateCustomSearchOptions(); location.reload(true); }}else if(targetIndex2===-1){searches2[currentIndex2].order=targetOrder2; searches2.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches2)); updateCustomSearchOptions(); btn2.setAttribute(\'data-order\', targetOrder2); var parentRow2=btn2.parentNode.parentNode; var leftSpan2=null; for(var r=0;r<parentRow2.childNodes.length;r++){if(parentRow2.childNodes[r].nodeType===1&&parentRow2.childNodes[r].tagName===\'SPAN\'){leftSpan2=parentRow2.childNodes[r];break;}} if(leftSpan2){var nameText2=\'\'; for(var s=0;s<leftSpan2.childNodes.length;s++){if(leftSpan2.childNodes[s].nodeType===3){nameText2=leftSpan2.childNodes[s].nodeValue;break;}} if(!nameText2){nameText2=leftSpan2.innerHTML.replace(/<[^>]+>/g,\'\');} leftSpan2.innerHTML=\'<strong>\'+targetOrder2+\'.</strong> \'+nameText2;} btn2.onclick = arguments.callee; }}}; } }" style="background: #ffffff; border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; margin-right: 5px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'" data-order="' + order + '"><i class="fa fa-caret-up"></i></button>';
+            
+            // 修改名称按钮
+            html += '<button onclick="var btn=this; var newName=prompt(\'修改搜索引擎名称\', this.getAttribute(\'data-name\')); if(newName!==null){var searches=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); for(var j=0;j<searches.length;j++){if(searches[j].order===' + order + '){searches[j].name=newName;break;}} localStorage.setItem(\'customSearches\', JSON.stringify(searches)); updateCustomSearchOptions(); btn.setAttribute(\'data-name\', newName); var parentSpan=this.parentNode.parentNode; var leftSpan=null; for(var k=0;k<parentSpan.childNodes.length;k++){if(parentSpan.childNodes[k].nodeType===1&&parentSpan.childNodes[k].tagName===\'SPAN\'){leftSpan=parentSpan.childNodes[k];break;}} if(leftSpan){leftSpan.innerHTML=\'<strong>' + order + '.</strong> \'+newName;} btn.onclick = function(){var btn2=this; var newName2=prompt(\'修改搜索引擎名称\', this.getAttribute(\'data-name\')); if(newName2!==null){var searches2=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); for(var m=0;m<searches2.length;m++){if(searches2[m].order===' + order + '){searches2[m].name=newName2;break;}} localStorage.setItem(\'customSearches\', JSON.stringify(searches2)); updateCustomSearchOptions(); btn2.setAttribute(\'data-name\', newName2); var parentSpan2=btn2.parentNode.parentNode; var leftSpan2=null; for(var n=0;n<parentSpan2.childNodes.length;n++){if(parentSpan2.childNodes[n].nodeType===1&&parentSpan2.childNodes[n].tagName===\'SPAN\'){leftSpan2=parentSpan2.childNodes[n];break;}} if(leftSpan2){leftSpan2.innerHTML=\'<strong>' + order + '.</strong> \'+newName2;} btn2.onclick = arguments.callee; }}; }" style="background: #ffffff; border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; margin-right: 5px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'" data-name="' + name.replace(/"/g, '&quot;') + '"><i class="fa fa-tags"></i></button>';
+            
+            // 修改网址按钮
+            html += '<button onclick="var btn=this; var newUrl=prompt(\'修改搜索引擎网址 (使用{keywords}作为占位符)\', \'' + url.replace(/'/g, "\\'") + '\'); if(newUrl!==null && newUrl.indexOf(\'{keywords}\')!==-1){var searches=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); for(var j=0;j<searches.length;j++){if(searches[j].order===' + order + '){searches[j].url=newUrl;break;}} localStorage.setItem(\'customSearches\', JSON.stringify(searches)); updateCustomSearchOptions(); btn.setAttribute(\'data-url\', newUrl); btn.onclick = function(){var btn2=this; var newUrl2=prompt(\'修改搜索引擎网址 (使用{keywords}作为占位符)\', this.getAttribute(\'data-url\')); if(newUrl2!==null && newUrl2.indexOf(\'{keywords}\')!==-1){var searches2=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); for(var k=0;k<searches2.length;k++){if(searches2[k].order===' + order + '){searches2[k].url=newUrl2;break;}} localStorage.setItem(\'customSearches\', JSON.stringify(searches2)); updateCustomSearchOptions(); btn2.setAttribute(\'data-url\', newUrl2); btn2.onclick = arguments.callee; }}; }" style="background: #ffffff; border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; margin-right: 5px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'" data-url="' + url.replace(/"/g, '&quot;') + '"><i class="fa fa-pencil"></i></button>';
+            
+            // 删除按钮
+            html += '<button onclick="var searches=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); var filtered=[]; for(var j=0;j<searches.length;j++){if(searches[j].order!==' + order + '){filtered.push(searches[j]);}} localStorage.setItem(\'customSearches\', JSON.stringify(filtered)); updateCustomSearchOptions(); this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode);" style="background: #ffffff; border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'"><i class="fa fa-trash-o"></i></button>';
+            
+            html += '</span>';
+            html += '</div>';
+        }
+    }
+    
+    html += '</div>';
+    showCustomAlert('自定义搜索列表', html);
+});
+
+// ==================== 更多设置折叠/展开功能（兼容所有浏览器） ====================
+(function() {
+    // 获取需要控制的元素集合
+    var container = document.getElementById('autoFillhttps');
+    if (!container) return;
+    
+    // 收集所有需要隐藏/显示的元素
+    var checkboxBlocks = [];
+    var labelBtns = [];
+    var textSelectWrappers = [];
+    
+    // 兼容低版本浏览器的获取元素方式
+    var allElements = container.getElementsByTagName('*');
+    for (var i = 0; i < allElements.length; i++) {
+        var el = allElements[i];
+        if (el.id === 'showMoreCheckboxBlock') {
+            checkboxBlocks.push(el);
+        } else if (el.id === 'showMoreLabelBtns') {
+            labelBtns.push(el);
+        } else if (el.className === 'text-select-wrapper') {
+            textSelectWrappers.push(el);
+        }
+    }
+    
+    // 合并所有需要控制的元素
+    var moreSettingsItems = checkboxBlocks.concat(labelBtns).concat(textSelectWrappers);
+    
+    // 展开/收起函数
+    function toggleMoreSettings(show) {
+        for (var i = 0; i < moreSettingsItems.length; i++) {
+            moreSettingsItems[i].style.display = show ? 'inline-block' : 'none';
+        }
+        // 处理特殊的内联块元素显示
+        if (show) {
+            for (var i = 0; i < labelBtns.length; i++) {
+                // 某些label可能需要特殊处理
+                if (labelBtns[i].style.display === 'none') {
+                    labelBtns[i].style.display = 'inline-block';
+                }
+            }
+        }
+    }
+    
+    // 获取按钮元素
+    var toggleBtn = document.getElementById('showMoreSettingsBtn');
+    if (!toggleBtn) return;
+    
+    // 从localStorage读取保存的状态
+    var isExpanded = false;
+    try {
+        var savedState = localStorage.getItem('moreSettingsExpanded');
+        if (savedState === 'true') {
+            isExpanded = true;
+        } else if (savedState === 'false') {
+            isExpanded = false;
+        } else if (savedState === null) {
+            // 首次使用，默认收起
+            isExpanded = false;
+            localStorage.setItem('moreSettingsExpanded', 'false');
+        }
+    } catch(e) {
+        // 兼容不支持localStorage的情况
+        isExpanded = false;
+    }
+    
+    // 根据保存的状态初始化显示
+    if (isExpanded) {
+        toggleMoreSettings(true);
+        toggleBtn.textContent = '收起更多设置';
+    } else {
+        toggleMoreSettings(false);
+        toggleBtn.textContent = '展开更多设置';
+    }
+    
+    // 绑定点击事件（兼容所有浏览器）
+    if (toggleBtn.addEventListener) {
+        toggleBtn.addEventListener('click', function() {
+            var currentState = localStorage.getItem('moreSettingsExpanded') === 'true';
+            var newState = !currentState;
+            
+            if (newState) {
+                toggleMoreSettings(true);
+                this.textContent = '收起更多设置';
+            } else {
+                toggleMoreSettings(false);
+                this.textContent = '展开更多设置';
+            }
+            
+            try {
+                localStorage.setItem('moreSettingsExpanded', newState ? 'true' : 'false');
+            } catch(e) {}
+        });
+    } else if (toggleBtn.attachEvent) {
+        toggleBtn.attachEvent('onclick', function() {
+            var currentState = localStorage.getItem('moreSettingsExpanded') === 'true';
+            var newState = !currentState;
+            
+            if (newState) {
+                toggleMoreSettings(true);
+                toggleBtn.textContent = '收起更多设置';
+            } else {
+                toggleMoreSettings(false);
+                toggleBtn.textContent = '展开更多设置';
+            }
+            
+            try {
+                localStorage.setItem('moreSettingsExpanded', newState ? 'true' : 'false');
+            } catch(e) {}
+        });
+    }
+})();
 
 // 清除所有设置功能
 document.querySelector('label[for="clearAllSettingsBtn"]').addEventListener('click', function() {
@@ -4839,6 +5949,57 @@ if (savedIframeWidth && savedIframeHeight) {
     document.getElementById('iframeContainer').style.height = savedIframeHeight;
 }
 
+// 【修改位置 4】iFramePlus 编辑所有窗口尺寸功能
+var iframePlusSizeBtn = document.getElementById('iframePlusSizeBtn');
+if (iframePlusSizeBtn) {
+    var sizeLabel = iframePlusSizeBtn.querySelector('label');
+    if (sizeLabel) {
+        sizeLabel.onclick = function() {
+            // 【修改位置 2】修复窗口检测逻辑，使用 window.iframePlusWindows
+            var currentWindows = window.iframePlusWindows || [];
+            var currentWidth = localStorage.getItem('iframePlusWidth') || '390px';
+            var currentHeight = localStorage.getItem('iframePlusHeight') || '500px';
+            showCustomDoubleInput(
+                '设置所有iFrame窗口尺寸',
+                '输入窗口宽度（如 390px 或 800px）',
+                '输入窗口高度（如 400px 或 500px）',
+                currentWidth,
+                currentHeight,
+                function(width, height) {
+                    if (width !== null && height !== null) {
+                        var isMobile = typeof isMobileAndroidApple === 'function' ? isMobileAndroidApple() : false;
+                        var defaultWidth = isMobile ? '98%' : '390px';
+                        var defaultHeight = isMobile ? '500px' : '500px';
+                        
+                        if (width === '') {
+                            width = defaultWidth;
+                        }
+                        if (height === '') {
+                            height = defaultHeight;
+                        }
+                        
+                        // 【修改位置 2】更新所有现有窗口的尺寸
+                        for (var i = 0; i < currentWindows.length; i++) {
+                            var wrapper = currentWindows[i].wrapper;
+                            var iframe = currentWindows[i].iframe;
+                            if (wrapper) {
+                                wrapper.style.width = width;
+                            }
+                            if (iframe) {
+                                iframe.style.height = height;
+                            }
+                        }
+                        
+                        // 保存尺寸到 localStorage
+                        localStorage.setItem('iframePlusWidth', width);
+                        localStorage.setItem('iframePlusHeight', height);
+                    }
+                }
+            );
+        };
+    }
+}
+
 function getBrowserInfo() {
     var userAgent = navigator.userAgent;
     var browserName;
@@ -4905,10 +6066,49 @@ window.onload = function() {
         displayElement.style.zIndex = '9999';
         displayElement.style.userSelect = 'none';
         
-        displayElement.addEventListener('click', function() {
-            var browserInfo = getBrowserInfo();    
-            showCustomAlert('关于', '<div style="font-size: 15px;">搜索Easy<br>' + '<p>当前版本: v7.1<br></p>' + '<p>浏览器内核: ' + browserInfo.version + '<br></p>' + '<p>此设备版本: ' + browserInfo.deviceVersion + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<br><p style="display: inline-block;">Github源码: <form style="display: inline-block; float: right; margin-top: 14px;" action="https://github.com/wugdu27376/setsearchbox/" target="_blank"><button type="submit">点击跳转</button></form></p>' + '</div>');
-        });
+        // 显示关于信息的函数
+        var showBrowserAlert = function() {
+            var browserInfo = getBrowserInfo();
+            var tips = [
+                '本网页早已不支持IE浏览器，除了v2版本以下',
+                '如果你电脑点击浏览器信息没有弹出这个弹窗，你换鼠标右键点击试试',
+                '如果你的是移动设备不能鼠标右键的话，可以在鼠标右键的地方长按就可以了',
+                '如果想用快捷键关闭双输入框弹窗的话，按 Shift + Esc 可以关闭',
+                '你可以按 Alt + Shift + N 可以快速切换下一个搜索引擎，向反按 Alt + Shift + P 可以切换上一个搜索引擎',
+                '如果你想复制一言的话，鼠标右键一言即可复制',
+                '如果要停用搜索框的话，请在停用输入框弹出弹窗认真阅读此提示，你会知道怎么恢复搜索框的',
+                '你可以自定义设置你喜欢的搜索主页',
+                '有些搜索引擎搜索后会记录你的搜索历史记录，如果你不是无痕浏览模式又只是删除浏览器搜索浏览记录或本站历史搜索历史，请检查你使用过的搜索引擎并删除搜索引擎记录的搜索历史记录(如果不想留搜索浏览历史记录建议使用无痕模式搜索)。',
+                '本站虽然不支持IE浏览器，但可以兼容到chrome21版本正常布局和使用大部分功能',
+                '有些搜索引擎并不适应手机或电脑，这就是为什么禁用部分搜索引擎的原因了'
+             ];
+            if (!window._lastTipIndex) window._lastTipIndex = -1;
+            var newIndex;
+            do { newIndex = Math.floor(Math.random() * 11); } while (newIndex === window._lastTipIndex && tips.length > 1);
+            window._lastTipIndex = newIndex;
+            var randomTip = tips[newIndex];
+            showCustomAlert('关于', '<div style="font-size: 15px; margin-top: 12px;">搜索Easy<br>' + '<p>当前版本: v7.2<br></p>' + '<p>浏览器内核: ' + browserInfo.version + '<br></p>' + '<p>此设备版本: ' + browserInfo.deviceVersion + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<p><b>小提示: </b>' + randomTip + '<div>Github源码: <button onclick="window.location.href=&#39;https://github.com/wugdu27376/setsearchbox/&#39;" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div><div style="margin-top: 20px;">扩展下载: <button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126071_Beta.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Beta</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126070.crx&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">ZIP</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126069.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX</button></div>' + '</div>');
+        };
+        
+        // 判断是否为移动端
+        if (isMobileAndroidApple()) {
+            // 移动端：点击显示
+            displayElement.addEventListener('click', function() {
+                showBrowserAlert();
+            });
+        } else {
+            // 电脑端：右键显示
+            displayElement.addEventListener('contextmenu', function(e) {
+                e = e || window.event;
+                if (e.preventDefault) {
+                    e.preventDefault();
+                } else {
+                    e.returnValue = false;
+                }
+                showBrowserAlert();
+                return false;
+            });
+        }
     }
 };
 
@@ -4924,3 +6124,57 @@ document.getElementById('urlInput').addEventListener('keypress', function(e) {
         }
     }
 });
+
+// 添加快捷键切换搜索引擎（仅电脑端）
+if (isDesktop()) {
+    document.addEventListener('keydown', function(e) {
+        e = e || window.event;
+        var keyCode = e.keyCode || e.which;
+        
+        // Alt+Shift+N 切换下一个搜索引擎
+        if (keyCode === 78 && e.altKey && e.shiftKey) {
+            if (document.getElementById('hideSearchContainerCheckbox').checked) {
+                return;
+            }
+            e.preventDefault();
+            var engineSelect = document.getElementById('engineSelect');
+            var options = engineSelect.options;
+            var currentIndex = engineSelect.selectedIndex;
+            var nextIndex = currentIndex + 1;
+            while (nextIndex < options.length) {
+                if (options[nextIndex].style.display !== 'none' && !options[nextIndex].disabled) {
+                    engineSelect.selectedIndex = nextIndex;
+                    var event = document.createEvent('HTMLEvents');
+                    event.initEvent('change', true, false);
+                    engineSelect.dispatchEvent(event);
+                    break;
+                }
+                nextIndex++;
+            }
+            return false;
+        }
+        
+        // Alt+Shift+P 切换上一个搜索引擎
+        if (keyCode === 80 && e.altKey && e.shiftKey) {
+            if (document.getElementById('hideSearchContainerCheckbox').checked) {
+                return;
+            }
+            e.preventDefault();
+            var engineSelect = document.getElementById('engineSelect');
+            var options = engineSelect.options;
+            var currentIndex = engineSelect.selectedIndex;
+            var prevIndex = currentIndex - 1;
+            while (prevIndex >= 0) {
+                if (options[prevIndex].style.display !== 'none' && !options[prevIndex].disabled) {
+                    engineSelect.selectedIndex = prevIndex;
+                    var event = document.createEvent('HTMLEvents');
+                    event.initEvent('change', true, false);
+                    engineSelect.dispatchEvent(event);
+                    break;
+                }
+                prevIndex--;
+            }
+            return false;
+        }
+    });
+}
