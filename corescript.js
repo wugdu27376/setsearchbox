@@ -90,7 +90,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (searchContainer && urlInput) {
                 // 设置容器为块级居中
-                searchContainer.style.display = 'block';
+                if (!document.getElementById('hideSearchContainerCheckbox').checked) {
+                    searchContainer.style.display = 'block';
+                }
                 searchContainer.style.textAlign = 'center';
                 
                 // 设置子元素内联块
@@ -147,7 +149,9 @@ document.addEventListener('DOMContentLoaded', function() {
             var submitBtn = document.getElementById('submitBtn');
             
             if (searchContainer && urlInput) {
-                searchContainer.style.display = 'block';
+                if (!document.getElementById('hideSearchContainerCheckbox').checked) {
+                    searchContainer.style.display = 'block';
+                }
                 searchContainer.style.textAlign = 'center';
                 
                 if (engineSelect) engineSelect.style.display = 'inline-block';
@@ -5717,6 +5721,95 @@ function updateTimeDisplay() {
     }
 }
 
+var savedShowTimeState = localStorage.getItem('showTimeChecked');
+if (savedShowTimeState === 'true') {
+    document.getElementById('showTimeCheckbox').checked = true;
+    // 启用相关控件
+    document.getElementById('showSecondsCheckbox').disabled = false;
+    document.getElementById('colonBlinkCheckbox').disabled = false;
+    document.getElementById('timeFormatSelect').disabled = false;
+    
+    // 【修复】Safari 5 兼容：延迟执行时间链接显示，确保 DOM 完全加载
+    setTimeout(function() {
+        updateTimeDisplay();
+        if (document.getElementById('showTimeCheckbox') && document.getElementById('showTimeCheckbox').checked) {
+            // 保存原始图片链接（如果有）
+            var savedLinkImage = localStorage.getItem('linkImage');
+            if (savedLinkImage) {
+                localStorage.setItem('timeLinkOriginalImage', savedLinkImage);
+                localStorage.removeItem('linkImage');
+            }
+            // 显示时间链接
+            var timeLinkElement = document.getElementById('85727544071588039023');
+            if (timeLinkElement) {
+                timeLinkElement.innerHTML = '';
+                // 开始更新时间
+                function updateTimeDisplay() {
+                    if (!timeLinkElement) return;
+                    var now = new Date();
+                    var timeFormat = localStorage.getItem('timeFormat') || '24hours';
+                    var showSeconds = document.getElementById('showSecondsCheckbox') && document.getElementById('showSecondsCheckbox').checked;
+                    var hours = now.getHours();
+                    var minutes = now.getMinutes();
+                    function pad(n) { return (n < 10 ? '0' : '') + n; }
+                    var timeStr = '';
+                    if (timeFormat === '24hours') {
+                        timeStr = pad(hours) + ':' + pad(minutes);
+                        if (showSeconds) timeStr += ':' + pad(now.getSeconds());
+                    } else {
+                        var h = hours % 12;
+                        h = h ? h : 12;
+                        timeStr = h + ':' + pad(minutes);
+                        if (showSeconds) timeStr += ':' + pad(now.getSeconds());
+                    }
+                    timeLinkElement.textContent = timeStr;
+                    var linkSize = localStorage.getItem('linkSize') || '30px';
+                    timeLinkElement.style.fontSize = linkSize;
+                }
+                updateTimeDisplay();
+                if (window.timeLinkInterval) clearInterval(window.timeLinkInterval);
+                window.timeLinkInterval = setInterval(updateTimeDisplay, 1000);
+            }
+        }
+        
+        var savedColonBlinkState = localStorage.getItem('colonBlinkChecked');
+        if (savedColonBlinkState === 'true') {
+            document.getElementById('colonBlinkCheckbox').checked = true;
+            // 如果时间链接已启用，启动闪烁效果
+            if (document.getElementById('showTimeCheckbox').checked) {
+                startColonBlink();
+            }
+        }
+        
+        var savedShowSecondsState = localStorage.getItem('showSecondsChecked');
+        if (savedShowSecondsState === 'true') {
+            document.getElementById('showSecondsCheckbox').checked = true;
+            // 如果时间链接已启用且勾选显示秒数，立即显示秒数
+            if (document.getElementById('showTimeCheckbox').checked) {
+                updateTimeDisplay(); // 立即更新时间显示
+            }
+        }
+    }, 0);
+}
+
+var savedColonBlinkState = localStorage.getItem('colonBlinkChecked');
+if (savedColonBlinkState === 'true') {
+    document.getElementById('colonBlinkCheckbox').checked = true;
+    // 如果时间链接已启用，启动闪烁效果
+    if (document.getElementById('showTimeCheckbox').checked) {
+        startColonBlink();
+    }
+}
+
+var savedShowSecondsState = localStorage.getItem('showSecondsChecked');
+if (savedShowSecondsState === 'true') {
+    document.getElementById('showSecondsCheckbox').checked = true;
+    // 如果时间链接已启用且勾选显示秒数，立即显示秒数
+    if (document.getElementById('showTimeCheckbox').checked) {
+    updateTimeDisplay(); // 立即更新时间显示
+    }
+}
+
 // 冒号闪烁相关变量
 var colonBlinkInterval = null;
 var colonVisible = true;
@@ -6199,7 +6292,7 @@ window.onload = function() {
                 '如果你想复制一言的话，鼠标右键一言即可复制',
                 '如果要停用搜索框的话，请在停用输入框弹出弹窗认真阅读此提示，你会知道怎么恢复搜索框的',
                 '你可以自定义设置你喜欢的搜索主页',
-                '有些搜索引擎搜索后会记录你的搜索历史记录，如果你不是无痕浏览模式又只是删除浏览器搜索浏览记录或本站历史搜索历史，请检查你使用过的搜索引擎并删除搜索引擎记录的搜索历史记录。如果不想留搜索浏览历史记录建议使用无痕模式搜索(也有部分浏览器写为隐身模式、隐形模式等)',
+                '有些搜索引擎搜索后会记录你的搜索历史记录，如果你不是无痕浏览模式又只是删除浏览器搜索浏览记录或本站历史搜索历史，请检查你使用过的搜索引擎并删除搜索引擎记录的搜索历史记录。如果不想留搜索浏览历史记录建议使用无痕模式搜索(也有部分浏览器写为隐身模式、隐私浏览等)',
                 '有些搜索引擎并不适应手机或电脑，这就是为什么禁用部分搜索引擎的原因了'
              ];
             if (!window._lastTipIndex) window._lastTipIndex = -1;
