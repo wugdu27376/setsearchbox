@@ -100,14 +100,14 @@
         .search-container {
             max-width: 800px;
             margin: 0 auto;
-            
+    
             /* 最底层的回退方案：Table 布局 (兼容 IE6+, Chrome 1+, Firefox 1+, Safari 1+) */
             display: table;
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* 防止子元素溢出 */
-            
-            /* 旧版 Flexbox 回退方案 (Safari 3.1-6, iOS 6-) */
+            table-layout: fixed;
+    
+            /* 旧版 Flexbox 回退方案 (Safari 3.1-6, iOS 6-, Chrome 1-20) */
             display: -webkit-box;
             -webkit-box-direction: normal;
             -webkit-box-orient: horizontal;
@@ -141,35 +141,73 @@
             justify-content: center;
             align-items: center;
             align-content: stretch;
-        }
             
+            /* 【修复】Chrome 21 以下版本布局修复 */
+            *display: block;
+            *text-align: center;
+            white-space: nowrap;
+        }
+        
+        /* 【修复】Chrome 21 以下版本子元素内联块显示 */
+        .search-container > * {
+            display: inline-block;
+            *display: inline;
+            *zoom: 1;
+            vertical-align: middle;
+            white-space: normal;
+        }
+        
         #engineSelect {
             min-width: 75px;
             width: 15%;
             max-width: 15%;
-            display: table-cell;   /* 配合 table 布局 */
+            display: table-cell;
             vertical-align: middle;
+            white-space: nowrap;
+            overflow: hidden;
+            /* 【修复】旧版浏览器兼容 */
+            *display: inline;
+            *zoom: 1;
+            *width: auto;
         }
         
         #urlInput {
-            display: table-cell;   /* 配合 table 布局 */
+            display: table-cell;
             vertical-align: middle;
-            width: 100%;           /* 在 table 布局中占据剩余空间 */
-            
+            /* 【修复】确保输入框占满剩余宽度 */
+            width: auto;
             -webkit-box-flex: 1;
             -moz-box-flex: 1;
             flex: 1;
-            min-width: 5%;
+            min-width: 30px;
+            /* 【修复】旧版浏览器兼容 */
+            *display: inline;
+            *zoom: 1;
+            *width: 60%;
         }
         
         #submitBtn {
             margin-left: 3px;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
-            display: table-cell;   /* 配合 table 布局 */
+            display: table-cell;
             vertical-align: middle;
             white-space: nowrap;
             overflow: hidden;
+            /* 【修复】旧版浏览器兼容 */
+            *display: inline;
+            *zoom: 1;
+        }
+        
+        /* 【新增】针对 Chrome 21 以下版本的额外修复 */
+        @media all and (max-width: 0px) {
+            /* 仅旧版浏览器解析的 hack */
+            .search-container {
+                text-align: center;
+            }
+            #urlInput {
+                width: 60%;
+            }
         }
         
         #autoFillhttps input[type="checkbox"] {

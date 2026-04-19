@@ -67,6 +67,114 @@ document.addEventListener('DOMContentLoaded', function() {
         var sizeBtn = document.getElementById('iframePlusSizeBtn');
         if (sizeBtn) sizeBtn.style.display = 'block';
     }
+    
+    // 修复 Chrome 21 以下版本输入框长度和居中问题
+    (function fixOldBrowserLayout() {
+        var isOldChrome = false;
+        var ua = navigator.userAgent;
+        var chromeMatch = ua.match(/Chrome\/(\d+)/);
+        if (chromeMatch && parseInt(chromeMatch[1], 10) < 21) {
+            isOldChrome = true;
+        }
+        // 检测是否不支持 flex（旧版浏览器回退）
+        var div = document.createElement('div');
+        var supportsFlex = typeof div.style.flex !== 'undefined' ||
+                           typeof div.style.webkitFlex !== 'undefined' ||
+                           typeof div.style.msFlex !== 'undefined';
+        
+        if (isOldChrome || !supportsFlex) {
+            var searchContainer = document.getElementById('searchContainer');
+            var engineSelect = document.getElementById('engineSelect');
+            var urlInput = document.getElementById('urlInput');
+            var submitBtn = document.getElementById('submitBtn');
+            
+            if (searchContainer && urlInput) {
+                // 设置容器为块级居中
+                searchContainer.style.display = 'block';
+                searchContainer.style.textAlign = 'center';
+                
+                // 设置子元素内联块
+                if (engineSelect) engineSelect.style.display = 'inline-block';
+                if (urlInput) {
+                    urlInput.style.display = 'inline-block';
+                    urlInput.style.width = 'calc(100% - 90px)';
+                    urlInput.style.width = 'expression((this.parentNode.offsetWidth - 90) + "px")';
+                    urlInput.style.minWidth = '100px';
+                }
+                if (submitBtn) submitBtn.style.display = 'inline-block';
+                
+                // 窗口大小改变时重新计算宽度
+                function fixInputWidth() {
+                    if (urlInput && searchContainer) {
+                        var containerWidth = searchContainer.offsetWidth;
+                        var otherWidth = 160; // 下拉框和按钮的估算宽度
+                        if (containerWidth > otherWidth) {
+                            urlInput.style.width = (containerWidth - otherWidth) + 'px';
+                        }
+                    }
+                }
+                fixInputWidth();
+                if (window.addEventListener) {
+                    window.addEventListener('resize', fixInputWidth);
+                } else if (window.attachEvent) {
+                    window.attachEvent('onresize', fixInputWidth);
+                }
+            }
+        }
+    })();
+    
+    // 修复 Chrome 21-28 版本输入框长度问题
+    (function fixChrome28Layout() {
+        var ua = navigator.userAgent;
+        var chromeMatch = ua.match(/Chrome\/(\d+)/);
+        var isOldChrome = false;
+        if (chromeMatch) {
+            var version = parseInt(chromeMatch[1], 10);
+            if (version >= 21 && version <= 28) {
+                isOldChrome = true;
+            }
+        }
+        
+        // 检测是否支持标准 flex（Chrome 29+ 支持）
+        var div = document.createElement('div');
+        var supportsStandardFlex = typeof div.style.flex !== 'undefined';
+        var supportsWebkitFlex = typeof div.style.webkitFlex !== 'undefined';
+        
+        if (isOldChrome || (supportsWebkitFlex && !supportsStandardFlex)) {
+            var searchContainer = document.getElementById('searchContainer');
+            var engineSelect = document.getElementById('engineSelect');
+            var urlInput = document.getElementById('urlInput');
+            var submitBtn = document.getElementById('submitBtn');
+            
+            if (searchContainer && urlInput) {
+                searchContainer.style.display = 'block';
+                searchContainer.style.textAlign = 'center';
+                
+                if (engineSelect) engineSelect.style.display = 'inline-block';
+                if (urlInput) {
+                    urlInput.style.display = 'inline-block';
+                    urlInput.style.width = 'calc(100% - 90px)';
+                    urlInput.style.minWidth = '100px';
+                }
+                if (submitBtn) submitBtn.style.display = 'inline-block';
+                
+                function fixWidth() {
+                    if (urlInput && searchContainer) {
+                        var w = searchContainer.offsetWidth;
+                        if (w > 100) {
+                            urlInput.style.width = (w - 160) + 'px';
+                        }
+                    }
+                }
+                fixWidth();
+                if (window.addEventListener) {
+                    window.addEventListener('resize', fixWidth);
+                } else if (window.attachEvent) {
+                    window.attachEvent('onresize', fixWidth);
+                }
+            }
+        }
+    })();
     // 如果保存的选择是showCheckbox，则显示autoFillhttps div
     if (savedEngine === 'showCheckbox') {
         document.getElementById('autoFillhttps').style.display = 'block';
@@ -6091,13 +6199,12 @@ window.onload = function() {
                 '如果你想复制一言的话，鼠标右键一言即可复制',
                 '如果要停用搜索框的话，请在停用输入框弹出弹窗认真阅读此提示，你会知道怎么恢复搜索框的',
                 '你可以自定义设置你喜欢的搜索主页',
-                '有些搜索引擎搜索后会记录你的搜索历史记录，如果你不是无痕浏览模式又只是删除浏览器搜索浏览记录或本站历史搜索历史，请检查你使用过的搜索引擎并删除搜索引擎记录的搜索历史记录(如果不想留搜索浏览历史记录建议使用无痕模式搜索)。',
-                '本站虽然不支持IE浏览器，但可以兼容到chrome21版本正常布局和使用大部分功能',
+                '有些搜索引擎搜索后会记录你的搜索历史记录，如果你不是无痕浏览模式又只是删除浏览器搜索浏览记录或本站历史搜索历史，请检查你使用过的搜索引擎并删除搜索引擎记录的搜索历史记录。如果不想留搜索浏览历史记录建议使用无痕模式搜索(也有部分浏览器写为隐身模式、隐形模式等)',
                 '有些搜索引擎并不适应手机或电脑，这就是为什么禁用部分搜索引擎的原因了'
              ];
             if (!window._lastTipIndex) window._lastTipIndex = -1;
             var newIndex;
-            do { newIndex = Math.floor(Math.random() * 11); } while (newIndex === window._lastTipIndex && tips.length > 1);
+            do { newIndex = Math.floor(Math.random() * 10); } while (newIndex === window._lastTipIndex && tips.length > 1);
             window._lastTipIndex = newIndex;
             var randomTip = tips[newIndex];
             showCustomAlert('关于', '<div style="font-size: 15px; margin-top: 12px;">搜索Easy<br>' + '<p>当前版本: v7.2<br></p>' + '<p>浏览器内核: ' + browserInfo.version + '<br></p>' + '<p>此设备版本: ' + browserInfo.deviceVersion + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<p><b>小提示: </b>' + randomTip + '<div>Github源码: <button onclick="window.location.href=&#39;https://github.com/wugdu27376/setsearchbox/&#39;" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div><div style="margin-top: 20px;">扩展下载: <button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126071_Beta.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Beta</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126070.crx&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">ZIP</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126069.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX</button></div>' + '</div>');
