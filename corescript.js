@@ -5792,24 +5792,6 @@ if (savedShowTimeState === 'true') {
     }, 0);
 }
 
-var savedColonBlinkState = localStorage.getItem('colonBlinkChecked');
-if (savedColonBlinkState === 'true') {
-    document.getElementById('colonBlinkCheckbox').checked = true;
-    // 如果时间链接已启用，启动闪烁效果
-    if (document.getElementById('showTimeCheckbox').checked) {
-        startColonBlink();
-    }
-}
-
-var savedShowSecondsState = localStorage.getItem('showSecondsChecked');
-if (savedShowSecondsState === 'true') {
-    document.getElementById('showSecondsCheckbox').checked = true;
-    // 如果时间链接已启用且勾选显示秒数，立即显示秒数
-    if (document.getElementById('showTimeCheckbox').checked) {
-    updateTimeDisplay(); // 立即更新时间显示
-    }
-}
-
 // 冒号闪烁相关变量
 var colonBlinkInterval = null;
 var colonVisible = true;
