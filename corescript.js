@@ -1354,7 +1354,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var customSearchUrl = localStorage.getItem('customSearchUrl');
     if (customSearchUrl) {
         // 确保customSearch选项可用
-        showCustomSearchButton();
+        // showCustomSearchButton();
     }
 });
 
@@ -1547,7 +1547,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
             }
             if (newCustomSearchUrl && newCustomSearchUrl.indexOf('{keywords}') !== -1) {
                 localStorage.setItem('customSearchUrl', newCustomSearchUrl);
-                showCustomSearchButton();
+              //  showCustomSearchButton();
             } else {
                 // 网址格式不正确，恢复之前的选择
                 var previousEngine = localStorage.getItem('previousEngine') || 'baidu';
@@ -1592,7 +1592,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                 return;
             }
         } else {
-            showCustomSearchButton();
+            // showCustomSearchButton();
         }
     } else {
         // 保存当前选择作为previousEngine，用于customSearch取消时恢复
@@ -1681,7 +1681,6 @@ if (savedFocusCheckboxState === 'true') {
     document.getElementById('clearOnBlurCheckbox').disabled = false;
     // 监听输入框聚焦时的高度变化，调整quickInputUi位置
     document.getElementById('urlInput').addEventListener('focus', function() {
-        adjustQuickInputPosition();
         document.body.classList.add('focused');
         document.querySelector('.search-container').classList.add('focused');
         document.getElementById('quickInputBtn').style.display = 'block';
