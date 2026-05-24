@@ -227,6 +227,329 @@
 
 
 
+// ========== 跨浏览器事件绑定辅助函数 ==========
+function addEvent(element, eventName, handler) {
+    if (!element) return;
+    if (element.addEventListener) {
+        element.addEventListener(eventName, handler);
+    } else if (element.attachEvent) {
+        element.attachEvent('on' + eventName, handler);
+    } else {
+        element['on' + eventName] = handler;
+    }
+}
+
+function removeEvent(element, eventName, handler) {
+    if (!element) return;
+    if (element.removeEventListener) {
+        element.removeEventListener(eventName, handler);
+    } else if (element.detachEvent) {
+        element.detachEvent('on' + eventName, handler);
+    } else {
+        element['on' + eventName] = null;
+    }
+}
+
+// DOM 加载完成检测
+function onDomReady(callback) {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(callback, 1);
+    } else if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', callback);
+    } else if (document.attachEvent) {
+        document.attachEvent('onreadystatechange', function() {
+            if (document.readyState === 'complete') {
+                callback();
+            }
+        });
+    }
+}
+// ========== 辅助函数结束 ==========
+
+
+
+// ========== IE9/10 完整兼容补丁 ==========
+(function() {
+    // 检测 IE 版本
+    var isIE9 = false, isIE10 = false, isIE = false;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        isIE = true;
+        var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        if (version === 9) isIE9 = true;
+        if (version === 10) isIE10 = true;
+    }
+    
+    // 检测 Trident 内核 (IE11+)
+    var trident = ua.indexOf('Trident/');
+    if (trident > 0) {
+        isIE = true;
+        var rv = ua.indexOf('rv:');
+        if (rv > 0) {
+            var version = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+            if (version <= 11) isIE = true;
+        }
+    }
+    
+    if (isIE9 || isIE10) {
+        // 1. 添加 IE 专用 CSS 类到 body
+        document.body.className += ' ie-legacy';
+        if (isIE9) document.body.className += ' ie9-legacy';
+        if (isIE10) document.body.className += ' ie10-legacy';
+        
+        // 2. 修复搜索容器布局（使用表格布局替代 flex）
+        var searchContainer = document.getElementById('searchContainer');
+        if (searchContainer) {
+            searchContainer.style.display = 'table';
+            searchContainer.style.width = '100%';
+            searchContainer.style.textAlign = 'center';
+            searchContainer.style.tableLayout = 'fixed';
+        }
+        
+        // 3. 修复下拉框、输入框、按钮布局
+        var engineSelect = document.getElementById('engineSelect');
+        var urlInput = document.getElementById('urlInput');
+        var submitBtn = document.getElementById('submitBtn');
+        
+        if (engineSelect) {
+            engineSelect.style.display = 'inline-block';
+            engineSelect.style.width = '90px';
+            engineSelect.style.minWidth = '90px';
+            engineSelect.style.verticalAlign = 'middle';
+            if (isIE9) engineSelect.style.height = '26px';
+        }
+        
+        if (urlInput) {
+            urlInput.style.display = 'inline-block';
+            urlInput.style.width = '60%';
+            urlInput.style.minWidth = '100px';
+            urlInput.style.verticalAlign = 'middle';
+            if (isIE9) urlInput.style.height = '26px';
+        }
+        
+        if (submitBtn) {
+            submitBtn.style.display = 'inline-block';
+            submitBtn.style.verticalAlign = 'middle';
+            submitBtn.style.minWidth = '50px';
+            if (isIE9) submitBtn.style.height = '26px';
+        }
+        
+        // 4. 窗口大小改变时重新调整输入框宽度
+        function fixInputWidth() {
+            if (urlInput && searchContainer) {
+                var containerWidth = searchContainer.offsetWidth;
+                if (containerWidth > 200) {
+                    var otherWidth = 150; // 下拉框90px + 按钮50px + 间距
+                    var inputWidth = containerWidth - otherWidth;
+                    if (inputWidth > 100) {
+                        urlInput.style.width = inputWidth + 'px';
+                    }
+                }
+            }
+        }
+        
+        if (window.addEventListener) {
+            window.addEventListener('resize', fixInputWidth);
+        } else if (window.attachEvent) {
+            window.attachEvent('onresize', fixInputWidth);
+        }
+        setTimeout(fixInputWidth, 100);
+    }
+    
+    // 5. String.trim polyfill
+    if (!String.prototype.trim) {
+        String.prototype.trim = function() {
+            return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+        };
+    }
+    
+    // 6. Array.prototype.indexOf polyfill
+    if (!Array.prototype.indexOf) {
+        Array.prototype.indexOf = function(searchElement, fromIndex) {
+            var k;
+            if (this == null) throw new TypeError('"this" is null or not defined');
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (len === 0) return -1;
+            var n = fromIndex | 0;
+            if (n >= len) return -1;
+            k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+            while (k < len) {
+                if (k in O && O[k] === searchElement) return k;
+                k++;
+            }
+            return -1;
+        };
+    }
+    
+    // 7. Array.prototype.forEach polyfill
+    if (!Array.prototype.forEach) {
+        Array.prototype.forEach = function(callback, thisArg) {
+            if (this == null) throw new TypeError('this is null or not defined');
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (typeof callback !== 'function') throw new TypeError(callback + ' is not a function');
+            var T = thisArg || window;
+            var k = 0;
+            while (k < len) {
+                if (k in O) callback.call(T, O[k], k, O);
+                k++;
+            }
+        };
+    }
+    
+    // 8. Array.prototype.filter polyfill
+    if (!Array.prototype.filter) {
+        Array.prototype.filter = function(callback, thisArg) {
+            if (this == null) throw new TypeError('this is null or not defined');
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (typeof callback !== 'function') throw new TypeError(callback + ' is not a function');
+            var T = thisArg, k = 0, A = [];
+            while (k < len) {
+                if (k in O) {
+                    var kValue = O[k];
+                    if (callback.call(T, kValue, k, O)) A.push(kValue);
+                }
+                k++;
+            }
+            return A;
+        };
+    }
+    
+    // 9. classList polyfill (用于 IE9)
+    if (window.document && !('classList' in document.documentElement)) {
+        (function() {
+            var proto = HTMLElement.prototype;
+            if (!proto.classList) {
+                Object.defineProperty(proto, 'classList', {
+                    get: function() {
+                        var self = this;
+                        function update(fn) {
+                            return function(value) {
+                                var classes = self.className.split(/\s+/);
+                                var index = classes.indexOf(value);
+                                fn(classes, index, value);
+                                self.className = classes.join(' ');
+                            };
+                        }
+                        return {
+                            add: update(function(classes, index, value) {
+                                if (index === -1) classes.push(value);
+                            }),
+                            remove: update(function(classes, index, value) {
+                                if (index !== -1) classes.splice(index, 1);
+                            }),
+                            contains: function(value) {
+                                return self.className.split(/\s+/).indexOf(value) !== -1;
+                            },
+                            toggle: function(value, force) {
+                                var classes = self.className.split(/\s+/);
+                                var index = classes.indexOf(value);
+                                var has = index !== -1;
+                                var shouldAdd = force !== undefined ? force : !has;
+                                if (shouldAdd && !has) {
+                                    classes.push(value);
+                                } else if (!shouldAdd && has) {
+                                    classes.splice(index, 1);
+                                }
+                                self.className = classes.join(' ');
+                                return shouldAdd;
+                            }
+                        };
+                    }
+                });
+            }
+        })();
+    }
+    
+    // 10. localStorage 安全包装
+    var localStorageAvailable = true;
+    try {
+        var testKey = '__test__' + Date.now();
+        localStorage.setItem(testKey, testKey);
+        localStorage.removeItem(testKey);
+    } catch(e) {
+        localStorageAvailable = false;
+        // 创建内存存储替代
+        var memoryStorage = {};
+        window.localStorage = {
+            setItem: function(key, value) { try { memoryStorage[key] = String(value); } catch(e) {} },
+            getItem: function(key) { try { return memoryStorage[key] !== undefined ? memoryStorage[key] : null; } catch(e) { return null; } },
+            removeItem: function(key) { try { delete memoryStorage[key]; } catch(e) {} },
+            clear: function() { try { memoryStorage = {}; } catch(e) {} },
+            get length() { try { return Object.keys(memoryStorage).length; } catch(e) { return 0; } },
+            key: function(index) { try { return Object.keys(memoryStorage)[index] || null; } catch(e) { return null; } }
+        };
+    }
+    
+    // 11. console 安全包装
+    if (!window.console) {
+        window.console = {
+            log: function() {},
+            error: function() {},
+            warn: function() {},
+            info: function() {},
+            debug: function() {}
+        };
+    }
+    
+    // 12. CustomEvent polyfill
+    if (typeof window.CustomEvent !== 'function') {
+        window.CustomEvent = function(event, params) {
+            params = params || { bubbles: false, cancelable: false, detail: undefined };
+            var evt = document.createEvent('CustomEvent');
+            evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+            return evt;
+        };
+        window.CustomEvent.prototype = window.Event.prototype;
+    }
+    
+    // 13. requestAnimationFrame polyfill
+    if (!window.requestAnimationFrame) {
+        window.requestAnimationFrame = function(callback) {
+            return setTimeout(callback, 16);
+        };
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+    }
+    
+    // 14. 为 IE9/10 修复 querySelectorAll 返回的 NodeList 不支持 forEach
+    if (isIE9 || isIE10) {
+        if (window.NodeList && !NodeList.prototype.forEach) {
+            NodeList.prototype.forEach = Array.prototype.forEach;
+        }
+        if (window.HTMLCollection && !HTMLCollection.prototype.forEach) {
+            HTMLCollection.prototype.forEach = Array.prototype.forEach;
+        }
+    }
+})();
+// ========== IE9/10 兼容补丁结束 ==========
+
+
+
+// IE 版本检测（放在 body 最开头）
+(function() {
+    var isIE9 = false, isIE10 = false;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        if (version === 9) isIE9 = true;
+        if (version === 10) isIE10 = true;
+    }
+    if (isIE9 || isIE10) {
+        document.documentElement.className += ' ie-legacy';
+        if (isIE9) document.documentElement.className += ' ie9-legacy';
+        if (isIE10) document.documentElement.className += ' ie10-legacy';
+    }
+})();
+
+
+
+
 // 检测是否为电脑端
 function isDesktop() {
     return !/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
