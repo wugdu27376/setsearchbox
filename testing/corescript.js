@@ -8727,6 +8727,19 @@ window.onload = function() {
     }
 })();
 
+// 支持按Enter键提交
+document.getElementById('urlInput').addEventListener('keypress', function(e) {
+    e = e || window.event;
+    var keyCode = e.keyCode || e.which;
+    if (keyCode === 13) {
+        if (document.getElementById('urlInput').value === '') return;
+        document.getElementById('submitBtn').click();
+        if (this.value.trim() !== '') {
+            this.blur();
+        }
+    }
+});
+
 // 添加快捷键切换搜索引擎（仅电脑端）
 if (isDesktop()) {
     document.addEventListener('keydown', function(e) {
