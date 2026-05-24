@@ -1,7 +1,4 @@
-
-
-
-// ========== IE兼容性补丁 ==========
+// ========== IE兼容性补丁(第670行后结束) ==========
 (function() {
     // 检测是否为IE浏览器
     var isIE = /*@cc_on!@*/false || !!document.documentMode;
@@ -117,8 +114,6 @@
 // ========== IE兼容性补丁结束 ==========
 
 
-
-
 // ========== IE 跳转兼容补丁 ==========
 (function() {
     var isIE = false;
@@ -170,7 +165,6 @@
     }
 })();
 // ========== IE 跳转补丁结束 ==========
-
 
 
 // ========== IE 完整兼容补丁 ==========
@@ -225,8 +219,6 @@
 // ========== IE 兼容补丁结束 ==========
 
 
-
-
 // ========== 跨浏览器事件绑定辅助函数 ==========
 function addEvent(element, eventName, handler) {
     if (!element) return;
@@ -265,7 +257,6 @@ function onDomReady(callback) {
     }
 }
 // ========== 辅助函数结束 ==========
-
 
 
 // ========== 跨浏览器事件绑定（最低 IE6 兼容） ==========
@@ -344,7 +335,6 @@ onDomReady(function() {
 });
 
 
-
 // ========== 全局 Enter 键回退方案（最低 IE6 兼容） ==========
 (function() {
     // 确保只绑定一次
@@ -397,7 +387,6 @@ onDomReady(function() {
         document.onkeydown = globalEnterHandler;
     }
 })();
-
 
 
 // ========== IE9/10 完整兼容补丁 ==========
@@ -661,7 +650,6 @@ onDomReady(function() {
 // ========== IE9/10 兼容补丁结束 ==========
 
 
-
 // IE 版本检测（放在 body 最开头）
 (function() {
     var isIE9 = false, isIE10 = false;
@@ -679,7 +667,7 @@ onDomReady(function() {
     }
 })();
 
-
+// ========== IE兼容性补丁-添加结束 ==========
 
 
 // 检测是否为电脑端
@@ -7706,7 +7694,7 @@ document.querySelector('label[for="customSearchListBtn"]').addEventListener('cli
     html += '<span style="display: table-cell; vertical-align: middle; text-align: right; white-space: nowrap;">';
     html += '<input type="checkbox" id="hideOrder0Checkbox" ' + (isOrder0Hidden ? 'checked' : '') + ' style="margin-right: 5px;">';
     html += '<label for="hideOrder0Checkbox" style="margin-right: 8px; position: relative; bottom: 2px; user-select: none;">隐藏此项</label>';
-    html += '<button id="clearAllCustomSearchesBtn" style="background: #ffffff; float: right; border: 1px solid #ccc; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'">清空<i class="fa fa-trash-o" style="margin-left: 3px;"></i></button>';
+    html += '<button id="clearAllCustomSearchesBtn" style="background: #ffffff; float: right; border: 1px solid #ccc; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'">一键清空<i class="fa fa-trash-o" style="margin-left: 3px;"></i></button>';
     html += '</span>';
     html += '</div>';
     
@@ -8642,7 +8630,6 @@ window.onload = function() {
         var showBrowserAlert = function() {
             var browserInfo = getBrowserInfo();
             var tips = [
-                '本网页早已不支持IE浏览器，除了v2版本以下',
                 '如果你电脑点击浏览器信息没有弹出这个弹窗，你换鼠标右键点击试试',
                 '如果你的是移动设备不能鼠标右键的话，可以在鼠标右键的地方长按就可以了',
                 '如果想用快捷键关闭双输入框弹窗的话，按 Shift + Esc 可以关闭',
@@ -8656,7 +8643,7 @@ window.onload = function() {
              ];
             if (!window._lastTipIndex) window._lastTipIndex = -1;
             var newIndex;
-            do { newIndex = Math.floor(Math.random() * 11); } while (newIndex === window._lastTipIndex && tips.length > 1);
+            do { newIndex = Math.floor(Math.random() * 10); } while (newIndex === window._lastTipIndex && tips.length > 1);
             window._lastTipIndex = newIndex;
             var randomTip = tips[newIndex];
             showCustomAlert('关于', '<div style="font-size: 15px; margin-top: 12px;">搜索Easy<br>' + '<p>网页版本号: v7.3<br></p>' + '<p>浏览器内核: ' + browserInfo.name + '<br></p>' + '<p>浏览器版本: ' + browserInfo.version + '<br></p>' + '<p>系统版本: ' + browserInfo.deviceVersion + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<p><b>小提示: </b>' + randomTip + '<div>Github源码: <button onclick="window.open(&#39;https://github.com/wugdu27376/setsearchbox/&#39;, &#39;_blank&#39;);" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div><div style="margin-top: 20px;">扩展下载: <div style="display: inline-block; width: 100%; max-width: 150px; float: right;"><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126071_Beta.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Beta</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126069.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">ZIP</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126070.crx&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126072.zip&#39;" style="margin-left: 4px; margin-top: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX-ZIP</button></div><!-- <div style="display: inline-block; margin-top: 20px; width: 100%;">Github源码: <button onclick="window.location.href=&#39;https://github.com/wugdu27376/setsearchbox/&#39;" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div> --></div>' + '</div>');
