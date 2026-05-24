@@ -268,6 +268,138 @@ function onDomReady(callback) {
 
 
 
+// ========== 跨浏览器事件绑定（最低 IE6 兼容） ==========
+function addEvent(element, eventName, handler) {
+    if (!element) return;
+    if (element.addEventListener) {
+        element.addEventListener(eventName, handler);
+    } else if (element.attachEvent) {
+        element.attachEvent('on' + eventName, handler);
+    } else {
+        element['on' + eventName] = handler;
+    }
+}
+
+function removeEvent(element, eventName, handler) {
+    if (!element) return;
+    if (element.removeEventListener) {
+        element.removeEventListener(eventName, handler);
+    } else if (element.detachEvent) {
+        element.detachEvent('on' + eventName, handler);
+    } else {
+        element['on' + eventName] = null;
+    }
+}
+
+// DOM 加载完成检测（最低 IE6 兼容）
+function onDomReady(callback) {
+    if (document.readyState === 'complete') {
+        setTimeout(callback, 1);
+        return;
+    }
+    if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', callback);
+    } else if (document.attachEvent) {
+        document.attachEvent('onreadystatechange', function() {
+            if (document.readyState === 'complete') {
+                callback();
+            }
+        });
+        // 确保 window.onload 也能触发
+        var oldOnLoad = window.onload;
+        window.onload = function() {
+            if (oldOnLoad) oldOnLoad();
+            callback();
+        };
+    } else {
+        window.onload = callback;
+    }
+}
+// ========== 事件辅助函数结束 ==========
+
+// 确保提交按钮的点击事件在 IE 中正常工作
+function bindSubmitButtonEvent() {
+    var submitBtn = document.getElementById('submitBtn');
+    if (!submitBtn) return;
+    
+    // 保存原始点击处理函数
+    var originalOnClick = submitBtn.onclick;
+    
+    // 使用兼容方式绑定
+    if (submitBtn.addEventListener) {
+        submitBtn.addEventListener('click', function(e) {
+            // 原有的提交逻辑会由其他代码处理
+        });
+    } else if (submitBtn.attachEvent) {
+        submitBtn.attachEvent('onclick', function(e) {
+            // 确保事件冒泡
+            return true;
+        });
+    }
+}
+
+// 在 DOM 加载完成后调用
+onDomReady(function() {
+    bindSubmitButtonEvent();
+});
+
+
+
+// ========== 全局 Enter 键回退方案（最低 IE6 兼容） ==========
+(function() {
+    // 确保只绑定一次
+    if (window.__enterKeyBound) return;
+    window.__enterKeyBound = true;
+    
+    function globalEnterHandler(e) {
+        e = e || window.event;
+        var target = e.target || e.srcElement;
+        var keyCode = e.keyCode || e.which || e.charCode;
+        
+        // 只在按下 Enter 键时处理
+        if (keyCode !== 13) return true;
+        
+        // 检查焦点是否在输入框上
+        if (target && (target.id === 'urlInput' || target === document.getElementById('urlInput'))) {
+            var submitBtn = document.getElementById('submitBtn');
+            var urlInput = document.getElementById('urlInput');
+            
+            if (submitBtn && urlInput) {
+                var inputValue = urlInput.value;
+                if (inputValue && inputValue !== '' && inputValue !== 'https://') {
+                    // 阻止默认行为
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    } else {
+                        e.returnValue = false;
+                    }
+                    
+                    // 触发跳转
+                    if (submitBtn.click) {
+                        submitBtn.click();
+                    } else if (submitBtn.fireEvent) {
+                        submitBtn.fireEvent('onclick');
+                    }
+                    
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    // 绑定到 document 或 window
+    if (document.addEventListener) {
+        document.addEventListener('keydown', globalEnterHandler);
+    } else if (document.attachEvent) {
+        document.attachEvent('onkeydown', globalEnterHandler);
+    } else {
+        document.onkeydown = globalEnterHandler;
+    }
+})();
+
+
+
 // ========== IE9/10 完整兼容补丁 ==========
 (function() {
     // 检测 IE 版本
@@ -527,94 +659,6 @@ function onDomReady(callback) {
     }
 })();
 // ========== IE9/10 兼容补丁结束 ==========
-
-
-
-// ========== IE 键盘事件完整兼容补丁 ==========
-(function() {
-    // 检测 IE 版本
-    var isIE = false;
-    var ieVersion = 0;
-    var ua = navigator.userAgent;
-    var msie = ua.indexOf('MSIE ');
-    if (msie > 0) {
-        isIE = true;
-        ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
-    }
-    var trident = ua.indexOf('Trident/');
-    if (trident > 0) {
-        isIE = true;
-        var rv = ua.indexOf('rv:');
-        if (rv > 0) {
-            ieVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
-        }
-    }
-    
-    // 修复 IE8 及以下 event 对象问题
-    if (isIE && ieVersion <= 8) {
-        // 全局修复 window.event
-        if (!window.event) {
-            window.event = (function() {
-                var event = null;
-                return event;
-            })();
-        }
-    }
-    
-    // 修复 keyCode 获取
-    window.getKeyCode = function(e) {
-        e = e || window.event;
-        return e.keyCode || e.which || e.charCode;
-    };
-    
-    // 修复 preventDefault
-    if (typeof Event !== 'undefined') {
-        if (!Event.prototype.preventDefault) {
-            Event.prototype.preventDefault = function() {
-                this.returnValue = false;
-            };
-        }
-        if (!Event.prototype.stopPropagation) {
-            Event.prototype.stopPropagation = function() {
-                this.cancelBubble = true;
-            };
-        }
-    }
-})();
-// ========== IE 键盘事件兼容补丁结束 ==========
-
-
-
-// IE9/10 专用回车修复
-if (document.documentMode === 9 || document.documentMode === 10) {
-    var urlInput = document.getElementById('urlInput');
-    if (urlInput) {
-        // 使用 onkeydown 替代 keypress（IE9/10 更稳定）
-        urlInput.onkeydown = function(e) {
-            e = e || window.event;
-            if (e.keyCode === 13) {
-                e.returnValue = false;
-                if (e.preventDefault) e.preventDefault();
-                
-                var value = this.value;
-                if (value && value !== '' && value !== 'https://' && value !== 'http://') {
-                    var submitBtn = document.getElementById('submitBtn');
-                    if (submitBtn) {
-                        try {
-                            submitBtn.click();
-                        } catch(e) {
-                            if (submitBtn.fireEvent) {
-                                submitBtn.fireEvent('onclick');
-                            }
-                        }
-                        try { this.blur(); } catch(e) {}
-                    }
-                }
-                return false;
-            }
-        };
-    }
-}
 
 
 
@@ -8640,105 +8684,107 @@ window.onload = function() {
     }
 };
 
-// ========== 回车键提交（兼容 IE6+ 所有版本） ==========
+// ========== Enter 键提交（兼容所有 IE 版本） ==========
 (function() {
     var urlInput = document.getElementById('urlInput');
     var submitBtn = document.getElementById('submitBtn');
     
     if (!urlInput || !submitBtn) return;
     
-    // 通用的回车键处理函数
+    // 检测 IE 浏览器
+    var isIE = false;
+    var ieVersion = 0;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        isIE = true;
+        ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+    }
+    var trident = ua.indexOf('Trident/');
+    if (trident > 0) {
+        isIE = true;
+        var rv = ua.indexOf('rv:');
+        if (rv > 0) {
+            ieVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+        }
+    }
+    
+    // Enter 键处理函数
     function handleEnterKey(e) {
+        // 获取事件对象（兼容 IE）
         e = e || window.event;
-        // 获取按键码（兼容所有浏览器）
+        
+        // 获取按键码（兼容 IE）
         var keyCode = e.keyCode || e.which || e.charCode;
         
-        // 13 表示 Enter 键
+        // 检查是否按下了 Enter 键（13）
         if (keyCode === 13) {
-            // 阻止默认行为（如表单提交、换行等）
+            // 阻止默认行为（如表单提交）
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
                 e.returnValue = false;
             }
             
-            var value = urlInput.value;
-            // 空值不处理
-            if (value === '' || value === 'https://' || value === 'http://') {
+            // 获取输入框值
+            var inputValue = urlInput.value;
+            
+            // 如果输入为空，不执行跳转
+            if (inputValue === '' || inputValue === 'https://') {
                 return false;
             }
             
             // 触发跳转按钮点击
             if (submitBtn.click) {
                 submitBtn.click();
-            } else {
-                // IE8 及以下 fallback
+            } else if (submitBtn.fireEvent) {
+                // IE 兼容：使用 fireEvent 触发点击
                 submitBtn.fireEvent('onclick');
             }
             
-            // 让输入框失去焦点（可选）
+            // 可选：失焦（IE 兼容）
             try {
-                if (value.trim() !== '') {
-                    urlInput.blur();
-                }
-            } catch(e) {}
+                urlInput.blur();
+            } catch(err) {}
             
             return false;
         }
         return true;
     }
     
-    // 兼容所有 IE 版本的事件绑定
+    // 为不同 IE 版本添加事件监听
     if (urlInput.addEventListener) {
         // 现代浏览器（包括 IE9+）
+        // 使用 keydown 而非 keypress，因为 IE8 及以下不支持 keypress
         urlInput.addEventListener('keydown', handleEnterKey);
-        // 同时保留 keypress 作为备选
-        urlInput.addEventListener('keypress', handleEnterKey);
     } else if (urlInput.attachEvent) {
         // IE8 及以下
         urlInput.attachEvent('onkeydown', handleEnterKey);
-        urlInput.attachEvent('onkeypress', handleEnterKey);
     } else {
-        // 极旧浏览器
+        // 极旧浏览器回退方案
         urlInput.onkeydown = handleEnterKey;
-        urlInput.onkeypress = handleEnterKey;
     }
     
-    // 额外修复：防止 IE 下输入法输入时误触发
-    if (urlInput.addEventListener) {
-        urlInput.addEventListener('keyup', function(e) {
-            e = e || window.event;
-            var keyCode = e.keyCode || e.which;
-            // 处理输入法确认时的回车（微软拼音等）
-            if (keyCode === 13) {
-                if (e.preventDefault) e.preventDefault();
+    // 额外修复：对于 IE 低版本，确保 input 框不会触发表单提交
+    if (isIE && ieVersion <= 9) {
+        // 阻止任何可能的表单自动提交
+        var parentForm = urlInput.parentNode;
+        while (parentForm && parentForm.tagName !== 'FORM') {
+            parentForm = parentForm.parentNode;
+        }
+        if (parentForm && parentForm.tagName === 'FORM') {
+            addEvent(parentForm, 'submit', function(e) {
+                e = e || window.event;
+                if (e.preventDefault) {
+                    e.preventDefault();
+                } else {
+                    e.returnValue = false;
+                }
                 return false;
-            }
-        });
-    } else if (urlInput.attachEvent) {
-        urlInput.attachEvent('onkeyup', function(e) {
-            e = e || window.event;
-            var keyCode = e.keyCode || e.which;
-            if (keyCode === 13) {
-                e.returnValue = false;
-                return false;
-            }
-        });
-    }
-})();
-
-// 支持按Enter键提交
-document.getElementById('urlInput').addEventListener('keypress', function(e) {
-    e = e || window.event;
-    var keyCode = e.keyCode || e.which;
-    if (keyCode === 13) {
-        if (document.getElementById('urlInput').value === '') return;
-        document.getElementById('submitBtn').click();
-        if (this.value.trim() !== '') {
-            this.blur();
+            });
         }
     }
-});
+})();
 
 // 添加快捷键切换搜索引擎（仅电脑端）
 if (isDesktop()) {
