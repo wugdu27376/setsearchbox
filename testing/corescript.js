@@ -1071,7 +1071,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     })();
     var savedSearchHistoryInSuggestState = localStorage.getItem('searchHistoryInSuggestChecked');
-    // 获取两个依赖开关的状态
+    // 读取保存的状态（兼容 IE9）
+    var savedSearchHistoryInSuggestState = null;
+    try {
+        savedSearchHistoryInSuggestState = localStorage.getItem('searchHistoryInSuggestChecked');
+    } catch(e) {
+        // IE9 隐私模式下使用内存存储
+        savedSearchHistoryInSuggestState = window._historyInSuggestState || 'false';
+    }
+    
     var historyCheckbox = document.getElementById('searchHistoryCheckbox');
     var suggestionsCheckbox = document.getElementById('searchSuggestionsCheckbox');
     var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
@@ -1094,17 +1102,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
                 // 依赖开关未勾选，清除保存的状态
-                localStorage.setItem('searchHistoryInSuggestChecked', 'false');
                 historyInSuggestCheckbox.checked = false;
+                try {
+                    localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+                } catch(e) {
+                    window._historyInSuggestState = 'false';
+                }
             }
         } else {
-            // 确保复选框状态与存储一致
             historyInSuggestCheckbox.checked = false;
         }
     }
     
     // 初始化禁用状态
-    updateHistoryInSuggestDisabled();
+    if (typeof updateHistoryInSuggestDisabled === 'function') {
+        updateHistoryInSuggestDisabled();
+    }
     // 修复 Chrome 21 以下版本输入框长度和居中问题
     (function fixOldBrowserLayout() {
         var isOldChrome = false;
@@ -1332,14 +1345,38 @@ document.addEventListener('DOMContentLoaded', function() {
     // 监听新版历史记录开关变化（兼容 IE9）
     var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
     if (historyInSuggestCheckbox) {
-        // IE9 兼容：使用 attachEvent 或 onclick 属性
-        var historyInSuggestChangeHandler = function() {
-            if (this.disabled) {
-                this.checked = false;
+        // 定义状态保存函数
+        function saveHistoryInSuggestState(checked) {
+            try {
+                localStorage.setItem('searchHistoryInSuggestChecked', checked ? 'true' : 'false');
+            } catch(e) {
+                // IE9 隐私模式下 localStorage 不可用，使用内存存储
+                window._historyInSuggestState = checked ? 'true' : 'false';
+            }
+        }
+        
+        // 定义状态读取函数
+        function getHistoryInSuggestState() {
+            try {
+                var state = localStorage.getItem('searchHistoryInSuggestChecked');
+                if (state !== null) return state;
+            } catch(e) {}
+            return window._historyInSuggestState || 'false';
+        }
+        
+        // 定义开关变化处理函数
+        function handleHistoryInSuggestChange() {
+            var checkbox = document.getElementById('searchHistoryInSuggestCheckbox');
+            if (!checkbox) return;
+            
+            if (checkbox.disabled) {
+                checkbox.checked = false;
                 return;
             }
             
-            if (this.checked) {
+            var isChecked = checkbox.checked;
+            
+            if (isChecked) {
                 var searchHistoryDiv = document.getElementById('searchHistory');
                 var clearHistoryBtn = document.getElementById('clearHistoryBtn');
                 if (searchHistoryDiv) {
@@ -1348,10 +1385,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (clearHistoryBtn) {
                     clearHistoryBtn.style.display = 'none';
                 }
-                
-                try {
-                    localStorage.setItem('searchHistoryInSuggestChecked', 'true');
-                } catch(e) {}
+                saveHistoryInSuggestState(true);
             } else {
                 var historyCheckbox = document.getElementById('searchHistoryCheckbox');
                 if (historyCheckbox && historyCheckbox.checked) {
@@ -1373,36 +1407,35 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 }
-                
-                try {
-                    localStorage.setItem('searchHistoryInSuggestChecked', 'false');
-                } catch(e) {}
+                saveHistoryInSuggestState(false);
             }
             
             // 更新历史记录大小和颜色选择器的禁用状态
             if (typeof updateHistoryInSuggestDisabled === 'function') {
                 updateHistoryInSuggestDisabled();
             }
-        };
+        }
         
-        // 兼容所有浏览器的绑定方式
+        // IE9 兼容：使用多种方式绑定事件
         if (historyInSuggestCheckbox.addEventListener) {
-            historyInSuggestCheckbox.addEventListener('change', historyInSuggestChangeHandler);
-        } else if (historyInSuggestCheckbox.attachEvent) {
+            historyInSuggestCheckbox.addEventListener('change', handleHistoryInSuggestChange);
+        }
+        
+        // IE9 专用：使用 attachEvent 监听 propertychange
+        if (historyInSuggestCheckbox.attachEvent) {
             historyInSuggestCheckbox.attachEvent('onpropertychange', function(e) {
                 e = e || window.event;
                 if (e.propertyName === 'checked') {
-                    historyInSuggestChangeHandler.call(historyInSuggestCheckbox, e);
+                    handleHistoryInSuggestChange();
                 }
             });
-        } else {
-            historyInSuggestCheckbox.onclick = function() {
-                // IE9 中点击后立即执行
-                setTimeout(function() {
-                    historyInSuggestChangeHandler.call(historyInSuggestCheckbox);
-                }, 0);
-            };
         }
+        
+        // 备用方案：使用 onclick 确保 IE9 能捕获点击
+        historyInSuggestCheckbox.onclick = function() {
+            // 延迟执行，确保 checked 状态已更新
+            setTimeout(handleHistoryInSuggestChange, 0);
+        };
     }
     
     // 控制历史记录在建议中显示开关的可用性（兼容 IE9）
