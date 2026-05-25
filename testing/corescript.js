@@ -5908,7 +5908,37 @@ document.querySelector('label[for="exportSettingsBtn"]').addEventListener('click
     });
 });
 
+
+
+
+
+
+
+// ========== 修改位置：exportSettingsData 函数 - 支持 IE9+ 浏览器导出 ==========
 function exportSettingsData() {
+    // ========== 新增：IE 兼容性检测 ==========
+    var isIE = false;
+    var ieVersion = 0;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            isIE = true;
+            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        }
+        var trident = ua.indexOf('Trident/');
+        if (trident > 0) {
+            isIE = true;
+            var rv = ua.indexOf('rv:');
+            if (rv > 0) {
+                ieVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+            }
+        }
+    } catch(e) {
+        isIE = false;
+    }
+    // ========== 新增结束 ==========
+    
     var settings = {
         autoFillHttpsChecked: localStorage.getItem('autoFillHttpsChecked') || 'false',
         focusCheckboxChecked: localStorage.getItem('focusCheckboxChecked') || 'false',
@@ -5968,20 +5998,162 @@ function exportSettingsData() {
         timeLinkOriginalImage: localStorage.getItem('timeLinkOriginalImage'),
         timeFormat: localStorage.getItem('timeFormat') || '24hours',
         colonBlinkChecked: localStorage.getItem('colonBlinkChecked') || 'false',
-        showSecondsChecked: localStorage.getItem('colonBlinkChecked') || 'false',
+        showSecondsChecked: localStorage.getItem('showSecondsChecked') || 'false',
         '36156798756549916136': localStorage.getItem('36156798756549916136') || 'false',
-        hideOrder0Search: localStorage.getItem('hideOrder0Search') || 'false'
+        hideOrder0Search: localStorage.getItem('hideOrder0Search') || 'false',
+        searchHistoryInSuggestChecked: localStorage.getItem('searchHistoryInSuggestChecked') || 'false',
+        historyLinksFontSize: localStorage.getItem('historyLinksFontSize'),
+        historyLinksColor: localStorage.getItem('historyLinksColor') || '#0000ee',
+        iframePlusWidth: localStorage.getItem('iframePlusWidth'),
+        iframePlusHeight: localStorage.getItem('iframePlusHeight'),
+        rightClickAction: localStorage.getItem('rightClickAction') || 'disabled',
+        swipeSwitchChecked: localStorage.getItem('swipeSwitchChecked') || 'false',
+        hitokotoColor: localStorage.getItem('hitokotoColor') || '#000000',
+        hitokotoFontStyle: localStorage.getItem('hitokotoFontStyle') || 'italic',
+        hitokotoFontSize: localStorage.getItem('hitokotoFontSize') || '14px',
+        moreSettingsExpanded: localStorage.getItem('moreSettingsExpanded') || 'false'
     };
     
-    var jsonContent = JSON.stringify(settings, null, 2);
-    var base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
-    var dataUrl = 'data:application/json;base64,' + base64Content;
+    // ========== 新增：动态遍历 localStorage 捕获遗漏项 ==========
+    try {
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && !settings.hasOwnProperty(key)) {
+                if (key.indexOf('_temp') === -1 && 
+                    key.indexOf('modalCallback_') === -1 &&
+                    key.indexOf('doubleInputCallback_') === -1 &&
+                    key.indexOf('alertCallback_') === -1 &&
+                    key.indexOf('codeCallback_') === -1 &&
+                    key.indexOf('confirmCallback_') === -1) {
+                    var value = localStorage.getItem(key);
+                    if (value !== null && value !== undefined) {
+                        settings[key] = value;
+                    }
+                }
+            }
+        }
+    } catch(e) {
+        // IE 兼容：遍历失败时手动添加已知遗漏项
+        var knownMissingKeys = [
+            'iframePlusWidth', 'iframePlusHeight',
+            'rightClickAction', 'swipeSwitchChecked',
+            'hitokotoColor', 'hitokotoFontStyle', 'hitokotoFontSize',
+            'moreSettingsExpanded', 'previousEngine',
+            'searchHistoryInSuggestChecked', 'historyLinksFontSize', 'historyLinksColor'
+        ];
+        for (var k = 0; k < knownMissingKeys.length; k++) {
+            var key = knownMissingKeys[k];
+            if (!settings.hasOwnProperty(key)) {
+                var value = localStorage.getItem(key);
+                if (value !== null && value !== undefined) {
+                    settings[key] = value;
+                }
+            }
+        }
+    }
+    // ========== 新增结束 ==========
     
-    var a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = 'search_settings.json';
-    a.click();
+    var jsonContent = JSON.stringify(settings, null, 2);
+    
+    // ========== 修改：IE9+ 兼容的文件导出逻辑 ==========
+    var fileName = 'search_settings.json';
+    
+    // 方法1：尝试使用 Blob（IE10+ 支持）
+    var blobSupported = false;
+    try {
+        blobSupported = typeof Blob !== 'undefined' && typeof URL !== 'undefined';
+    } catch(e) {
+        blobSupported = false;
+    }
+    
+    if (blobSupported) {
+        // IE10+ 和其他现代浏览器使用 Blob + URL.createObjectURL
+        try {
+            var blob = new Blob([jsonContent], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            
+            if (a.click) {
+                a.click();
+            } else if (a.fireEvent) {
+                a.fireEvent('onclick');
+            }
+            
+            setTimeout(function() {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            return;
+        } catch(e) {
+            // Blob 方式失败，继续使用备用方案
+        }
+    }
+    
+    // 方法2：IE9 及以下使用 msSaveBlob（IE10+ 也支持）
+    if (typeof navigator !== 'undefined' && navigator.msSaveBlob) {
+        try {
+            var blob = new Blob([jsonContent], { type: 'application/json' });
+            navigator.msSaveBlob(blob, fileName);
+            return;
+        } catch(e) {
+            // msSaveBlob 失败，继续使用备用方案
+        }
+    }
+    
+    // 方法3：使用 data URL（所有浏览器通用，但 IE 有 URL 长度限制）
+    try {
+        var base64Content = '';
+        // 尝试 base64 编码
+        try {
+            if (typeof btoa === 'function') {
+                base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
+            } else {
+                // IE9 不支持 btoa 时的降级方案
+                base64Content = encodeURIComponent(jsonContent);
+            }
+        } catch(e) {
+            base64Content = encodeURIComponent(jsonContent);
+        }
+        
+        var dataUrl = 'data:application/json;charset=utf-8,' + base64Content;
+        var a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        
+        if (a.click) {
+            a.click();
+        } else if (a.fireEvent) {
+            a.fireEvent('onclick');
+        }
+        
+        setTimeout(function() {
+            document.body.removeChild(a);
+        }, 100);
+    } catch(e) {
+        // 方法4：最后的降级方案 - 使用 prompt 显示 JSON 内容让用户手动保存
+        try {
+            var fallbackMsg = '无法自动下载文件，请手动复制以下内容并保存为 ' + fileName + '：\n\n';
+            if (confirm(fallbackMsg + '确定后显示文件内容')) {
+                prompt('请复制以下内容并保存为 ' + fileName, jsonContent);
+            }
+        } catch(e2) {
+            alert('导出失败：' + e2.message);
+        }
+    }
+    // ========== 修改结束 ==========
 }
+// ========== 修改位置结束 ==========
+
+
+
+
+
 
 // 导入设置功能
 document.querySelector('label[for="importSettingsBtn"]').addEventListener('click', function() {
