@@ -3780,9 +3780,12 @@ function exportSettingsData() {
         timeLinkOriginalImage: localStorage.getItem('timeLinkOriginalImage'),
         timeFormat: localStorage.getItem('timeFormat') || '24hours',
         colonBlinkChecked: localStorage.getItem('colonBlinkChecked') || 'false',
-        showSecondsChecked: localStorage.getItem('colonBlinkChecked') || 'false',
+        showSecondsChecked: localStorage.getItem('showSecondsChecked') || 'false',
         '36156798756549916136': localStorage.getItem('36156798756549916136') || 'false',
-        hideOrder0Search: localStorage.getItem('hideOrder0Search') || 'false'
+        hideOrder0Search: localStorage.getItem('hideOrder0Search') || 'false',
+        iframePlusWidth: localStorage.getItem('iframePlusWidth'),
+        iframePlusHeight: localStorage.getItem('iframePlusHeight'),
+        moreSettingsExpanded: localStorage.getItem('moreSettingsExpanded') || 'false'
     };
     
     var jsonContent = JSON.stringify(settings, null, 2);
