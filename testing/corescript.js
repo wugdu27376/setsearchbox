@@ -1071,25 +1071,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     })();
     var savedSearchHistoryInSuggestState = localStorage.getItem('searchHistoryInSuggestChecked');
-    // 获取两个依赖开关的状态 ===
-    var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
-    var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+    // 获取两个依赖开关的状态
+    var historyCheckbox = document.getElementById('searchHistoryCheckbox');
+    var suggestionsCheckbox = document.getElementById('searchSuggestionsCheckbox');
+    var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
     
-    if (savedSearchHistoryInSuggestState === 'true') {
-        // === 只有两个依赖开关都勾选时才能恢复勾选状态 ===
-        if (historyChecked && suggestionsChecked) {
-            document.getElementById('searchHistoryInSuggestCheckbox').checked = true;
-            var searchHistoryDiv = document.getElementById('searchHistory');
-            var clearHistoryBtn = document.getElementById('clearHistoryBtn');
-            if (searchHistoryDiv) {
-                searchHistoryDiv.style.display = 'none';
-            }
-            if (clearHistoryBtn) {
-                clearHistoryBtn.style.display = 'none';
+    if (historyCheckbox && suggestionsCheckbox && historyInSuggestCheckbox) {
+        var historyChecked = historyCheckbox.checked;
+        var suggestionsChecked = suggestionsCheckbox.checked;
+        
+        if (savedSearchHistoryInSuggestState === 'true') {
+            // 只有两个依赖开关都勾选时才能恢复勾选状态
+            if (historyChecked && suggestionsChecked) {
+                historyInSuggestCheckbox.checked = true;
+                var searchHistoryDiv = document.getElementById('searchHistory');
+                var clearHistoryBtn = document.getElementById('clearHistoryBtn');
+                if (searchHistoryDiv) {
+                    searchHistoryDiv.style.display = 'none';
+                }
+                if (clearHistoryBtn) {
+                    clearHistoryBtn.style.display = 'none';
+                }
+            } else {
+                // 依赖开关未勾选，清除保存的状态
+                localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+                historyInSuggestCheckbox.checked = false;
             }
         } else {
-            // 依赖开关未勾选，清除保存的状态
-            localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+            // 确保复选框状态与存储一致
+            historyInSuggestCheckbox.checked = false;
         }
     }
     
@@ -1319,10 +1329,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('searchHistoryInSuggestCheckbox').checked = true;
     }
     
-    // 监听新版历史记录开关变化
+    // 监听新版历史记录开关变化（兼容 IE9）
     var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
     if (historyInSuggestCheckbox) {
-        historyInSuggestCheckbox.addEventListener('change', function() {
+        // IE9 兼容：使用 attachEvent 或 onclick 属性
+        var historyInSuggestChangeHandler = function() {
             if (this.disabled) {
                 this.checked = false;
                 return;
@@ -1338,11 +1349,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     clearHistoryBtn.style.display = 'none';
                 }
                 
-                localStorage.setItem('searchHistoryInSuggestChecked', 'true');
+                try {
+                    localStorage.setItem('searchHistoryInSuggestChecked', 'true');
+                } catch(e) {}
             } else {
-                var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
-                if (historyChecked) {
-                    var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                var historyCheckbox = document.getElementById('searchHistoryCheckbox');
+                if (historyCheckbox && historyCheckbox.checked) {
+                    var history = [];
+                    try {
+                        history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                    } catch(e) {}
                     if (history.length > 0) {
                         var searchHistoryDiv = document.getElementById('searchHistory');
                         var clearHistoryBtn = document.getElementById('clearHistoryBtn');
@@ -1352,28 +1368,82 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (clearHistoryBtn) {
                             clearHistoryBtn.style.display = 'block';
                         }
-                        updateSearchHistory();
+                        if (typeof updateSearchHistory === 'function') {
+                            updateSearchHistory();
+                        }
                     }
                 }
                 
-                localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+                try {
+                    localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+                } catch(e) {}
             }
             
-            // === 新增：更新历史记录大小和颜色选择器的禁用状态 ===
-            updateHistoryInSuggestDisabled();
-            // === 新增代码结束 ===
-        });
+            // 更新历史记录大小和颜色选择器的禁用状态
+            if (typeof updateHistoryInSuggestDisabled === 'function') {
+                updateHistoryInSuggestDisabled();
+            }
+        };
+        
+        // 兼容所有浏览器的绑定方式
+        if (historyInSuggestCheckbox.addEventListener) {
+            historyInSuggestCheckbox.addEventListener('change', historyInSuggestChangeHandler);
+        } else if (historyInSuggestCheckbox.attachEvent) {
+            historyInSuggestCheckbox.attachEvent('onpropertychange', function(e) {
+                e = e || window.event;
+                if (e.propertyName === 'checked') {
+                    historyInSuggestChangeHandler.call(historyInSuggestCheckbox, e);
+                }
+            });
+        } else {
+            historyInSuggestCheckbox.onclick = function() {
+                // IE9 中点击后立即执行
+                setTimeout(function() {
+                    historyInSuggestChangeHandler.call(historyInSuggestCheckbox);
+                }, 0);
+            };
+        }
     }
     
-    // 控制历史记录在建议中显示开关的可用性
+    // 控制历史记录在建议中显示开关的可用性（兼容 IE9）
     function updateHistoryInSuggestDisabled() {
-        var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
-        var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+        var historyCheckbox = document.getElementById('searchHistoryCheckbox');
+        var suggestionsCheckbox = document.getElementById('searchSuggestionsCheckbox');
         var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
-        // === 新增：获取历史记录大小和颜色选择器 ===
-        var historyLinksSizeLabel = document.querySelector('label[for="historyLinksSizePicker"]');
-        var historyLinksColorLabel = document.querySelector('label[for="historyLinksColorPicker"]');
-        // === 新增代码结束 ===
+        
+        if (!historyCheckbox || !suggestionsCheckbox) return;
+        
+        var historyChecked = historyCheckbox.checked;
+        var suggestionsChecked = suggestionsCheckbox.checked;
+        
+        // 获取历史记录大小和颜色选择器
+        var historyLinksSizeLabel = null;
+        var historyLinksColorLabel = null;
+        
+        // IE9 兼容：使用 getElementById 或 querySelector 的 fallback
+        try {
+            historyLinksSizeLabel = document.querySelector('label[for="historyLinksSizePicker"]');
+        } catch(e) {
+            var labels = document.getElementsByTagName('label');
+            for (var i = 0; i < labels.length; i++) {
+                if (labels[i].getAttribute('for') === 'historyLinksSizePicker') {
+                    historyLinksSizeLabel = labels[i];
+                    break;
+                }
+            }
+        }
+        
+        try {
+            historyLinksColorLabel = document.querySelector('label[for="historyLinksColorPicker"]');
+        } catch(e) {
+            var labels = document.getElementsByTagName('label');
+            for (var i = 0; i < labels.length; i++) {
+                if (labels[i].getAttribute('for') === 'historyLinksColorPicker') {
+                    historyLinksColorLabel = labels[i];
+                    break;
+                }
+            }
+        }
         
         if (historyInSuggestCheckbox) {
             if (historyChecked && suggestionsChecked) {
@@ -1382,16 +1452,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 historyInSuggestCheckbox.disabled = true;
                 if (historyInSuggestCheckbox.checked) {
                     historyInSuggestCheckbox.checked = false;
-                    localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+                    try {
+                        localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+                    } catch(e) {}
                     if (historyChecked) {
                         var searchHistoryDiv = document.getElementById('searchHistory');
                         var clearHistoryBtn = document.getElementById('clearHistoryBtn');
                         if (searchHistoryDiv) {
-                            var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                            var history = [];
+                            try {
+                                history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                            } catch(e) {}
                             if (history.length > 0) {
                                 searchHistoryDiv.style.display = 'block';
                                 if (clearHistoryBtn) clearHistoryBtn.style.display = 'block';
-                                updateSearchHistory();
+                                if (typeof updateSearchHistory === 'function') {
+                                    updateSearchHistory();
+                                }
                             }
                         }
                     }
@@ -1399,9 +1476,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // === 控制历史记录大小和颜色选择器的禁用状态 ===
-        // 条件：勾选 searchHistoryCheckbox 且 不勾选 searchHistoryInSuggestCheckbox 时解除禁用
-        var shouldEnable = historyChecked && (!historyInSuggestCheckbox || !historyInSuggestCheckbox.checked);
+        // 控制历史记录大小和颜色选择器的禁用状态
+        var shouldEnable = historyChecked && (historyInSuggestCheckbox ? !historyInSuggestCheckbox.checked : true);
         
         if (historyLinksSizeLabel) {
             if (shouldEnable) {
@@ -6125,7 +6201,7 @@ document.querySelector('label[for="heightAdjustBtn"]').addEventListener('click',
 // 搜索建议功能
 var searchSuggestions = document.getElementById('searchSuggestions');
 
-// ========== 显示搜索建议（完全兼容 IE9/10，保持原有布局） ==========
+// ========== 显示搜索建议（完全兼容 IE9/10，保持原有布局和高度控制） ==========
 function showSearchSuggestions(suggestions) {
     var searchSuggestionsCheckbox = document.getElementById('searchSuggestionsCheckbox');
     var engineSelect = document.getElementById('engineSelect');
@@ -6138,25 +6214,40 @@ function showSearchSuggestions(suggestions) {
     if (!urlInput || !searchSuggestions) return;
     
     var inputText = urlInput.value.trim();
-    var isDesktopFlag = typeof isDesktop === 'function' ? isDesktop() : false;
+    // 预先计算 isDesktop 结果，避免重复调用（IE9 兼容）
+    var isDesktopFlag = false;
+    try {
+        isDesktopFlag = typeof isDesktop === 'function' ? isDesktop() : false;
+    } catch(e) {
+        isDesktopFlag = !/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+    
+    // 设置搜索建议框的最大高度（保持原有逻辑）
+    if (isDesktopFlag) {
+        searchSuggestions.style.maxHeight = '800px';
+    } else {
+        searchSuggestions.style.maxHeight = '200px';
+    }
+    searchSuggestions.style.overflowY = 'auto';
+    searchSuggestions.style.overflowX = 'hidden';
     
     // 检查是否为空且启用了历史记录在建议中显示
     var showHistoryInSuggest = false;
     var searchHistoryChecked = false;
     try {
         showHistoryInSuggest = localStorage.getItem('searchHistoryInSuggestChecked') === 'true';
-        searchHistoryChecked = document.getElementById('searchHistoryCheckbox') && 
-                               document.getElementById('searchHistoryCheckbox').checked;
+        var historyCheckbox = document.getElementById('searchHistoryCheckbox');
+        searchHistoryChecked = historyCheckbox && historyCheckbox.checked;
     } catch(e) {}
     
     var isInputEmpty = inputText === '';
     
-    // 清空建议框（IE9 兼容：使用 while 循环）
+    // 清空建议框（IE9 兼容：使用 while 循环而非 innerHTML）
     while (searchSuggestions.firstChild) {
         searchSuggestions.removeChild(searchSuggestions.firstChild);
     }
     
-    // 显示历史记录（输入为空时）
+    // ========== 显示历史记录（输入为空时） ==========
     if (isInputEmpty && showHistoryInSuggest && searchHistoryChecked) {
         var history = [];
         try {
@@ -6165,23 +6256,33 @@ function showSearchSuggestions(suggestions) {
         var displayHistory = history.slice(0, 9);
         
         if (displayHistory.length > 0) {
-            // 添加清空历史记录选项
+            // ========== 添加清空历史记录列 ==========
             var clearDiv = document.createElement('div');
             clearDiv.id = 'suggestion_clear_history';
+            
+            // 使用 innerHTML 添加图标和文字（兼容 IE9）
             clearDiv.innerHTML = '<i class="fa fa-trash-o" style="margin-left: -2px; margin-right: 5px;"></i>清空历史记录';
-            clearDiv.style.padding = '6px 10px';
+            
+            // 应用样式（保持原有布局）
+            clearDiv.style.padding = isDesktopFlag ? '6px 10px' : '5px 10px';
             clearDiv.style.cursor = 'pointer';
             clearDiv.style.borderBottom = '1px solid #eee';
             clearDiv.style.fontWeight = 'bold';
             clearDiv.style.backgroundColor = '#F8F8F8';
-            clearDiv.style.fontSize = '11px';
+            clearDiv.style.fontSize = isDesktopFlag ? '11px' : '13px';
             clearDiv.style.textAlign = 'left';
+            clearDiv.style.userSelect = 'none';
             
+            // 清空历史记录点击事件（兼容 IE9）
             clearDiv.onclick = function() {
                 try {
                     localStorage.removeItem('searchHistory');
-                    if (typeof updateSearchHistory === 'function') updateSearchHistory();
+                    if (typeof updateSearchHistory === 'function') {
+                        updateSearchHistory();
+                    }
                 } catch(e) {}
+                
+                // 刷新建议列表
                 var currentValue = urlInput.value;
                 if (currentValue === '') {
                     searchSuggestions.style.display = 'none';
@@ -6194,13 +6295,13 @@ function showSearchSuggestions(suggestions) {
             clearDiv.onmouseout = function() { this.style.backgroundColor = '#F8F8F8'; };
             searchSuggestions.appendChild(clearDiv);
             
-            // 显示历史记录
+            // ========== 显示历史记录列表 ==========
             for (var i = 0; i < displayHistory.length; i++) {
                 var historyDiv = document.createElement('div');
                 historyDiv.id = 'suggestion_history_' + i;
                 var historyText = displayHistory[i].text;
                 
-                // 应用原有样式（兼容 IE）
+                // 应用原有样式
                 historyDiv.style.padding = isDesktopFlag ? '7px 10px' : '6px 10px';
                 historyDiv.style.fontSize = isDesktopFlag ? '12.4px' : '';
                 historyDiv.style.cursor = 'pointer';
@@ -6209,29 +6310,17 @@ function showSearchSuggestions(suggestions) {
                 historyDiv.style.textOverflow = 'ellipsis';
                 historyDiv.style.whiteSpace = 'nowrap';
                 
-                // 截断过长文本
-                var tempSpan = document.createElement('span');
-                tempSpan.style.visibility = 'hidden';
-                tempSpan.style.position = 'absolute';
-                tempSpan.style.whiteSpace = 'nowrap';
-                tempSpan.style.font = window.getComputedStyle ? getComputedStyle(historyDiv).font : '12px Arial';
-                tempSpan.textContent = historyText;
-                document.body.appendChild(tempSpan);
-                
+                // 截断过长文本（兼容 IE9）
+                var maxDisplayLength = 50;
                 var displayText = historyText;
-                if (tempSpan.offsetWidth > 200) {
-                    while (tempSpan.offsetWidth > 200 && displayText.length > 3) {
-                        displayText = displayText.substring(0, displayText.length - 1);
-                        tempSpan.textContent = displayText + '...';
-                    }
-                    displayText = displayText + '...';
+                if (historyText.length > maxDisplayLength) {
+                    displayText = historyText.substring(0, maxDisplayLength) + '...';
                 }
-                document.body.removeChild(tempSpan);
-                
                 historyDiv.textContent = displayText;
                 historyDiv.setAttribute('data-fulltext', historyText);
                 historyDiv.title = historyText;
                 
+                // 点击历史记录项（兼容 IE9）
                 (function(fullText) {
                     historyDiv.onclick = function() {
                         var autoFillAndJump = false;
@@ -6262,7 +6351,7 @@ function showSearchSuggestions(suggestions) {
                             } catch(e) {}
                             urlInput.focus();
                             setTimeout(function() {
-                                if (searchSuggestionsCheckbox.checked && 
+                                if (searchSuggestionsCheckbox && searchSuggestionsCheckbox.checked && 
                                     typeof fetchSearchSuggestions === 'function') {
                                     fetchSearchSuggestions(fullText);
                                 }
@@ -6288,7 +6377,7 @@ function showSearchSuggestions(suggestions) {
         }
     }
     
-    // 检测输入内容是否包含网址格式
+    // ========== 检测输入内容是否包含网址格式 ==========
     var isUrlPattern = false;
     var isNumberPattern = /^[+-]?\d+(\.\d+)?$/;
     if (!isNumberPattern.test(inputText) && inputText.length > 0) {
@@ -6342,7 +6431,7 @@ function showSearchSuggestions(suggestions) {
         }
     }
     
-    // 添加访问网站建议
+    // ========== 添加访问网站建议 ==========
     var showVisitWebsite = false;
     try {
         showVisitWebsite = document.getElementById('showVisitWebsiteCheckbox') && 
@@ -6431,7 +6520,7 @@ function showSearchSuggestions(suggestions) {
         searchSuggestions.appendChild(visitDiv);
     }
     
-    // 显示搜索建议
+    // ========== 显示搜索建议 ==========
     if (suggestions && suggestions.length > 0) {
         for (var i = 0; i < suggestions.length; i++) {
             var sugDiv = document.createElement('div');
@@ -6476,7 +6565,7 @@ function showSearchSuggestions(suggestions) {
                             }
                         } catch(e) {}
                         setTimeout(function() {
-                            if (searchSuggestionsCheckbox.checked && 
+                            if (searchSuggestionsCheckbox && searchSuggestionsCheckbox.checked && 
                                 typeof fetchSearchSuggestions === 'function') {
                                 fetchSearchSuggestions(suggestion);
                             }
@@ -6492,7 +6581,7 @@ function showSearchSuggestions(suggestions) {
         }
     }
     
-    // 显示或隐藏建议框
+    // ========== 显示或隐藏建议框 ==========
     if (searchSuggestions.children.length > 0) {
         var inputRect = urlInput.getBoundingClientRect();
         var scrollTop = document.documentElement.scrollTop || document.body.scrollTop || 0;
