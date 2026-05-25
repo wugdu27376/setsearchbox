@@ -1074,22 +1074,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 获取两个依赖开关的状态 ===
     var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
     var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
-    var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
     
-    // IE 兼容性：确保 localStorage 值正确读取
     if (savedSearchHistoryInSuggestState === 'true') {
-        // 只有两个依赖开关都勾选时才能恢复勾选状态
+        // === 只有两个依赖开关都勾选时才能恢复勾选状态 ===
         if (historyChecked && suggestionsChecked) {
-            // 使用 try-catch 确保 IE 下设置成功
-            try {
-                historyInSuggestCheckbox.checked = true;
-                // 强制更新属性（IE 兼容）
-                if (historyInSuggestCheckbox.setAttribute) {
-                    historyInSuggestCheckbox.setAttribute('checked', 'checked');
-                }
-            } catch(e) {}
-            
-            // 隐藏传统历史记录显示区域
+            document.getElementById('searchHistoryInSuggestCheckbox').checked = true;
             var searchHistoryDiv = document.getElementById('searchHistory');
             var clearHistoryBtn = document.getElementById('clearHistoryBtn');
             if (searchHistoryDiv) {
@@ -1101,22 +1090,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // 依赖开关未勾选，清除保存的状态
             localStorage.setItem('searchHistoryInSuggestChecked', 'false');
-            // 确保复选框不被勾选
-            try {
-                historyInSuggestCheckbox.checked = false;
-                if (historyInSuggestCheckbox.removeAttribute) {
-                    historyInSuggestCheckbox.removeAttribute('checked');
-                }
-            } catch(e) {}
         }
-    } else if (savedSearchHistoryInSuggestState === 'false') {
-        // 确保复选框不被勾选
-        try {
-            historyInSuggestCheckbox.checked = false;
-            if (historyInSuggestCheckbox.removeAttribute) {
-                historyInSuggestCheckbox.removeAttribute('checked');
-            }
-        } catch(e) {}
     }
     
     // 初始化禁用状态
@@ -1348,37 +1322,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 监听新版历史记录开关变化
     var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
     if (historyInSuggestCheckbox) {
-        // 移除可能存在的旧事件（避免重复绑定）
-        var oldChangeHandler = historyInSuggestCheckbox._changeHandler;
-        if (oldChangeHandler) {
-            if (historyInSuggestCheckbox.removeEventListener) {
-                historyInSuggestCheckbox.removeEventListener('change', oldChangeHandler);
-            } else if (historyInSuggestCheckbox.detachEvent) {
-                historyInSuggestCheckbox.detachEvent('onchange', oldChangeHandler);
-            }
-        }
-        
-        // 定义 change 事件处理函数
-        var historyInSuggestChangeHandler = function() {
-            // IE 兼容：获取当前复选框状态
-            var isChecked = false;
-            try {
-                isChecked = this.checked;
-            } catch(e) {}
-            
-            // 如果复选框被禁用，强制取消勾选
+        historyInSuggestCheckbox.addEventListener('change', function() {
             if (this.disabled) {
-                try {
-                    this.checked = false;
-                    if (this.removeAttribute) {
-                        this.removeAttribute('checked');
-                    }
-                } catch(e) {}
+                this.checked = false;
                 return;
             }
             
-            if (isChecked) {
-                // 勾选时：隐藏传统历史记录显示区域
+            if (this.checked) {
                 var searchHistoryDiv = document.getElementById('searchHistory');
                 var clearHistoryBtn = document.getElementById('clearHistoryBtn');
                 if (searchHistoryDiv) {
@@ -1388,32 +1338,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     clearHistoryBtn.style.display = 'none';
                 }
                 
-                // 保存状态（IE 兼容）
-                try {
-                    localStorage.setItem('searchHistoryInSuggestChecked', 'true');
-                    // 确保属性也被设置
-                    if (this.setAttribute) {
-                        this.setAttribute('checked', 'checked');
-                    }
-                } catch(e) {
-                    // IE 隐私模式兼容
-                }
+                localStorage.setItem('searchHistoryInSuggestChecked', 'true');
             } else {
-                // ========== 手动取消勾选时：恢复传统历史记录显示 ==========
-                var historyChecked = false;
-                try {
-                    var historyCheckboxElem = document.getElementById('searchHistoryCheckbox');
-                    if (historyCheckboxElem) {
-                        historyChecked = historyCheckboxElem.checked;
-                    }
-                } catch(e) {}
-                
+                var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
                 if (historyChecked) {
-                    var history = [];
-                    try {
-                        history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-                    } catch(e) {}
-                    
+                    var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
                     if (history.length > 0) {
                         var searchHistoryDiv = document.getElementById('searchHistory');
                         var clearHistoryBtn = document.getElementById('clearHistoryBtn');
@@ -1423,146 +1352,44 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (clearHistoryBtn) {
                             clearHistoryBtn.style.display = 'block';
                         }
-                        // 更新历史记录显示
-                        if (typeof updateSearchHistory === 'function') {
-                            updateSearchHistory();
-                        }
-                    } else {
-                        // 无历史记录时隐藏显示区域
-                        var searchHistoryDiv = document.getElementById('searchHistory');
-                        var clearHistoryBtn = document.getElementById('clearHistoryBtn');
-                        if (searchHistoryDiv) searchHistoryDiv.style.display = 'none';
-                        if (clearHistoryBtn) clearHistoryBtn.style.display = 'none';
+                        updateSearchHistory();
                     }
                 }
                 
-                // 保存状态为 false（IE 兼容）
-                try {
-                    localStorage.setItem('searchHistoryInSuggestChecked', 'false');
-                    // 确保属性被移除
-                    if (this.removeAttribute) {
-                        this.removeAttribute('checked');
-                    }
-                } catch(e) {}
+                localStorage.setItem('searchHistoryInSuggestChecked', 'false');
             }
             
-            // 更新历史记录大小和颜色选择器的禁用状态
-            if (typeof updateHistoryInSuggestDisabled === 'function') {
-                updateHistoryInSuggestDisabled();
-            }
-            
-            // 如果搜索建议开启，刷新建议框
-            try {
-                var suggestionsCheckbox = document.getElementById('searchSuggestionsCheckbox');
-                var urlInput = document.getElementById('urlInput');
-                if (suggestionsCheckbox && suggestionsCheckbox.checked && urlInput && typeof fetchSearchSuggestions === 'function') {
-                    // 延迟刷新，避免事件冲突
-                    setTimeout(function() {
-                        fetchSearchSuggestions(urlInput.value);
-                    }, 50);
-                }
-            } catch(e) {}
-        };
-        
-        // 保存处理函数引用
-        historyInSuggestCheckbox._changeHandler = historyInSuggestChangeHandler;
-        
-        // 兼容所有浏览器的事件绑定
-        if (historyInSuggestCheckbox.addEventListener) {
-            historyInSuggestCheckbox.addEventListener('change', historyInSuggestChangeHandler);
-        } else if (historyInSuggestCheckbox.attachEvent) {
-            historyInSuggestCheckbox.attachEvent('onchange', historyInSuggestChangeHandler);
-        }
+            // === 更新历史记录大小和颜色选择器的禁用状态 ===
+            updateHistoryInSuggestDisabled();
+        });
     }
     
     // 控制历史记录在建议中显示开关的可用性
     function updateHistoryInSuggestDisabled() {
-        // IE 兼容：安全获取复选框状态
-        var historyChecked = false;
-        var suggestionsChecked = false;
-        var historyInSuggestCheckbox = null;
-        
-        try {
-            var historyCheckboxElem = document.getElementById('searchHistoryCheckbox');
-            if (historyCheckboxElem) {
-                historyChecked = historyCheckboxElem.checked;
-            }
-        } catch(e) {}
-        
-        try {
-            var suggestionsCheckboxElem = document.getElementById('searchSuggestionsCheckbox');
-            if (suggestionsCheckboxElem) {
-                suggestionsChecked = suggestionsCheckboxElem.checked;
-            }
-        } catch(e) {}
-        
-        try {
-            historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
-        } catch(e) {}
-        
-        // 获取历史记录大小和颜色选择器
-        var historyLinksSizeLabel = null;
-        var historyLinksColorLabel = null;
-        try {
-            historyLinksSizeLabel = document.querySelector('label[for="historyLinksSizePicker"]');
-            historyLinksColorLabel = document.querySelector('label[for="historyLinksColorPicker"]');
-        } catch(e) {}
+        var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
+        var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+        var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
+        // === 获取历史记录大小和颜色选择器 ===
+        var historyLinksSizeLabel = document.querySelector('label[for="historyLinksSizePicker"]');
+        var historyLinksColorLabel = document.querySelector('label[for="historyLinksColorPicker"]');
         
         if (historyInSuggestCheckbox) {
             if (historyChecked && suggestionsChecked) {
-                // 启用开关
                 historyInSuggestCheckbox.disabled = false;
-                // IE 兼容：移除 disabled 属性
-                if (historyInSuggestCheckbox.removeAttribute) {
-                    historyInSuggestCheckbox.removeAttribute('disabled');
-                }
             } else {
-                // 禁用开关
                 historyInSuggestCheckbox.disabled = true;
-                if (historyInSuggestCheckbox.setAttribute) {
-                    historyInSuggestCheckbox.setAttribute('disabled', 'disabled');
-                }
-                
-                // 如果开关是勾选状态，强制取消勾选并清理相关设置
-                var isChecked = false;
-                try {
-                    isChecked = historyInSuggestCheckbox.checked;
-                } catch(e) {}
-                
-                if (isChecked) {
-                    try {
-                        historyInSuggestCheckbox.checked = false;
-                        if (historyInSuggestCheckbox.removeAttribute) {
-                            historyInSuggestCheckbox.removeAttribute('checked');
-                        }
-                    } catch(e) {}
-                    
-                    // 保存状态
-                    try {
-                        localStorage.setItem('searchHistoryInSuggestChecked', 'false');
-                    } catch(e) {}
-                    
-                    // 恢复传统历史记录显示
+                if (historyInSuggestCheckbox.checked) {
+                    historyInSuggestCheckbox.checked = false;
+                    localStorage.setItem('searchHistoryInSuggestChecked', 'false');
                     if (historyChecked) {
-                        var searchHistoryDiv = null;
-                        var clearHistoryBtn = null;
-                        try {
-                            searchHistoryDiv = document.getElementById('searchHistory');
-                            clearHistoryBtn = document.getElementById('clearHistoryBtn');
-                        } catch(e) {}
-                        
+                        var searchHistoryDiv = document.getElementById('searchHistory');
+                        var clearHistoryBtn = document.getElementById('clearHistoryBtn');
                         if (searchHistoryDiv) {
-                            var history = [];
-                            try {
-                                history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-                            } catch(e) {}
-                            
+                            var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
                             if (history.length > 0) {
                                 searchHistoryDiv.style.display = 'block';
                                 if (clearHistoryBtn) clearHistoryBtn.style.display = 'block';
-                                if (typeof updateSearchHistory === 'function') {
-                                    updateSearchHistory();
-                                }
+                                updateSearchHistory();
                             }
                         }
                     }
@@ -1570,15 +1397,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // 控制历史记录大小和颜色选择器的禁用状态
+        // === 控制历史记录大小和颜色选择器的禁用状态 ===
         // 条件：勾选 searchHistoryCheckbox 且 不勾选 searchHistoryInSuggestCheckbox 时解除禁用
-        var inSuggestChecked = false;
-        try {
-            if (historyInSuggestCheckbox) {
-                inSuggestChecked = historyInSuggestCheckbox.checked;
-            }
-        } catch(e) {}
-        var shouldEnable = historyChecked && (!inSuggestChecked);
+        var shouldEnable = historyChecked && (!historyInSuggestCheckbox || !historyInSuggestCheckbox.checked);
         
         if (historyLinksSizeLabel) {
             if (shouldEnable) {
@@ -1624,33 +1445,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化禁用状态
     updateHistoryInSuggestDisabled();
 });
-// ========== 修改位置6：页面加载时同步 searchHistoryInSuggestCheckbox 状态 ==========
-// 确保页面加载后开关状态与 localStorage 一致
-try {
-    var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
-    var savedState = localStorage.getItem('searchHistoryInSuggestChecked');
-    if (historyInSuggestCheckbox && savedState === 'true') {
-        if (!historyInSuggestCheckbox.checked) {
-            historyInSuggestCheckbox.checked = true;
-            if (historyInSuggestCheckbox.setAttribute) {
-                historyInSuggestCheckbox.setAttribute('checked', 'checked');
-            }
-        }
-        // 确保传统历史记录区域隐藏
-        var searchHistoryDiv = document.getElementById('searchHistory');
-        var clearHistoryBtn = document.getElementById('clearHistoryBtn');
-        if (searchHistoryDiv) searchHistoryDiv.style.display = 'none';
-        if (clearHistoryBtn) clearHistoryBtn.style.display = 'none';
-    } else if (historyInSuggestCheckbox && savedState === 'false') {
-        if (historyInSuggestCheckbox.checked) {
-            historyInSuggestCheckbox.checked = false;
-            if (historyInSuggestCheckbox.removeAttribute) {
-                historyInSuggestCheckbox.removeAttribute('checked');
-            }
-        }
-    }
-} catch(e) {}
-// ========== 修改位置6结束 ==========
+
 // 如果是电脑端，禁用移动搜索选项
 if (isDesktop()) {
     document.getElementById('shenmaOption').disabled = true;
@@ -1814,32 +1609,6 @@ function bindSubmitEvent() {
                             var limitedHistory = filteredHistory.slice(0, 10);
                             localStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
                             if (typeof updateSearchHistory === 'function') updateSearchHistory();
-                            
-                            // ========== 新增：保存历史记录后，检查并保持 searchHistoryInSuggestCheckbox 状态 ==========
-                            try {
-                                var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
-                                var savedState = localStorage.getItem('searchHistoryInSuggestChecked');
-                                
-                                // 如果开关原本是勾选的，且没有被禁用，确保状态保持
-                                if (historyInSuggestCheckbox && !historyInSuggestCheckbox.disabled) {
-                                    if (savedState === 'true') {
-                                        // 强制保持勾选状态
-                                        if (!historyInSuggestCheckbox.checked) {
-                                            historyInSuggestCheckbox.checked = true;
-                                            // IE 兼容：设置属性
-                                            if (historyInSuggestCheckbox.setAttribute) {
-                                                historyInSuggestCheckbox.setAttribute('checked', 'checked');
-                                            }
-                                        }
-                                        // 确保传统历史记录区域隐藏
-                                        var searchHistoryDiv = document.getElementById('searchHistory');
-                                        var clearHistoryBtn = document.getElementById('clearHistoryBtn');
-                                        if (searchHistoryDiv) searchHistoryDiv.style.display = 'none';
-                                        if (clearHistoryBtn) clearHistoryBtn.style.display = 'none';
-                                    }
-                                }
-                            } catch(e) {}
-                            // ========== 新增结束 ==========
                         }
                     } catch(err) {}
                 }
@@ -1970,32 +1739,6 @@ function bindSubmitEvent() {
                         var limitedHistory = filteredHistory.slice(0, 10);
                         localStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
                         if (typeof updateSearchHistory === 'function') updateSearchHistory();
-                        
-                        // ========== 新增：保存历史记录后，检查并保持 searchHistoryInSuggestCheckbox 状态 ==========
-                        try {
-                            var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
-                            var savedState = localStorage.getItem('searchHistoryInSuggestChecked');
-                            
-                            // 如果开关原本是勾选的，且没有被禁用，确保状态保持
-                            if (historyInSuggestCheckbox && !historyInSuggestCheckbox.disabled) {
-                                if (savedState === 'true') {
-                                    // 强制保持勾选状态
-                                    if (!historyInSuggestCheckbox.checked) {
-                                        historyInSuggestCheckbox.checked = true;
-                                        // IE 兼容：设置属性
-                                        if (historyInSuggestCheckbox.setAttribute) {
-                                            historyInSuggestCheckbox.setAttribute('checked', 'checked');
-                                        }
-                                    }
-                                    // 确保传统历史记录区域隐藏
-                                    var searchHistoryDiv = document.getElementById('searchHistory');
-                                    var clearHistoryBtn = document.getElementById('clearHistoryBtn');
-                                    if (searchHistoryDiv) searchHistoryDiv.style.display = 'none';
-                                    if (clearHistoryBtn) clearHistoryBtn.style.display = 'none';
-                                }
-                            }
-                        } catch(e) {}
-                        // ========== 新增结束 ==========
                     }
                 } catch(err) {}
             }
@@ -4804,10 +4547,6 @@ document.getElementById('searchHistoryCheckbox').addEventListener('change', func
                     if (historyInSuggestCheckbox && historyInSuggestCheckbox.checked) {
                         historyInSuggestCheckbox.checked = false;
                         localStorage.setItem('searchHistoryInSuggestChecked', 'false');
-                        // ========== 新增：IE 兼容 - 移除 checked 属性 ==========
-                        if (historyInSuggestCheckbox.removeAttribute) {
-                            historyInSuggestCheckbox.removeAttribute('checked');
-                        }
                         var searchHistoryDiv = document.getElementById('searchHistory');
                         var clearHistoryBtn = document.getElementById('clearHistoryBtn');
                         if (searchHistoryDiv) {
@@ -4927,16 +4666,6 @@ if (originalUpdateSearchHistory) {
 // 修改位置：在 updateSearchHistory 函数中，找到创建 linkElement 的代码
 
 function updateSearchHistory() {
-    if (showHistoryInSuggest) {
-        var searchHistoryDiv = document.getElementById('searchHistory');
-        if (searchHistoryDiv) {
-            searchHistoryDiv.innerHTML = '';
-            searchHistoryDiv.style.display = 'none';
-            var clearHistoryBtn = document.getElementById('clearHistoryBtn');
-            if (clearHistoryBtn) clearHistoryBtn.style.display = 'none';
-        }
-        return;
-    }
     // 添加IE兼容性检测
     var isIE = false;
     try {
@@ -6490,13 +6219,6 @@ function showSearchSuggestions(suggestions) {
                     if (typeof updateSearchHistory === 'function') {
                         updateSearchHistory();
                     }
-                    // ========== 新增：IE 兼容 - 刷新当前建议显示 ==========
-                    var urlInputElem = document.getElementById('urlInput');
-                    if (urlInputElem && urlInputElem.value === '') {
-                        searchSuggestions.style.display = 'none';
-                    } else if (urlInputElem && typeof fetchSearchSuggestions === 'function') {
-                        fetchSearchSuggestions(urlInputElem.value);
-                    }
                 } catch(e) {}
                 
                 // 刷新建议列表
@@ -6540,22 +6262,6 @@ function showSearchSuggestions(suggestions) {
                 // 点击历史记录项（兼容 IE9）
                 (function(fullText) {
                     historyDiv.onclick = function() {
-                        // ========== 修改位置4：点击历史记录时保持 searchHistoryInSuggestCheckbox 状态 ==========
-                        // 确保开关状态不被意外改变
-                        try {
-                            var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
-                            var savedState = localStorage.getItem('searchHistoryInSuggestChecked');
-                            if (historyInSuggestCheckbox && savedState === 'true') {
-                                if (!historyInSuggestCheckbox.checked) {
-                                    historyInSuggestCheckbox.checked = true;
-                                    if (historyInSuggestCheckbox.setAttribute) {
-                                        historyInSuggestCheckbox.setAttribute('checked', 'checked');
-                                    }
-                                }
-                            }
-                        } catch(e) {}
-                        // ========== 修改位置4结束 ==========
-                        
                         var autoFillAndJump = false;
                         try {
                             autoFillAndJump = document.getElementById('autoFillAndJumpCheckbox') && 
