@@ -5908,13 +5908,6 @@ document.querySelector('label[for="exportSettingsBtn"]').addEventListener('click
     });
 });
 
-
-
-
-
-
-
-// ========== 修改位置：exportSettingsData 函数 - 支持 IE9+ 浏览器导出 ==========
 function exportSettingsData() {
     // ========== 新增：IE 兼容性检测 ==========
     var isIE = false;
@@ -6014,7 +6007,7 @@ function exportSettingsData() {
         moreSettingsExpanded: localStorage.getItem('moreSettingsExpanded') || 'false'
     };
     
-    // ========== 动态遍历 localStorage 捕获遗漏项 ==========
+    // ========== 新增：动态遍历 localStorage 捕获遗漏项 ==========
     try {
         for (var i = 0; i < localStorage.length; i++) {
             var key = localStorage.key(i);
@@ -6033,6 +6026,7 @@ function exportSettingsData() {
             }
         }
     } catch(e) {
+        // IE 兼容：遍历失败时手动添加已知遗漏项
         var knownMissingKeys = [
             'iframePlusWidth', 'iframePlusHeight',
             'rightClickAction', 'swipeSwitchChecked',
@@ -6050,10 +6044,12 @@ function exportSettingsData() {
             }
         }
     }
+    // ========== 新增结束 ==========
     
     var jsonContent = JSON.stringify(settings, null, 2);
     
-    // ========== 新增：生成带日期时间的文件名（年-月-日_时-分-秒）==========
+    // ========== 修改：IE9+ 兼容的文件导出逻辑 ==========
+    // ========== 新增：生成带日期时间的文件名（兼容 IE9+）==========
     function getFormattedDateTime() {
         var now = new Date();
         var year = now.getFullYear();
@@ -6063,22 +6059,28 @@ function exportSettingsData() {
         var minutes = now.getMinutes();
         var seconds = now.getSeconds();
         
-        // 补零函数（IE9 兼容）
+        // 补零函数（兼容 IE9）
         function padZero(num) {
             return (num < 10 ? '0' : '') + num;
         }
         
-        // 格式：2025-01-15_14-30-45
-        var dateTime = year + '-' + padZero(month) + '-' + padZero(day) + '_' + 
-                       padZero(hours) + '-' + padZero(minutes) + '-' + padZero(seconds);
-        return dateTime;
+        // 格式：20250115_143052
+        var dateTimeStr = year + 
+                          padZero(month) + 
+                          padZero(day) + 
+                          '_' + 
+                          padZero(hours) + 
+                          padZero(minutes) + 
+                          padZero(seconds);
+        
+        return dateTimeStr;
     }
     
+    // 生成带日期时间的文件名
     var dateTimeStr = getFormattedDateTime();
     var fileName = 'search_settings_' + dateTimeStr + '.json';
     // ========== 新增结束 ==========
     
-    // ========== IE9+ 兼容的文件导出逻辑 ==========
     // 方法1：尝试使用 Blob（IE10+ 支持）
     var blobSupported = false;
     try {
@@ -6088,6 +6090,7 @@ function exportSettingsData() {
     }
     
     if (blobSupported) {
+        // IE10+ 和其他现代浏览器使用 Blob + URL.createObjectURL
         try {
             var blob = new Blob([jsonContent], { type: 'application/json' });
             var url = URL.createObjectURL(blob);
@@ -6113,7 +6116,7 @@ function exportSettingsData() {
         }
     }
     
-    // 方法2：使用 msSaveBlob（IE10+ 支持）
+    // 方法2：IE9 及以下使用 msSaveBlob（IE10+ 也支持）
     if (typeof navigator !== 'undefined' && navigator.msSaveBlob) {
         try {
             var blob = new Blob([jsonContent], { type: 'application/json' });
@@ -6124,13 +6127,15 @@ function exportSettingsData() {
         }
     }
     
-    // 方法3：使用 data URL（所有浏览器通用）
+    // 方法3：使用 data URL（所有浏览器通用，但 IE 有 URL 长度限制）
     try {
         var base64Content = '';
+        // 尝试 base64 编码
         try {
             if (typeof btoa === 'function') {
                 base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
             } else {
+                // IE9 不支持 btoa 时的降级方案
                 base64Content = encodeURIComponent(jsonContent);
             }
         } catch(e) {
@@ -6154,7 +6159,7 @@ function exportSettingsData() {
             document.body.removeChild(a);
         }, 100);
     } catch(e) {
-        // 方法4：最后的降级方案
+        // 方法4：最后的降级方案 - 使用 prompt 显示 JSON 内容让用户手动保存
         try {
             var fallbackMsg = '无法自动下载文件，请手动复制以下内容并保存为 ' + fileName + '：\n\n';
             if (confirm(fallbackMsg + '确定后显示文件内容')) {
@@ -6164,13 +6169,8 @@ function exportSettingsData() {
             alert('导出失败：' + e2.message);
         }
     }
+    // ========== 修改结束 ==========
 }
-// ========== 修改位置结束 ==========
-
-
-
-
-
 
 // 导入设置功能
 document.querySelector('label[for="importSettingsBtn"]').addEventListener('click', function() {
