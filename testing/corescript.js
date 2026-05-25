@@ -1,4 +1,4 @@
-// ========== IE兼容性补丁(第670行后结束) ==========
+// ========== IE兼容性补丁(第784行后结束) ==========
 (function() {
     // 检测是否为IE浏览器
     var isIE = /*@cc_on!@*/false || !!document.documentMode;
@@ -1359,9 +1359,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('searchHistoryInSuggestChecked', 'false');
             }
             
-            // === 新增：更新历史记录大小和颜色选择器的禁用状态 ===
+            // === 更新历史记录大小和颜色选择器的禁用状态 ===
             updateHistoryInSuggestDisabled();
-            // === 新增代码结束 ===
         });
     }
     
@@ -1370,10 +1369,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
         var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
         var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
-        // === 新增：获取历史记录大小和颜色选择器 ===
+        // === 获取历史记录大小和颜色选择器 ===
         var historyLinksSizeLabel = document.querySelector('label[for="historyLinksSizePicker"]');
         var historyLinksColorLabel = document.querySelector('label[for="historyLinksColorPicker"]');
-        // === 新增代码结束 ===
         
         if (historyInSuggestCheckbox) {
             if (historyChecked && suggestionsChecked) {
@@ -1904,6 +1902,9 @@ function bindSubmitEvent() {
                     break;
                 case 'githubCode':
                     searchUrl = 'https://github.com/search?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'giteeCode':
+                    searchUrl = 'https://so.gitee.com/?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'baiduTw':
                     searchUrl = 'https://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(searchUrl);
@@ -2601,6 +2602,15 @@ document.getElementById('engineSelect').addEventListener('change', function() {
         }
     } else {
         fetchSearchSuggestions(urlInput.value);
+    }
+    // ========== 切换搜索引擎后，如果输入框未聚焦，隐藏搜索建议 ==========
+    var urlInputElement = document.getElementById('urlInput');
+    var searchSuggestions = document.getElementById('searchSuggestions');
+    if (urlInputElement && searchSuggestions) {
+        var isInputFocused = (document.activeElement === urlInputElement);
+        if (!isInputFocused) {
+            searchSuggestions.style.display = 'none';
+        }
     }
     // 控制iframe显示
     if (this.value === 'iFrameFree') {
@@ -4563,7 +4573,7 @@ document.getElementById('searchHistoryCheckbox').addEventListener('change', func
                         historyLinksColorLabel.style.cursor = 'pointer';
                         historyLinksColorLabel.style.pointerEvents = 'auto';
                     }
-                    // === 新增：恢复 searchHistoryInSuggestCheckbox 的禁用状态 ===
+                    // === 恢复 searchHistoryInSuggestCheckbox 的禁用状态 ===
                     // 检查 suggestionsChecked 状态，重新启用或禁用 historyInSuggestCheckbox
                     var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
                     if (historyInSuggestCheckbox) {
@@ -4737,9 +4747,8 @@ function updateSearchHistory() {
         linkElement.textContent = displayText;
         linkElement.title = item.text;
         
-        // === 新增：设置历史记录链接颜色 ===
+        // === 设置历史记录链接颜色 ===
         linkElement.style.color = defaultHistoryColor;
-        // === 新增代码结束 ===
         
         linkElement.style.margin = '0 5px';
         linkElement.style.maxWidth = '150px';
@@ -4764,7 +4773,7 @@ function updateSearchHistory() {
     
     searchHistoryDiv.appendChild(container);
     
-    // === 新增：添加 active 状态样式（红色）===
+    // === 添加 active 状态样式（红色）===
     var styleId = 'historyLinksActiveStyle';
     var existingStyle = document.getElementById(styleId);
     if (!existingStyle) {
@@ -4773,7 +4782,6 @@ function updateSearchHistory() {
         styleElement.textContent = '#searchHistory a:active { color: #ff0000 !important; }';
         document.head.appendChild(styleElement);
     }
-    // === 新增代码结束 ===
 }
 
 // 保存和加载一言显示checkbox状态
@@ -4995,7 +5003,7 @@ function hideSearchEngineOptions() {
         'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'quarkTranslateTools', 'fanyiSo', 'transmartQQTs',
         'taobaoWeb', 'jdWebPage', 'pddWebPage',
         'biliTv', 'dyIsWindows', 'haokanVideo', 'fastHandVideo', 'hongshuVideo', 'soHuVideo', 'tencentTv', 'enUsYoutubeVideo',
-        'githubCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
+        'githubCode', 'giteeCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
         'kfBaidu', 'weixinSogou', 'baiduTw', 'iFrameFree', 'iFramePlus', 'httpsAutoFill'];
     for (var i = 0; i < engineSelect.options.length; i++) {
         if (optionsToHide.indexOf(engineSelect.options[i].value) !== -1 && engineSelect.options[i].id !== 'nullBaidu') {
@@ -6166,13 +6174,20 @@ function showSearchSuggestions(suggestions) {
     
     var isInputEmpty = inputText === '';
     
+    // ========== 检查输入框是否获得焦点 ==========
+    var isInputFocused = false;
+    var urlInputElement = document.getElementById('urlInput');
+    if (urlInputElement) {
+        isInputFocused = (document.activeElement === urlInputElement);
+    }
+    
     // 清空建议框（IE9 兼容：使用 while 循环而非 innerHTML）
     while (searchSuggestions.firstChild) {
         searchSuggestions.removeChild(searchSuggestions.firstChild);
     }
     
     // ========== 显示历史记录（输入为空时） ==========
-    if (isInputEmpty && showHistoryInSuggest && searchHistoryChecked) {
+    if (isInputEmpty && showHistoryInSuggest && searchHistoryChecked && isInputFocused) {
         var history = [];
         try {
             history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
@@ -6566,6 +6581,19 @@ function fetchSearchSuggestions(query) {
     
     var searchSuggestions = document.getElementById('searchSuggestions');
     if (!searchSuggestions) return;
+    
+    // ========== 检查输入框是否获得焦点 ==========
+    var urlInputElement = document.getElementById('urlInput');
+    var isInputFocused = false;
+    if (urlInputElement) {
+        isInputFocused = (document.activeElement === urlInputElement);
+    }
+    
+    // 如果输入框未获得焦点，不显示搜索建议
+    if (!isInputFocused) {
+        searchSuggestions.style.display = 'none';
+        return;
+    }
     
     // 如果查询为空且启用了历史记录在建议中显示
     if (!query || query.trim() === '') {
