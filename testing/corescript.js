@@ -1176,14 +1176,47 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (savedShowVisitWebsiteState === 'false') {
         document.getElementById('showVisitWebsiteCheckbox').checked = false;
     }
-    var savedLayoutState = localStorage.getItem('layoutChecked');
+    var savedLayoutState = null;
+    try {
+        savedLayoutState = localStorage.getItem('layoutChecked');
+    } catch(e) {}
+    
     if (savedLayoutState === 'true') {
         var centerBox = document.getElementById('centerBoxDisplay');
         if (centerBox) {
-            centerBox.style.display = 'block';
-            var savedHeightPercent = localStorage.getItem('heightPercent') || '25%';
-            centerBox.style.height = savedHeightPercent;
-            centerBox.style.textAlign = 'center';
+            // 检测 IE9/10
+            var isIE9or10 = false;
+            var ua = navigator.userAgent;
+            var msie = ua.indexOf('MSIE ');
+            if (msie > 0) {
+                var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+                if (version === 9 || version === 10) isIE9or10 = true;
+            }
+            
+            var savedHeightPercent = '25%';
+            try {
+                savedHeightPercent = localStorage.getItem('heightPercent') || '25%';
+            } catch(e) {}
+            
+            if (isIE9or10) {
+                // IE9/10 使用 table 布局实现居中
+                centerBox.style.display = 'table';
+                centerBox.style.width = '100%';
+                centerBox.style.height = savedHeightPercent;
+                centerBox.style.position = 'relative';
+                centerBox.style.margin = '0 auto';
+                centerBox.style.textAlign = 'center';
+                
+                // 确保内部有包裹元素用于垂直居中
+                var innerContent = centerBox.innerHTML;
+                if (!centerBox.querySelector('.centerBox-inner')) {
+                    centerBox.innerHTML = '<div class="centerBox-inner" style="display: table-cell; vertical-align: middle; text-align: center; width: 100%;">' + innerContent + '</div>';
+                }
+            } else {
+                centerBox.style.display = 'block';
+                centerBox.style.height = savedHeightPercent;
+                centerBox.style.textAlign = 'center';
+            }
         }
     }
     // 恢复 iFramePlus 窗口显示
@@ -5680,28 +5713,67 @@ document.getElementById('layoutCheckbox').addEventListener('change', function() 
     }
 });
 
-// 应用布局样式函数
+// ========== 应用布局样式函数（修复 IE9/10 居中问题） ==========
 function applyLayoutStyle(checked) {
+    var centerBox = document.getElementById('centerBoxDisplay');
+    if (!centerBox) return;
+    
+    // 检测 IE9/10
+    var isIE9or10 = false;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        if (version === 9 || version === 10) isIE9or10 = true;
+    }
+    
     if (checked) {
-        // 仅作用于centerBoxDisplay区域
-        var centerBox = document.getElementById('centerBoxDisplay');
-        if (centerBox) {
+        centerBox.style.display = 'block';
+        var savedHeightPercent = '25%';
+        try {
+            savedHeightPercent = localStorage.getItem('heightPercent') || '25%';
+        } catch(e) {}
+        centerBox.style.height = savedHeightPercent;
+        
+        // 【修复】IE9/10 专用居中布局
+        if (isIE9or10) {
+            // IE9/10 使用 table 布局实现居中
+            centerBox.style.display = 'table';
+            centerBox.style.width = '100%';
+            centerBox.style.height = savedHeightPercent;
+            centerBox.style.position = 'relative';
+            centerBox.style.top = '0';
+            centerBox.style.left = '0';
+            centerBox.style.right = '0';
+            centerBox.style.margin = '0 auto';
+            
+            // 确保内部内容居中
+            var innerContent = centerBox.innerHTML;
+            if (!centerBox.querySelector('.centerBox-inner')) {
+                centerBox.innerHTML = '<div class="centerBox-inner" style="display: table-cell; vertical-align: middle; text-align: center;">' + innerContent + '</div>';
+            }
+        } else {
+            // 现代浏览器使用原有样式
             centerBox.style.textAlign = 'center';
             centerBox.style.display = 'block';
-            // 使用保存的高度值而不是固定值
-            var savedHeightPercent = localStorage.getItem('heightPercent') || '25%';
-            centerBox.style.height = savedHeightPercent;
             document.body.style.height = '90%';
         }
     } else {
-        // 仅作用于centerBoxDisplay区域
-        var centerBox = document.getElementById('centerBoxDisplay');
-        if (centerBox) {
-            centerBox.style.textAlign = '';
-            centerBox.style.display = 'none';
-            centerBox.style.height = '';
-            document.body.style.height = '';
+        // 恢复原始内容
+        if (isIE9or10) {
+            var innerDiv = centerBox.querySelector('.centerBox-inner');
+            if (innerDiv) {
+                var originalContent = innerDiv.innerHTML;
+                centerBox.innerHTML = originalContent;
+            }
         }
+        centerBox.style.textAlign = '';
+        centerBox.style.display = 'none';
+        centerBox.style.height = '';
+        centerBox.style.width = '';
+        centerBox.style.position = '';
+        centerBox.style.margin = '';
+        document.body.style.height = '';
     }
 }
 
@@ -6762,34 +6834,68 @@ function setupDragDrop(element, callback) {
     });
 }
 
-// 在 layoutCheckbox 事件监听器附近添加以下代码
+// ========== 高度调整按钮（修复 IE9/10 居中高度同步） ==========
 document.querySelector('label[for="heightAdjustBtn"]').addEventListener('click', function() {
-    // 只有当layoutCheckbox勾选时才弹出提示
-    if (!document.getElementById('layoutCheckbox').checked) {
+    var layoutCheckbox = document.getElementById('layoutCheckbox');
+    if (!layoutCheckbox || !layoutCheckbox.checked) {
         return;
     }
     
-    var currentPercent = localStorage.getItem('heightPercent') || '25%';
+    // 检测 IE9/10
+    var isIE9or10 = false;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        if (version === 9 || version === 10) isIE9or10 = true;
+    }
+    
+    var currentPercent = '25%';
+    try {
+        currentPercent = localStorage.getItem('heightPercent') || '25%';
+    } catch(e) {}
+    
     showCustomModal('请输入居中高度百分比 (5%-40%，输入为空时恢复默认25%) ：', currentPercent, function(newPercent) {
+        if (newPercent === null) return;
+        
+        var centerBox = document.getElementById('centerBoxDisplay');
+        if (!centerBox) return;
+        
         if (newPercent === '') {
-            // 输入为空时恢复默认高度
             var defaultPercent = '25%';
-            var centerBox = document.getElementById('centerBoxDisplay');
-            if (centerBox) {
+            if (isIE9or10) {
+                // IE9/10 需要同时设置外层和内层高度
+                centerBox.style.height = defaultPercent;
+                var innerDiv = centerBox.querySelector('.centerBox-inner');
+                if (innerDiv) {
+                    innerDiv.style.height = defaultPercent;
+                }
+            } else {
                 centerBox.style.height = defaultPercent;
             }
-            document.getElementById('heightPercentValue').textContent = defaultPercent;
-            localStorage.setItem('heightPercent', defaultPercent);
+            var heightPercentSpan = document.getElementById('heightPercentValue');
+            if (heightPercentSpan) heightPercentSpan.textContent = defaultPercent;
+            try {
+                localStorage.setItem('heightPercent', defaultPercent);
+            } catch(e) {}
         } else if (/^([5-9](\.[0-9]+)?|[1-3][0-9](\.[0-9]+)?|40(\.[0]+)?)%$/.test(newPercent)) {
-            // 验证输入是否在5%-40%范围内（支持小数点）
             var percentValue = parseFloat(newPercent);
-            if (percentValue >= 5 && percentValue <= 40) { //>
-                var centerBox = document.getElementById('centerBoxDisplay');
-                if (centerBox) {
+            if (percentValue >= 5 && percentValue <= 40) {
+                if (isIE9or10) {
+                    // IE9/10 需要同时设置外层和内层高度
+                    centerBox.style.height = newPercent;
+                    var innerDiv = centerBox.querySelector('.centerBox-inner');
+                    if (innerDiv) {
+                        innerDiv.style.height = newPercent;
+                    }
+                } else {
                     centerBox.style.height = newPercent;
                 }
-                document.getElementById('heightPercentValue').textContent = newPercent;
-                localStorage.setItem('heightPercent', newPercent);
+                var heightPercentSpan = document.getElementById('heightPercentValue');
+                if (heightPercentSpan) heightPercentSpan.textContent = newPercent;
+                try {
+                    localStorage.setItem('heightPercent', newPercent);
+                } catch(e) {}
             }
         }
     });
