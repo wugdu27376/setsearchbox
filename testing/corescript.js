@@ -1203,6 +1203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 centerBox.style.display = 'table';
                 centerBox.style.width = '100%';
                 centerBox.style.height = savedHeightPercent;
+                centerBox.style.minHeight = savedHeightPercent;
                 centerBox.style.position = 'relative';
                 centerBox.style.margin = '0 auto';
                 centerBox.style.textAlign = 'center';
@@ -1214,7 +1215,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
                 centerBox.style.display = 'block';
-                centerBox.style.height = savedHeightPercent;
+                centerBox.style.minHeight = savedHeightPercent;
                 centerBox.style.textAlign = 'center';
             }
         }
@@ -5734,6 +5735,7 @@ function applyLayoutStyle(checked) {
             savedHeightPercent = localStorage.getItem('heightPercent') || '25%';
         } catch(e) {}
         centerBox.style.height = savedHeightPercent;
+        centerBox.style.minHeight = savedHeightPercent;
         
         // 【修复】IE9/10 专用居中布局
         if (isIE9or10) {
@@ -5741,6 +5743,7 @@ function applyLayoutStyle(checked) {
             centerBox.style.display = 'table';
             centerBox.style.width = '100%';
             centerBox.style.height = savedHeightPercent;
+            centerBox.style.minHeight = savedHeightPercent;
             centerBox.style.position = 'relative';
             centerBox.style.top = '0';
             centerBox.style.left = '0';
@@ -5770,6 +5773,7 @@ function applyLayoutStyle(checked) {
         centerBox.style.textAlign = '';
         centerBox.style.display = 'none';
         centerBox.style.height = '';
+        centerBox.style.minHeight = '';
         centerBox.style.width = '';
         centerBox.style.position = '';
         centerBox.style.margin = '';
@@ -5814,6 +5818,7 @@ if (savedHeightPercent) {
         var centerBox = document.getElementById('centerBoxDisplay');
         if (centerBox) {
             centerBox.style.height = savedHeightPercent;
+            centerBox.style.minHeight = savedHeightPercent;
         }
     }
 }
@@ -6866,12 +6871,14 @@ document.querySelector('label[for="heightAdjustBtn"]').addEventListener('click',
             if (isIE9or10) {
                 // IE9/10 需要同时设置外层和内层高度
                 centerBox.style.height = defaultPercent;
+                centerBox.style.minHeight = defaultPercent;
                 var innerDiv = centerBox.querySelector('.centerBox-inner');
                 if (innerDiv) {
                     innerDiv.style.height = defaultPercent;
                 }
             } else {
                 centerBox.style.height = defaultPercent;
+                centerBox.style.minHeight = defaultPercent;
             }
             var heightPercentSpan = document.getElementById('heightPercentValue');
             if (heightPercentSpan) heightPercentSpan.textContent = defaultPercent;
@@ -6884,12 +6891,14 @@ document.querySelector('label[for="heightAdjustBtn"]').addEventListener('click',
                 if (isIE9or10) {
                     // IE9/10 需要同时设置外层和内层高度
                     centerBox.style.height = newPercent;
+                    centerBox.style.minHeight = newPercent;
                     var innerDiv = centerBox.querySelector('.centerBox-inner');
                     if (innerDiv) {
                         innerDiv.style.height = newPercent;
                     }
                 } else {
                     centerBox.style.height = newPercent;
+                    centerBox.style.minHeight = newPercent;
                 }
                 var heightPercentSpan = document.getElementById('heightPercentValue');
                 if (heightPercentSpan) heightPercentSpan.textContent = newPercent;

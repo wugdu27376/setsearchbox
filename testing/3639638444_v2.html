@@ -84,7 +84,7 @@
     })();
 </script>
 
-<div id="centerBoxDisplay" style="height: 25%; display: none;"></div>
+<div id="centerBoxDisplay" style="height: 25%; min-height: 25%; display: none;"></div>
 
 <body>
 <p><strong><a href="javascript:void(0)" id="85727544071588039023" class="link-85727544071588039023" style="font-size: 30px; text-decoration: underline;">Baidu.com</a></strong></p>
@@ -417,63 +417,6 @@
         /* 确保建议框在最上层 */
         #searchSuggestions {
             z-index: 10002;
-        }
-        
-        /* ========== IE9/10 居中布局专用修复 ========== */
-        .ie9-legacy #centerBoxDisplay,
-        .ie10-legacy #centerBoxDisplay {
-            display: table !important;
-            width: 100% !important;
-            position: relative !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            margin: 0 auto !important;
-            text-align: center !important;
-        }
-        
-        .ie9-legacy #centerBoxDisplay .centerBox-inner,
-        .ie10-legacy #centerBoxDisplay .centerBox-inner {
-            display: table-cell !important;
-            vertical-align: middle !important;
-            text-align: center !important;
-            width: 100% !important;
-        }
-        
-        /* 确保 body 高度正常 */
-        .ie9-legacy body,
-        .ie10-legacy body {
-            height: auto !important;
-            min-height: 100vh !important;
-        }
-        
-        /* 搜索容器在布局启用时的修复 */
-        .ie9-legacy .search-container,
-        .ie10-legacy .search-container {
-            display: table !important;
-            width: 100% !important;
-            margin: 0 auto !important;
-        }
-        
-        .ie9-legacy #engineSelect,
-        .ie10-legacy #engineSelect {
-            display: table-cell !important;
-            width: 90px !important;
-            min-width: 90px !important;
-        }
-        
-        .ie9-legacy #urlInput,
-        .ie10-legacy #urlInput {
-            display: table-cell !important;
-            width: auto !important;
-            min-width: 150px !important;
-        }
-        
-        .ie9-legacy #submitBtn,
-        .ie10-legacy #submitBtn {
-            display: table-cell !important;
-            width: auto !important;
-            min-width: 50px !important;
         }
     </style>
 </head>
