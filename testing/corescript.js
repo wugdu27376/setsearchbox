@@ -5963,21 +5963,41 @@ if (savedCss) {
 }
 
 // 监听urlInput输入事件，当用户开始输入时记录状态
-document.getElementById('urlInput').addEventListener('input', function() {
-    // 记录用户已经开始输入，禁用自动选择
-    if (this.value !== 'https://') {
-        this.dataset.userInput = 'true';
-    } else {
-        // 当值恢复为https://时，重置用户输入状态（除非是手动输入的）
-        if (!this.dataset.manualHttps) {
-            this.dataset.userInput = '';
+// 【修复】兼容 IE 等旧浏览器中 dataset 属性可能为 undefined 的问题
+var inputEventElement = document.getElementById('urlInput');
+if (inputEventElement) {
+    inputEventElement.addEventListener('input', function() {
+        // 兼容性获取 manualHttps 标记
+        var manualHttpsFlag = '';
+        if (this.dataset) {
+            manualHttpsFlag = this.dataset.manualHttps;
+        } else {
+            manualHttpsFlag = this.getAttribute('data-manual-https') || '';
         }
-    }
-    
-    if (document.getElementById('saveInputCheckbox').checked) {
-        localStorage.setItem('savedInputText', this.value);
-    }
-});
+        
+        // 记录用户已经开始输入，禁用自动选择
+        if (this.value !== 'https://') {
+            if (this.dataset) {
+                this.dataset.userInput = 'true';
+            } else {
+                this.setAttribute('data-user-input', 'true');
+            }
+        } else {
+            // 当值恢复为https://时，重置用户输入状态（除非是手动输入的）
+            if (!manualHttpsFlag) {
+                if (this.dataset) {
+                    this.dataset.userInput = '';
+                } else {
+                    this.setAttribute('data-user-input', '');
+                }
+            }
+        }
+        
+        if (document.getElementById('saveInputCheckbox') && document.getElementById('saveInputCheckbox').checked) {
+            localStorage.setItem('savedInputText', this.value);
+        }
+    });
+}
 
 var savedEngine = localStorage.getItem('selectedEngine');
 if (savedEngine) {
