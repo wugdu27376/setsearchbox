@@ -851,62 +851,6 @@ onDomReady(function() {
 })();
 
 
-// 【修复】IE10及以下版本禁用label按钮点击执行代码行为
-(function() {
-    var isIE10OrBelow = false;
-    try {
-        var ua = navigator.userAgent;
-        var msie = ua.indexOf('MSIE ');
-        if (msie > 0) {
-            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
-            if (version <= 10) isIE10OrBelow = true;
-        }
-        var trident = ua.indexOf('Trident/');
-        if (trident > 0) {
-            var rv = ua.indexOf('rv:');
-            if (rv > 0) {
-                var version = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
-                if (version <= 10) isIE10OrBelow = true;
-            }
-        }
-    } catch(e) {
-        isIE10OrBelow = false;
-    }
-    
-    if (isIE10OrBelow) {
-        // 禁用执行CSS代码的label按钮
-        var executeCssLabel = document.querySelector('label[for="executeCssBtn"]');
-        if (executeCssLabel) {
-            executeCssLabel.style.pointerEvents = 'none';
-            executeCssLabel.style.opacity = '0.7';
-            executeCssLabel.style.cursor = 'default';
-            executeCssLabel.removeAttribute('onclick');
-            if (executeCssLabel.attachEvent) {
-                executeCssLabel.detachEvent('onclick', executeCssLabel.onclick);
-            } else if (executeCssLabel.removeEventListener) {
-                executeCssLabel.removeEventListener('click', executeCssLabel.clickHandler);
-            }
-            executeCssLabel.onclick = null;
-        }
-        
-        // 禁用执行JS脚本的label按钮
-        var executeJsLabel = document.querySelector('label[for="executeJsBtn"]');
-        if (executeJsLabel) {
-            executeJsLabel.style.pointerEvents = 'none';
-            executeJsLabel.style.opacity = '0.7';
-            executeJsLabel.style.cursor = 'default';
-            executeJsLabel.removeAttribute('onclick');
-            if (executeJsLabel.attachEvent) {
-                executeJsLabel.detachEvent('onclick', executeJsLabel.onclick);
-            } else if (executeJsLabel.removeEventListener) {
-                executeJsLabel.removeEventListener('click', executeJsLabel.clickHandler);
-            }
-            executeJsLabel.onclick = null;
-        }
-    }
-})();
-
-
 // ========== 内存泄漏防护 - 资源管理器 ==========
 var ResourceManager = (function() {
     var eventListeners = [];
