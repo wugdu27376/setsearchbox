@@ -13,6 +13,28 @@
             };
         }
         
+        // IE9 localStorage安全访问包装（防止设置隐私模式导致执行中断）
+        (function() {
+            var localStorageAvailable = true;
+            try {
+                var testKey = '__ie_test__' + Date.now();
+                window.localStorage.setItem(testKey, testKey);
+                window.localStorage.removeItem(testKey);
+            } catch(e) {
+                localStorageAvailable = false;
+                // 创建内存存储替代，防止后续代码因localStorage未定义而报错
+                var memoryStorage = {};
+                window.localStorage = {
+                    setItem: function(key, value) { try { memoryStorage[key] = String(value); } catch(e) {} },
+                    getItem: function(key) { try { return memoryStorage[key] !== undefined ? memoryStorage[key] : null; } catch(e) { return null; } },
+                    removeItem: function(key) { try { delete memoryStorage[key]; } catch(e) {} },
+                    clear: function() { try { memoryStorage = {}; } catch(e) {} },
+                    get length() { try { return Object.keys(memoryStorage).length; } catch(e) { return 0; } },
+                    key: function(index) { try { return Object.keys(memoryStorage)[index] || null; } catch(e) { return null; } }
+                };
+            }
+        })();
+        
         // String.trim polyfill
         if (!String.prototype.trim) {
             String.prototype.trim = function() {
@@ -68,7 +90,7 @@
             localStorage.setItem(test, test);
             localStorage.removeItem(test);
         } catch(e) {
-            alert('提示：当前浏览器隐私模式可能导致部分功能无法保存设置，建议关闭隐私模式后使用。');
+        //    alert('提示：当前浏览器隐私模式可能导致部分功能无法保存设置，建议关闭隐私模式后使用。');
         }
     }
     
@@ -1849,11 +1871,102 @@ function getSelectedEngineText() {
 }
 
 // 重新绑定提交按钮事件（确保 IE 兼容）
+// 重新绑定提交按钮事件（确保 IE 兼容）
 function bindSubmitEvent() {
     var submitBtn = document.getElementById('submitBtn');
     var urlInput = document.getElementById('urlInput');
     
     if (!submitBtn) return;
+    
+    // ========== 【修复】IE9 特有修复：确保按钮可点击并阻止事件冒泡中断 ==========
+    var isIE9 = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (version === 9) isIE9 = true;
+        }
+    } catch(e) { isIE9 = false; }
+    
+    if (isIE9) {
+        // IE9 下使用 attachEvent 并确保 returnValue 正确设置
+        if (submitBtn.attachEvent) {
+            // 移除可能已绑定的旧事件
+            if (submitBtn._ie9ClickHandler) {
+                submitBtn.detachEvent('onclick', submitBtn._ie9ClickHandler);
+            }
+            submitBtn._ie9ClickHandler = function(e) {
+                e = e || window.event;
+                var url = urlInput ? urlInput.value.trim() : '';
+                var engine = getSelectedEngineValue();
+                
+                // 保存选择
+                try { localStorage.setItem('selectedEngine', engine); } catch(err) {}
+                
+                if (!url || url === '' || url === 'https://') {
+                    e.returnValue = false;
+                    return false;
+                }
+                
+                // 搜索后清空输入功能
+                var clearOnSearchCheckbox = document.getElementById('clearOnSearchCheckbox');
+                if (clearOnSearchCheckbox && clearOnSearchCheckbox.checked && engine !== 'iFrameFree') {
+                    setTimeout(function() {
+                        if (urlInput) urlInput.value = '';
+                        var saveInputCheckbox = document.getElementById('saveInputCheckbox');
+                        if (saveInputCheckbox && saveInputCheckbox.checked) {
+                            try { localStorage.removeItem('savedInputText'); } catch(err) {}
+                        }
+                    }, 0);
+                }
+                
+                // 保存历史记录
+                if (url) {
+                    try {
+                        var searchHistoryCheckbox = document.getElementById('searchHistoryCheckbox');
+                        if (searchHistoryCheckbox && searchHistoryCheckbox.checked) {
+                            var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                            var filteredHistory = [];
+                            for (var h = 0; h < history.length; h++) {
+                                if (history[h].text !== url) filteredHistory.push(history[h]);
+                            }
+                            filteredHistory.unshift({ text: url });
+                            var limitedHistory = filteredHistory.slice(0, 10);
+                            localStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
+                            if (typeof updateSearchHistory === 'function') updateSearchHistory();
+                        }
+                    } catch(err) {}
+                }
+                
+                // 构建搜索URL
+                var searchUrl = url;
+                if (searchUrl && searchUrl.indexOf('://') === -1) {
+                    // 根据搜索引擎构建URL（简化版，确保核心搜索可用）
+                    if (engine === 'baidu') {
+                        searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
+                    } else if (engine === 'google') {
+                        searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
+                    }
+                }
+                
+                // IE9 下使用 window.location 跳转
+                if (searchUrl) {
+                    try {
+                        window.location.href = searchUrl;
+                    } catch(err) {
+                        window.location = searchUrl;
+                    }
+                }
+                e.returnValue = false;
+                return false;
+            };
+            submitBtn.attachEvent('onclick', submitBtn._ie9ClickHandler);
+        }
+        return;
+    }
     
     // ========== 【修复】使用更安全的事件绑定方式，避免 cloneNode 导致内存泄漏 ==========
     // 先移除旧事件（如果存在）
