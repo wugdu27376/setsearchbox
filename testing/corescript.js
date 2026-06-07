@@ -820,6 +820,80 @@ onDomReady(function() {
 // ========== IE9/10 搜索建议补丁结束 ==========
 
 
+// IE9 浏览器禁用 hitokotoCheckbox
+(function() {
+    var isIE9 = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (version === 9) isIE9 = true;
+        }
+    } catch(e) {
+        isIE9 = false;
+    }
+    
+    if (isIE9) {
+        var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
+        if (hitokotoCheckbox) {
+            hitokotoCheckbox.disabled = true;
+            var hitokotoLabel = document.querySelector('label[for="hitokotoCheckbox"]');
+            if (hitokotoLabel) {
+                hitokotoLabel.style.opacity = '0.7';
+                hitokotoLabel.style.cursor = 'not-allowed';
+            }
+            // 确保一言显示功能被关闭
+            document.getElementById('hitokotoDisplay').style.display = 'none';
+            localStorage.setItem('hitokotoChecked', 'false');
+        }
+    }
+})();
+
+
+// IE 浏览器禁用 label 按钮时禁止点击执行代码行为
+(function() {
+    var isIE = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            isIE = true;
+        }
+        var trident = ua.indexOf('Trident/');
+        if (trident > 0) {
+            isIE = true;
+        }
+    } catch(e) {
+        isIE = false;
+    }
+    
+    if (isIE) {
+        var disabledLabels = document.querySelectorAll('label[style*="cursor: not-allowed"], label[style*="pointer-events: none"]');
+        for (var i = 0; i < disabledLabels.length; i++) {
+            var label = disabledLabels[i];
+            if (label.style.cursor === 'not-allowed' || label.style.pointerEvents === 'none') {
+                label.onclick = function(e) {
+                    if (e && e.preventDefault) {
+                        e.preventDefault();
+                    }
+                    if (e && e.stopPropagation) {
+                        e.stopPropagation();
+                    }
+                    if (window.event) {
+                        window.event.returnValue = false;
+                        window.event.cancelBubble = true;
+                    }
+                    return false;
+                };
+                label.unselectable = 'on';
+                label.setAttribute('unselectable', 'on');
+            }
+        }
+    }
+})();
+
+
 // ========== 内存泄漏防护 - 资源管理器 ==========
 var ResourceManager = (function() {
     var eventListeners = [];
