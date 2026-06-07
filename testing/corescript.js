@@ -5830,7 +5830,13 @@ document.getElementById('urlInput').addEventListener('keydown', function(e) {
 
 // 监听urlInput的focus事件，重置manualHttps标记
 document.getElementById('urlInput').addEventListener('focus', function() {
-    this.dataset.manualHttps = '';
+    // 【修复】兼容 IE 等低版本浏览器，确保 dataset 存在且可安全设置
+    if (this && this.dataset) {
+        this.dataset.manualHttps = '';
+    } else if (this) {
+        // 降级方案：使用 setAttribute 兼容 IE9 及以下
+        this.setAttribute('data-manual-https', '');
+    }
 });
 
 // 保存和加载自动聚焦checkbox状态
