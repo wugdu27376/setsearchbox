@@ -8324,13 +8324,16 @@ function showCustomConfirm(title, callback) {
     ].join('');
     
     // 添加键盘事件处理函数
+    // 【修复】兼容 IE 浏览器，确保回调函数存在后再调用
     modal._keyHandler = function(e) {
         e = e || window.event;
         var keyCode = e.keyCode || e.which;
         
         // 按Esc键 (keyCode 27) 关闭
         if (keyCode === 27) {
-            window[callbackName](false);
+            if (typeof window[callbackName] === 'function') {
+                window[callbackName](false);
+            }
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
@@ -8341,7 +8344,9 @@ function showCustomConfirm(title, callback) {
         
         // 按N键 (keyCode 78) 或 n键 (keyCode 110) 为取消
         if (keyCode === 78 || keyCode === 110) {
-            window[callbackName](false);
+            if (typeof window[callbackName] === 'function') {
+                window[callbackName](false);
+            }
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
@@ -8352,12 +8357,14 @@ function showCustomConfirm(title, callback) {
         
         // 按Y键 (keyCode 89) 或 y键 (keyCode 121) 为确定
         if (keyCode === 89 || keyCode === 121) {
-            window[callbackName](true);
+            if (typeof window[callbackName] === 'function') {
+                window[callbackName](true);
+            }
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
                 e.returnValue = false;
-                }
+            }
             return false;
         }
     };
