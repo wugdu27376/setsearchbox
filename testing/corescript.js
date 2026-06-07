@@ -1567,8 +1567,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     // 初始化用户输入状态
-    if (document.getElementById('urlInput').value !== 'https://') {
-        document.getElementById('urlInput').dataset.userInput = 'true';
+    // 【修复】兼容 IE 等旧浏览器中 dataset 属性可能为 undefined 的问题
+    var initUrlInput = document.getElementById('urlInput');
+    if (initUrlInput) {
+        if (initUrlInput.value !== 'https://') {
+            if (initUrlInput.dataset) {
+                initUrlInput.dataset.userInput = 'true';
+            } else {
+                initUrlInput.setAttribute('data-user-input', 'true');
+            }
+        }
     }
     var iframe = document.getElementById('webFrame');
     var container = document.getElementById('iframeContainer');
