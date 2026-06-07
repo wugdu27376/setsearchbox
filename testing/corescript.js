@@ -5796,17 +5796,29 @@ if (savedSelectHttpsTextState === 'true') {
 }
 
 // 添加urlInput的focus事件处理，用于自动选择https文本
-document.getElementById('urlInput').addEventListener('focus', function() {
-    // 检查是否启用了自动选择https文本功能
-    var isSelectHttpsTextChecked = localStorage.getItem('selectHttpsTextChecked') === 'true';
-    var isAutoFillHttpsChecked = localStorage.getItem('autoFillHttpsChecked') === 'true';
-    
-    // 只有当所有条件满足且用户没有手动输入时才自动选择
-    if (isSelectHttpsTextChecked && isAutoFillHttpsChecked &&
-        this.value === 'https://' && !this.dataset.userInput) {
-        this.select(); // 自动选择所有文本
-    }
-});
+// 【修复】兼容 IE 等旧浏览器中 dataset 属性可能为 undefined 的问题
+var urlInputFocusElement = document.getElementById('urlInput');
+if (urlInputFocusElement) {
+    urlInputFocusElement.addEventListener('focus', function() {
+        // 检查是否启用了自动选择https文本功能
+        var isSelectHttpsTextChecked = localStorage.getItem('selectHttpsTextChecked') === 'true';
+        var isAutoFillHttpsChecked = localStorage.getItem('autoFillHttpsChecked') === 'true';
+        
+        // 兼容性获取 dataset.userInput 的值
+        var userInputFlag = '';
+        if (this.dataset) {
+            userInputFlag = this.dataset.userInput;
+        } else {
+            userInputFlag = this.getAttribute('data-user-input') || '';
+        }
+        
+        // 只有当所有条件满足且用户没有手动输入时才自动选择
+        if (isSelectHttpsTextChecked && isAutoFillHttpsChecked &&
+            this.value === 'https://' && !userInputFlag) {
+            this.select(); // 自动选择所有文本
+        }
+    });
+}
 
 // 右键控制
 document.getElementById('urlInput').addEventListener('contextmenu', function(e) {
@@ -5829,15 +5841,19 @@ document.getElementById('urlInput').addEventListener('keydown', function(e) {
 });
 
 // 监听urlInput的focus事件，重置manualHttps标记
-document.getElementById('urlInput').addEventListener('focus', function() {
-    // 【修复】兼容 IE 等低版本浏览器，确保 dataset 存在且可安全设置
-    if (this && this.dataset) {
-        this.dataset.manualHttps = '';
-    } else if (this) {
-        // 降级方案：使用 setAttribute 兼容 IE9 及以下
-        this.setAttribute('data-manual-https', '');
-    }
-});
+// 【修复】兼容 IE 等旧浏览器中 dataset 属性可能为 undefined 的问题
+var urlInputElement = document.getElementById('urlInput');
+if (urlInputElement) {
+    urlInputElement.addEventListener('focus', function() {
+        // 兼容性处理：检查 dataset 是否存在，不存在则手动创建
+        if (this.dataset) {
+            this.dataset.manualHttps = '';
+        } else {
+            // 对于不支持 dataset 的浏览器（如 IE10 以下），使用 setAttribute
+            this.setAttribute('data-manual-https', '');
+        }
+    });
+}
 
 // 保存和加载自动聚焦checkbox状态
 var savedAutoFocusState = localStorage.getItem('autoFocusChecked');
