@@ -851,44 +851,57 @@ onDomReady(function() {
 })();
 
 
-// IE 浏览器禁用 label 按钮时禁止点击执行代码行为
+// 【修复】IE10及以下版本禁用label按钮点击执行代码行为
 (function() {
-    var isIE = false;
+    var isIE10OrBelow = false;
     try {
         var ua = navigator.userAgent;
         var msie = ua.indexOf('MSIE ');
         if (msie > 0) {
-            isIE = true;
+            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (version <= 10) isIE10OrBelow = true;
         }
         var trident = ua.indexOf('Trident/');
         if (trident > 0) {
-            isIE = true;
+            var rv = ua.indexOf('rv:');
+            if (rv > 0) {
+                var version = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+                if (version <= 10) isIE10OrBelow = true;
+            }
         }
     } catch(e) {
-        isIE = false;
+        isIE10OrBelow = false;
     }
     
-    if (isIE) {
-        var disabledLabels = document.querySelectorAll('label[style*="cursor: not-allowed"], label[style*="pointer-events: none"]');
-        for (var i = 0; i < disabledLabels.length; i++) {
-            var label = disabledLabels[i];
-            if (label.style.cursor === 'not-allowed' || label.style.pointerEvents === 'none') {
-                label.onclick = function(e) {
-                    if (e && e.preventDefault) {
-                        e.preventDefault();
-                    }
-                    if (e && e.stopPropagation) {
-                        e.stopPropagation();
-                    }
-                    if (window.event) {
-                        window.event.returnValue = false;
-                        window.event.cancelBubble = true;
-                    }
-                    return false;
-                };
-                label.unselectable = 'on';
-                label.setAttribute('unselectable', 'on');
+    if (isIE10OrBelow) {
+        // 禁用执行CSS代码的label按钮
+        var executeCssLabel = document.querySelector('label[for="executeCssBtn"]');
+        if (executeCssLabel) {
+            executeCssLabel.style.pointerEvents = 'none';
+            executeCssLabel.style.opacity = '0.7';
+            executeCssLabel.style.cursor = 'default';
+            executeCssLabel.removeAttribute('onclick');
+            if (executeCssLabel.attachEvent) {
+                executeCssLabel.detachEvent('onclick', executeCssLabel.onclick);
+            } else if (executeCssLabel.removeEventListener) {
+                executeCssLabel.removeEventListener('click', executeCssLabel.clickHandler);
             }
+            executeCssLabel.onclick = null;
+        }
+        
+        // 禁用执行JS脚本的label按钮
+        var executeJsLabel = document.querySelector('label[for="executeJsBtn"]');
+        if (executeJsLabel) {
+            executeJsLabel.style.pointerEvents = 'none';
+            executeJsLabel.style.opacity = '0.7';
+            executeJsLabel.style.cursor = 'default';
+            executeJsLabel.removeAttribute('onclick');
+            if (executeJsLabel.attachEvent) {
+                executeJsLabel.detachEvent('onclick', executeJsLabel.onclick);
+            } else if (executeJsLabel.removeEventListener) {
+                executeJsLabel.removeEventListener('click', executeJsLabel.clickHandler);
+            }
+            executeJsLabel.onclick = null;
         }
     }
 })();
