@@ -6788,38 +6788,61 @@ document.querySelector('label[for="importSettingsBtn"]').addEventListener('click
     document.getElementById('importSettingsInput').click();
 });
 
-document.getElementById('importSettingsInput').addEventListener('change', function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
+// 兼容 IE 所有版本及旧版浏览器正常导入文件
+var importSettingsInput = document.getElementById('importSettingsInput');
+if (importSettingsInput) {
+    if (importSettingsInput.addEventListener) {
+        importSettingsInput.addEventListener('change', handleImportFile);
+    } else if (importSettingsInput.attachEvent) {
+        importSettingsInput.attachEvent('onchange', handleImportFile);
+    }
     
-    var reader = new FileReader();
-    reader.onload = function(event) {
-        try {
-            var content = event.target.result;
-            var settings = JSON.parse(content);
-            
-            // 弹出二次确认对话框
-            showCustomConfirm('确定要导入该配置文件吗？导入后将覆盖当前所有设置并刷新页面。', function(result) {
-                if (result) {
-                    // 恢复所有设置到localStorage
-                    var settingsKeys = Object.keys(settings);
-                    for (var k = 0; k < settingsKeys.length; k++) {
-                        var key = settingsKeys[k];
-                        if (settings[key] !== null) {
-                            localStorage.setItem(key, settings[key]);
+    function handleImportFile(e) {
+        e = e || window.event;
+        var target = e.target || e.srcElement;
+        var file = target.files && target.files[0];
+        if (!file) return;
+        
+        var reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                var content = event.target.result;
+                var settings = JSON.parse(content);
+                
+                // 弹出二次确认对话框
+                showCustomConfirm('确定要导入该配置文件吗？导入后将覆盖当前所有设置并刷新页面。', function(result) {
+                    if (result) {
+                        // 恢复所有设置到localStorage
+                        var settingsKeys = Object.keys(settings);
+                        for (var k = 0; k < settingsKeys.length; k++) {
+                            var key = settingsKeys[k];
+                            if (settings[key] !== null) {
+                                try {
+                                    localStorage.setItem(key, settings[key]);
+                                } catch(e) {}
+                            }
+                        }
+                        // 重新加载页面应用设置
+                        try {
+                            window.location.reload();
+                        } catch(e) {
+                            window.location.href = window.location.href;
                         }
                     }
-                    // 重新加载页面应用设置
-                    location.reload();
-                }
-            });
-        } catch (error) {
-            // JSON解析失败，静默处理
-        }
-        e.target.value = '';
-    };
-    reader.readAsText(file);
-});
+                });
+            } catch (error) {
+                // JSON解析失败，静默处理
+            }
+            if (target) target.value = '';
+        };
+        reader.onerror = function() {
+            if (target) target.value = '';
+        };
+        try {
+            reader.readAsText(file);
+        } catch(e) {}
+    }
+}
 
 // 为导入设置按钮添加拖放支持
 var importSettingsLabel = document.querySelector('label[for="importSettingsBtn"]');
