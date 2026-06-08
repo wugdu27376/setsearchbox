@@ -297,66 +297,58 @@
     }
     
     if (isIE) {
-        // 修复 IE 下 URL 跳转失败问题
-        var originalSubmitBtnClick = null;
-        // 【修复】IE8 兼容：使用 attachEvent 替代 addEventListener
-        function onDomReady(callback) {
-            if (document.readyState === 'complete') {
-                setTimeout(callback, 1);
-            } else if (document.attachEvent) {
-                document.attachEvent('onreadystatechange', function() {
-                    if (document.readyState === 'complete') {
-                        callback();
+        // 仅保留必要的IE兼容辅助逻辑，不干预提交按钮的点击事件
+        // 主流程中的 bindSubmitEvent 已包含完整的搜索引擎处理，且兼容IE8
+        // 修复 IE 下 select 元素 value 读取问题
+        if (HTMLSelectElement && HTMLSelectElement.prototype) {
+            var hasValueProp = false;
+            try {
+                hasValueProp = Object.prototype.hasOwnProperty.call(HTMLSelectElement.prototype, 'value');
+            } catch(e) {
+                hasValueProp = false;
+            }
+            if (!hasValueProp) {
+                Object.defineProperty(HTMLSelectElement.prototype, 'value', {
+                    get: function() {
+                        if (this.selectedIndex >= 0 && this.options[this.selectedIndex]) {
+                            return this.options[this.selectedIndex].value;
+                        }
+                        return '';
+                    },
+                    set: function(val) {
+                        for (var i = 0; i < this.options.length; i++) {
+                            if (this.options[i].value == val) {
+                                this.selectedIndex = i;
+                                break;
+                            }
+                        }
                     }
                 });
-                var oldOnLoad = window.onload;
-                window.onload = function() {
-                    if (oldOnLoad) oldOnLoad();
-                    callback();
-                };
-            } else {
-                window.onload = callback;
             }
         }
         
-        onDomReady(function() {
-            var submitBtn = document.getElementById('submitBtn');
-            var urlInput = document.getElementById('urlInput');
-            
-            if (submitBtn && urlInput) {
-                // 移除原有事件，使用更可靠的跳转方式
-                var newBtn = submitBtn.cloneNode(true);
-                submitBtn.parentNode.replaceChild(newBtn, submitBtn);
-                submitBtn = newBtn;
-                
-                submitBtn.onclick = function(e) {
-                    e = e || window.event;
-                    var url = urlInput.value;
-                    var engine = document.getElementById('engineSelect').value;
-                    
-                    if (!url || url === 'https://') return false;
-                    
-                    // IE 下直接跳转
-                    try {
-                        if (engine === 'iFrameFree') {
-                            var iframe = document.getElementById('webFrame');
-                            if (iframe) iframe.src = url;
-                            return false;
-                        }
-                        try {
-    window.location.href = url;
-} catch(e) {
-    window.location = url;
-}
-                    } catch(err) {
-                        window.location = url;
-                    }
-                    return false;
-                };
-            }
-        });
+        // 修复 console 对象
+        if (!window.console) {
+            window.console = {
+                log: function() {},
+                error: function() {},
+                warn: function() {},
+                info: function() {}
+            };
+        }
+        
+        // 修复 CustomEvent
+        if (typeof window.CustomEvent !== 'function') {
+            window.CustomEvent = function(event, params) {
+                params = params || { bubbles: false, cancelable: false, detail: undefined };
+                var evt = document.createEvent('CustomEvent');
+                evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+                return evt;
+            };
+        }
     }
 })();
+// ========== IE 兼容补丁结束 ==========
 
 
 // ========== IE 完整兼容补丁 ==========
@@ -2735,66 +2727,41 @@ function bindSubmitEvent() {
             }
         }
         
-                    // 最终跳转
-            if (searchUrl) {
-                var autoNewTabCheckbox = document.getElementById('autoNewTabCheckbox');
-                var isAutoNewTabChecked = autoNewTabCheckbox ? autoNewTabCheckbox.checked : false;
-                var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
-                var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
-                
-                if (shouldOpenNewTab) {
-                    window.open(searchUrl, '_blank');
-                    return;
-                } else if (engine === 'httpsAutoFill' && searchUrl) {
-                    try {
-                        var form = document.createElement('form');
-                        form.action = searchUrl;
-                        form.target = '_self';
-                        form.method = 'post';
-                        form.style.display = 'none';
-                        var submitButton = document.createElement('button');
-                        submitButton.type = 'submit';
-                        form.appendChild(submitButton);
-                        document.body.appendChild(form);
-                        form.submit();
-                        document.body.removeChild(form);
-                    } catch(err) {
-                        // 【修复】IE8 兼容跳转
-                        if (navigator.userAgent.indexOf('MSIE 8') !== -1) {
-                            try { window.location.href = searchUrl; } catch(e) { window.location = searchUrl; }
-                        } else {
-                            window.location.href = searchUrl;
-                        }
-                    }
-                    return;
-                } else {
-                    // 【修复】IE8 兼容：确保跳转和搜索关键词正确执行
-                    try {
-                        if (navigator.userAgent.indexOf('MSIE 8') !== -1) {
-                            var isSuccess = false;
-                            try {
-                                window.location.href = searchUrl;
-                                isSuccess = true;
-                            } catch(e) {}
-                            if (!isSuccess) {
-                                try {
-                                    window.location = searchUrl;
-                                } catch(e2) {
-                                    window.location.replace(searchUrl);
-                                }
-                            }
-                        } else {
-                            window.location.href = searchUrl;
-                        }
-                    } catch(err) {
-                        try {
-                            window.location = searchUrl;
-                        } catch(e) {
-                            window.location.replace(searchUrl);
-                        }
-                    }
+        // 最终跳转
+        if (searchUrl) {
+            var autoNewTabCheckbox = document.getElementById('autoNewTabCheckbox');
+            var isAutoNewTabChecked = autoNewTabCheckbox ? autoNewTabCheckbox.checked : false;
+            var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
+            var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
+            
+            if (shouldOpenNewTab) {
+                window.open(searchUrl, '_blank');
+                return;
+            } else if (engine === 'httpsAutoFill' && searchUrl) {
+                try {
+                    var form = document.createElement('form');
+                    form.action = searchUrl;
+                    form.target = '_self';
+                    form.method = 'post';
+                    form.style.display = 'none';
+                    var submitButton = document.createElement('button');
+                    submitButton.type = 'submit';
+                    form.appendChild(submitButton);
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                } catch(err) {
+                    window.location.href = searchUrl;
+                }
+                return;
+            } else {
+                try {
+                    window.location.href = searchUrl;
+                } catch(err) {
+                    window.location = searchUrl;
                 }
             }
+        }
     };
 }
 
