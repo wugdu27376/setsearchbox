@@ -288,19 +288,32 @@
 
 
 // ========== IE 跳转兼容补丁 ==========
-// ========== IE 跳转兼容补丁 ==========
 (function() {
+    // 检测IE版本
     var isIE = false;
+    var ieVersion = 0;
     try {
-        isIE = /*@cc_on!@*/false || !!document.documentMode;
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            isIE = true;
+            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        }
+        var trident = ua.indexOf('Trident/');
+        if (trident > 0) {
+            isIE = true;
+            var rv = ua.indexOf('rv:');
+            if (rv > 0) {
+                ieVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+            }
+        }
     } catch(e) {
         isIE = false;
+        ieVersion = 0;
     }
     
-    if (isIE) {
-        // 修复 IE 下 URL 跳转失败问题
-        var originalSubmitBtnClick = null;
-        // 【修复】IE8 兼容：使用 attachEvent 替代 addEventListener
+    // ========== IE8及以下版本专用跳转修复 ==========
+    if (isIE && ieVersion <= 8) {
         function onDomReady(callback) {
             if (document.readyState === 'complete') {
                 setTimeout(callback, 1);
@@ -326,7 +339,6 @@
             var engineSelect = document.getElementById('engineSelect');
             
             if (submitBtn && urlInput && engineSelect) {
-                // 移除原有事件，使用更可靠的跳转方式
                 var newBtn = submitBtn.cloneNode(true);
                 submitBtn.parentNode.replaceChild(newBtn, submitBtn);
                 submitBtn = newBtn;
@@ -338,24 +350,16 @@
                     
                     if (!searchText || searchText === 'https://') return false;
                     
-                    // IE 下构建搜索URL
                     try {
-                        // 处理 iFrameFree 模式
                         if (engine === 'iFrameFree') {
                             var iframe = document.getElementById('webFrame');
-                            if (iframe) {
-                                iframe.src = searchText;
-                            }
-                            var iframeContainer = document.getElementById('iframeContainer');
-                            if (iframeContainer) iframeContainer.style.display = 'block';
+                            if (iframe) iframe.src = searchText;
                             return false;
                         }
                         
-                        // 构建搜索URL
                         var searchUrl = searchText;
                         var isDirectUrl = false;
                         
-                        // 检查是否为直接URL（包含协议或域名格式）
                         if (searchText.indexOf('://') !== -1 || 
                             /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/.test(searchText)) {
                             isDirectUrl = true;
@@ -364,7 +368,6 @@
                             }
                         }
                         
-                        // 根据搜索引擎构建搜索URL（非直接URL时）
                         if (!isDirectUrl) {
                             switch (engine) {
                                 case 'baidu':
@@ -382,71 +385,93 @@
                                 case 'so':
                                     searchUrl = 'https://www.so.com/s?q=' + encodeURIComponent(searchText);
                                     break;
-                                case 'yandex':
-                                    searchUrl = 'https://yandex.com/search/?text=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'duckduckgo':
-                                    searchUrl = 'https://duckduckgo.com/?q=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'yahooSearch':
-                                    searchUrl = 'https://sg.search.yahoo.com/search?p=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'braveSearch':
-                                    searchUrl = 'https://search.brave.com/search?q=' + encodeURIComponent(searchText);
-                                    break;
                                 case 'autofillHttp1':
                                     searchUrl = 'http://' + searchText;
                                     break;
                                 case 'autofillHttps':
                                     searchUrl = 'https://' + searchText;
                                     break;
-                                case 'customSearch':
-                                    var customUrl = null;
-                                    try { customUrl = localStorage.getItem('customSearchUrl'); } catch(err) {}
-                                    if (customUrl && customUrl.indexOf('{keywords}') !== -1) {
-                                        searchUrl = customUrl.replace('{keywords}', encodeURIComponent(searchText));
-                                    } else {
-                                        searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                                    }
-                                    break;
                                 default:
-                                    if (engine.indexOf('customSearch_') === 0) {
-                                        var customSearches = [];
-                                        try { customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]'); } catch(err) {}
-                                        var order = parseInt(engine.split('_')[1]);
-                                        for (var i = 0; i < customSearches.length; i++) {
-                                            if (customSearches[i].order === order && customSearches[i].url.indexOf('{keywords}') !== -1) {
-                                                searchUrl = customSearches[i].url.replace('{keywords}', encodeURIComponent(searchText));
-                                                break;
-                                            }
-                                        }
-                                        if (!searchUrl || searchUrl === searchText) {
-                                            searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                                        }
-                                    } else {
-                                        searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                                    }
+                                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
                                     break;
                             }
                         }
                         
-                        // 执行跳转
                         if (searchUrl) {
                             try {
                                 window.location.href = searchUrl;
                             } catch(e) {
                                 window.location = searchUrl;
                             }
-                        } else {
-                            return false;
                         }
                     } catch(err) {
-                        // 最后回退：使用百度搜索
                         try {
                             window.location.href = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
                         } catch(e2) {
                             window.location = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
                         }
+                    }
+                    return false;
+                };
+            }
+        });
+    }
+    
+    // ========== IE9及以上版本保持原有逻辑 ==========
+    if (isIE && ieVersion >= 9) {
+        // 修复 IE 下 URL 跳转失败问题
+        var originalSubmitBtnClick = null;
+        // 【修复】IE8 兼容：使用 attachEvent 替代 addEventListener
+        function onDomReady(callback) {
+            if (document.readyState === 'complete') {
+                setTimeout(callback, 1);
+            } else if (document.attachEvent) {
+                document.attachEvent('onreadystatechange', function() {
+                    if (document.readyState === 'complete') {
+                        callback();
+                    }
+                });
+                var oldOnLoad = window.onload;
+                window.onload = function() {
+                    if (oldOnLoad) oldOnLoad();
+                    callback();
+                };
+            } else {
+                window.onload = callback;
+            }
+        }
+        
+        onDomReady(function() {
+            var submitBtn = document.getElementById('submitBtn');
+            var urlInput = document.getElementById('urlInput');
+            
+            if (submitBtn && urlInput) {
+                // 移除原有事件，使用更可靠的跳转方式
+                var newBtn = submitBtn.cloneNode(true);
+                submitBtn.parentNode.replaceChild(newBtn, submitBtn);
+                submitBtn = newBtn;
+                
+                submitBtn.onclick = function(e) {
+                    e = e || window.event;
+                    var url = urlInput.value;
+                    var engine = document.getElementById('engineSelect').value;
+                    
+                    if (!url || url === 'https://') return false;
+                    
+                    // IE 下直接跳转
+                    try {
+                        if (engine === 'iFrameFree') {
+                            var iframe = document.getElementById('webFrame');
+                            if (iframe) iframe.src = url;
+                            return false;
+                        }
+                        try {
+                            window.location.href = url;
+                        } catch(e) {
+                            window.location = url;
+                        }
+                    } catch(err) {
+                        window.location = url;
                     }
                     return false;
                 };
