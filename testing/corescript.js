@@ -637,6 +637,92 @@
 // ========== IE8及以下版本专属兼容代码结束 ==========
 
 
+// ========== 【修复】IE8及以下浏览器搜索引擎保存与加载兼容性补丁 ==========
+(function() {
+    // 检测 IE 浏览器版本（支持 IE6+）
+    var ieVersion = 0;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+    }
+    var isIELowVersion = (ieVersion > 0 && ieVersion <= 8);
+    
+    // 获取保存的搜索引擎值（安全读取）
+    function getSavedEngine() {
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                return localStorage.getItem('selectedEngine');
+            }
+        } catch(e) {}
+        return null;
+    }
+    
+    // 保存搜索引擎值（安全写入）
+    function setSavedEngine(value) {
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                localStorage.setItem('selectedEngine', value);
+            }
+        } catch(e) {}
+    }
+    
+    // 设置下拉框选中项（兼容 IE 低版本）
+    function setSelectValue(selectEl, value) {
+        if (!selectEl) return false;
+        for (var i = 0; i < selectEl.options.length; i++) {
+            if (selectEl.options[i].value === value) {
+                selectEl.selectedIndex = i;
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    var engineSelect = document.getElementById('engineSelect');
+    if (!engineSelect) return;
+    
+    // 页面加载时恢复保存的选择
+    var savedEngine = getSavedEngine();
+    if (savedEngine) {
+        if (setSelectValue(engineSelect, savedEngine)) {
+            // 手动触发 change 事件（兼容 IE 低版本）
+            if (engineSelect.fireEvent) {
+                engineSelect.fireEvent('onchange');
+            } else if (engineSelect.dispatchEvent) {
+                var evt = document.createEvent('HTMLEvents');
+                evt.initEvent('change', true, false);
+                engineSelect.dispatchEvent(evt);
+            }
+        }
+    }
+    
+    // 监听 change 事件保存选择（兼容 IE 低版本）
+    var originalChangeHandler = engineSelect.onchange;
+    engineSelect.onchange = function(e) {
+        var selectedValue = engineSelect.value;
+        if (selectedValue) {
+            setSavedEngine(selectedValue);
+        }
+        if (originalChangeHandler) {
+            originalChangeHandler.call(this, e);
+        }
+    };
+    
+    // 对于 IE8 及以下，使用 attachEvent 确保事件绑定
+    if (isIELowVersion && engineSelect.attachEvent && !engineSelect._patched) {
+        engineSelect._patched = true;
+        engineSelect.attachEvent('onchange', function() {
+            var selectedValue = engineSelect.value;
+            if (selectedValue) {
+                setSavedEngine(selectedValue);
+            }
+        });
+    }
+})();
+// ========== 【修复结束】 ==========
+
+
 // ========== IE 完整兼容补丁 ==========
 (function() {
     var isIE = false;
@@ -1728,40 +1814,10 @@ function isMobileAndroidApple() {
 
 // 页面加载时恢复保存的选择
 document.addEventListener('DOMContentLoaded', function() {
-    // ========== 【修复】恢复保存的搜索引擎选择（IE8兼容） ==========
-    var savedEngine = null;
-    // 优先从 localStorage 读取
-    try {
-        if (typeof localStorage !== 'undefined' && localStorage !== null) {
-            savedEngine = localStorage.getItem('selectedEngine');
-        }
-    } catch(e) {
-        savedEngine = null;
-    }
-    // localStorage 不可用时从 cookie 读取
-    if (!savedEngine && typeof document !== 'undefined') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = cookies[i].replace(/^\s+/, '');
-            if (cookie.indexOf('selectedEngine=') === 0) {
-                savedEngine = decodeURIComponent(cookie.substring('selectedEngine='.length));
-                break;
-            }
-        }
-    }
+    var savedEngine = localStorage.getItem('selectedEngine');
     if (savedEngine) {
-        var engineSelectElem = document.getElementById('engineSelect');
-        if (engineSelectElem) {
-            // 遍历选项查找匹配值（兼容 IE8）
-            for (var i = 0; i < engineSelectElem.options.length; i++) {
-                if (engineSelectElem.options[i].value === savedEngine) {
-                    engineSelectElem.selectedIndex = i;
-                    break;
-                }
-            }
-        }
+        document.getElementById('engineSelect').value = savedEngine;
     }
-    // ========== 【修复结束】 ==========
     // 如果保存的选择是iFrameFree，则显示iframe容器
     if (savedEngine === 'iFrameFree') {
         document.getElementById('iframeContainer').style.display = 'block';
@@ -2501,19 +2557,8 @@ function bindSubmitEvent() {
         
         // 保存当前选择
         try {
-            if (typeof localStorage !== 'undefined' && localStorage !== null) {
-                localStorage.setItem('selectedEngine', engine);
-            }
+            localStorage.setItem('selectedEngine', engine);
         } catch(err) {}
-        // IE8 及以下降级方案：使用 cookie 保存
-        try {
-            if (typeof document !== 'undefined') {
-                var expiryDate = new Date();
-                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-                document.cookie = 'selectedEngine=' + encodeURIComponent(engine) + '; path=/; expires=' + expiryDate.toUTCString();
-            }
-        } catch(err) {}
-        // ========== 【修复结束】 ==========
         
         // ========== 【修改位置】跳转/搜索前，记录即将失焦状态 ==========
         // 设置一个标记，表示即将进行跳转
@@ -3677,22 +3722,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 监听选择变化并保存
 document.getElementById('engineSelect').addEventListener('change', function() {
-    // ========== 【修复】搜索引擎变化时保存（IE8兼容） ==========
-    var selectedVal = this.value;
-    try {
-        if (typeof localStorage !== 'undefined' && localStorage !== null) {
-            localStorage.setItem('selectedEngine', selectedVal);
-        }
-    } catch(e) {}
-    // IE8 及以下降级方案：使用 cookie 保存
-    try {
-        if (typeof document !== 'undefined') {
-            var expiryDate = new Date();
-            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-            document.cookie = 'selectedEngine=' + encodeURIComponent(selectedVal) + '; path=/; expires=' + expiryDate.toUTCString();
-        }
-    } catch(e) {}
-    // ========== 【修复结束】 ==========
+    localStorage.setItem('selectedEngine', this.value);
     // 检查order0自定义搜索是否被隐藏
     var isOrder0Hidden = localStorage.getItem('hideOrder0Search') === 'true';
     if (isOrder0Hidden && this.value === 'customSearch') {
