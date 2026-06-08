@@ -73,31 +73,43 @@
     }
     
     // classList兼容（针对IE9-10）
+    // 【修复】IE8 兼容：检测 HTMLElement 是否存在，避免 undefined 错误
     if (!('classList' in document.documentElement)) {
-        Object.defineProperty(HTMLElement.prototype, 'classList', {
-            get: function() {
-                var self = this;
-                function update(fn) {
-                    return function(value) {
-                        var classes = self.className.split(/\s+/);
-                        var index = classes.indexOf(value);
-                        fn(classes, index, value);
-                        self.className = classes.join(' ');
-                    };
-                }
-                return {
-                    add: update(function(classes, index, value) {
-                        if (index === -1) classes.push(value);
-                    }),
-                    remove: update(function(classes, index, value) {
-                        if (index !== -1) classes.splice(index, 1);
-                    }),
-                    contains: function(value) {
-                        return self.className.split(/\s+/).indexOf(value) !== -1;
-                    }
-                };
-            }
-        });
+        var classListTarget = null;
+        if (window.HTMLElement) {
+            classListTarget = HTMLElement.prototype;
+        } else if (window.Element) {
+            classListTarget = Element.prototype;
+        }
+        if (classListTarget && !classListTarget.classList) {
+            (function(proto) {
+                Object.defineProperty(proto, 'classList', {
+                    get: function() {
+                        var self = this;
+                        function update(fn) {
+                            return function(value) {
+                                var classes = self.className.split(/\s+/);
+                                var index = classes.indexOf(value);
+                                fn(classes, index, value);
+                                self.className = classes.join(' ');
+                            };
+                        }
+                        return {
+                            add: update(function(classes, index, value) {
+                                if (index === -1) classes.push(value);
+                            }),
+                            remove: update(function(classes, index, value) {
+                                if (index !== -1) classes.splice(index, 1);
+                            }),
+                            contains: function(value) {
+                                return self.className.split(/\s+/).indexOf(value) !== -1;
+                            }
+                        };
+                    },
+                    configurable: true
+                });
+            })(classListTarget);
+        }
     }
     
     // 自定义事件创建兼容
