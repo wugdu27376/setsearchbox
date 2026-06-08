@@ -329,6 +329,42 @@ function bindSubmitButtonEvent() {
     }
 }
 
+// IE 浏览器点击链接时激活为红色状态
+(function() {
+    var isIE = false;
+    try {
+        isIE = /*@cc_on!@*/false || !!document.documentMode;
+    } catch(e) {
+        isIE = false;
+    }
+    
+    if (isIE) {
+        var activeLink = document.getElementById('85727544071588039023');
+        if (activeLink) {
+            activeLink.onmousedown = function() {
+                this.style.color = '#ff0000';
+            };
+            activeLink.onmouseup = function() {
+                // 恢复保存的链接颜色
+                var savedColor = localStorage.getItem('linkColor');
+                if (savedColor) {
+                    this.style.color = savedColor;
+                } else {
+                    this.style.color = '#0000ee';
+                }
+            };
+            activeLink.onmouseout = function() {
+                var savedColor = localStorage.getItem('linkColor');
+                if (savedColor) {
+                    this.style.color = savedColor;
+                } else {
+                    this.style.color = '#0000ee';
+                }
+            };
+        }
+    }
+})();
+
 // 在 DOM 加载完成后调用
 onDomReady(function() {
     bindSubmitButtonEvent();
