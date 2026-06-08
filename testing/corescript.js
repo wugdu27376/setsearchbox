@@ -668,14 +668,41 @@ onDomReady(function() {
     } catch(e) {
         localStorageAvailable = false;
         // 创建内存存储替代
+        // 【修复】兼容 IE8 及以下版本不支持 Object.keys 的问题
         var memoryStorage = {};
+        
+        // 辅助函数：获取 memoryStorage 的键数组（兼容所有浏览器）
+        function getMemoryKeys() {
+            var keys = [];
+            for (var k in memoryStorage) {
+                if (memoryStorage.hasOwnProperty(k)) {
+                    keys.push(k);
+                }
+            }
+            return keys;
+        }
+        
         window.localStorage = {
             setItem: function(key, value) { try { memoryStorage[key] = String(value); } catch(e) {} },
             getItem: function(key) { try { return memoryStorage[key] !== undefined ? memoryStorage[key] : null; } catch(e) { return null; } },
             removeItem: function(key) { try { delete memoryStorage[key]; } catch(e) {} },
             clear: function() { try { memoryStorage = {}; } catch(e) {} },
-            get length() { try { return Object.keys(memoryStorage).length; } catch(e) { return 0; } },
-            key: function(index) { try { return Object.keys(memoryStorage)[index] || null; } catch(e) { return null; } }
+            get length() { 
+                try { 
+                    var keys = getMemoryKeys();
+                    return keys.length;
+                } catch(e) { 
+                    return 0; 
+                } 
+            },
+            key: function(index) { 
+                try { 
+                    var keys = getMemoryKeys();
+                    return keys[index] || null;
+                } catch(e) { 
+                    return null; 
+                } 
+            }
         };
     }
     
