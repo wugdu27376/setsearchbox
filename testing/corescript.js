@@ -982,7 +982,7 @@ onDomReady(function() {
 })();
 
 
-// ========== 【修复】IE9及以下浏览器禁用一言复选框 ==========
+// ========== 【修复】IE10以下浏览器禁用label按钮时无操作 ==========
 (function() {
     // 检测 IE 浏览器版本（支持 IE6+）
     var ieVersion = 0;
@@ -992,7 +992,7 @@ onDomReady(function() {
         var msie = ua.indexOf('MSIE ');
         if (msie > 0) {
             ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
-            if (ieVersion <= 9) {
+            if (ieVersion < 10) {
                 isIELowVersion = true;
             }
         }
@@ -1002,7 +1002,7 @@ onDomReady(function() {
             var rv = ua.indexOf('rv:');
             if (rv > 0) {
                 var rvVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
-                if (rvVersion <= 9) {
+                if (rvVersion < 10) {
                     isIELowVersion = true;
                 }
             }
@@ -1012,127 +1012,60 @@ onDomReady(function() {
     }
     
     if (isIELowVersion) {
-        var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
-        var hitokotoColorBtn = document.getElementById('hitokotoColorBtn');
-        var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
-        var hitokotoSizeLabel = document.querySelector('label[for="hitokotoSizePicker"]');
+        // 获取所有需要添加禁用检测的 label 按钮
+        var labelSelectors = [
+            'label[for="linkColorPicker"]',
+            'label[for="renameLinkBtn"]',
+            'label[for="linkSizePicker"]',
+            'label[for="quickLinksColorPicker"]',
+            'label[for="quickLinksSizePicker"]',
+            'label[for="linkSpacingBtn"]',
+            'label[for="renameSubmitBtn"]',
+            'label[for="renamePlaceholderBtn"]',
+            'label[for="fontColorPicker"]',
+            'label[for="bgColorPicker"]',
+            'label[for="executeCssBtn"]',
+            'label[for="executeJsBtn"]',
+            'label[for="heightPicker"]',
+            'label[for="widthPicker"]',
+            'label[for="fontSizePicker"]',
+            'label[for="heightAdjustBtn"]',
+            'label[for="hitokotoColorBtn"]',
+            'label[for="hitokotoStyleBtn"]',
+            'label[for="historyLinksSizePicker"]',
+            'label[for="historyLinksColorPicker"]'
+        ];
         
-        if (hitokotoCheckbox) {
-            hitokotoCheckbox.disabled = true;
-            hitokotoCheckbox.checked = false;
-            // 清除保存的一言启用状态
-            try {
-                if (typeof localStorage !== 'undefined' && localStorage !== null) {
-                    localStorage.setItem('hitokotoChecked', 'false');
-                }
-            } catch(e) {}
-        }
-        
-        // 禁用相关的颜色、样式、大小按钮
-        if (hitokotoColorBtn) {
-            hitokotoColorBtn.style.opacity = '0.7';
-            hitokotoColorBtn.style.cursor = 'not-allowed';
-            hitokotoColorBtn.style.pointerEvents = 'none';
-        }
-        if (hitokotoStyleBtn) {
-            hitokotoStyleBtn.style.opacity = '0.7';
-            hitokotoStyleBtn.style.cursor = 'not-allowed';
-            hitokotoStyleBtn.style.pointerEvents = 'none';
-        }
-        if (hitokotoSizeLabel) {
-            hitokotoSizeLabel.style.opacity = '0.7';
-            hitokotoSizeLabel.style.cursor = 'not-allowed';
-            hitokotoSizeLabel.style.pointerEvents = 'none';
-        }
-        
-        // 隐藏一言显示区域
-        var hitokotoDisplay = document.getElementById('hitokotoDisplay');
-        if (hitokotoDisplay) {
-            hitokotoDisplay.style.display = 'none';
-        }
-    }
-})();
-// ========== 【修复结束】 ==========
-
-
-// ========== 【修复】IE10及以下浏览器禁用label按钮点击无操作 ==========
-(function() {
-    // 检测 IE 浏览器版本
-    var ieVersion = 0;
-    var isIELowVersion = false;
-    try {
-        var ua = navigator.userAgent;
-        var msie = ua.indexOf('MSIE ');
-        if (msie > 0) {
-            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
-            if (ieVersion <= 10) {
-                isIELowVersion = true;
-            }
-        }
-        var trident = ua.indexOf('Trident/');
-        if (trident > 0) {
-            var rv = ua.indexOf('rv:');
-            if (rv > 0) {
-                var rvVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
-                if (rvVersion <= 10) {
-                    isIELowVersion = true;
-                }
-            }
-        }
-    } catch(e) {
-        isIELowVersion = false;
-    }
-    
-    if (isIELowVersion) {
-        // 拦截所有 label 按钮的点击事件，检查是否处于禁用状态
-        document.addEventListener('click', function(e) {
-            e = e || window.event;
-            var target = e.target || e.srcElement;
-            
-            // 向上查找 label 元素
-            var label = target;
-            while (label && label.tagName !== 'LABEL') {
-                label = label.parentNode;
-                if (!label || label === document.body) break;
-            }
-            
-            if (label && label.tagName === 'LABEL') {
-                // 检查 label 关联的控件或自身是否被禁用
-                var forAttr = label.getAttribute('for');
-                var targetElement = null;
-                if (forAttr) {
-                    targetElement = document.getElementById(forAttr);
-                }
-                
-                var isDisabled = false;
-                // 检查 label 自身的 pointer-events 样式
-                if (label.style.pointerEvents === 'none') {
-                    isDisabled = true;
-                }
-                // 检查关联元素是否禁用
-                if (targetElement && targetElement.disabled === true) {
-                    isDisabled = true;
-                }
-                // 检查 label 自身是否包含 disabled 类或 opacity 样式
-                if (label.style.opacity === '0.7' || label.className.indexOf('disabled') !== -1) {
-                    isDisabled = true;
-                }
-                
-                if (isDisabled) {
-                    if (e.preventDefault) {
-                        e.preventDefault();
-                    } else {
-                        e.returnValue = false;
+        for (var s = 0; s < labelSelectors.length; s++) {
+            var labelBtn = document.querySelector(labelSelectors[s]);
+            if (labelBtn && labelBtn._ieDisabledPatched !== true) {
+                labelBtn._ieDisabledPatched = true;
+                var originalClick = labelBtn.onclick;
+                labelBtn.onclick = function(e) {
+                    // 检查按钮是否被禁用（opacity 或 pointer-events 样式判断）
+                    var isDisabled = false;
+                    if (this.style.opacity === '0.7' || this.style.pointerEvents === 'none') {
+                        isDisabled = true;
                     }
-                    if (e.stopPropagation) {
-                        e.stopPropagation();
-                    } else {
-                        e.cancelBubble = true;
+                    // 检查关联的 checkbox 是否未勾选
+                    var forId = this.getAttribute('for');
+                    if (forId) {
+                        var relatedCheckbox = document.getElementById(forId);
+                        if (relatedCheckbox && relatedCheckbox.type === 'checkbox' && !relatedCheckbox.checked) {
+                            isDisabled = true;
+                        }
                     }
-                    return false;
-                }
+                    if (isDisabled) {
+                        if (e && e.preventDefault) e.preventDefault();
+                        if (e && e.stopPropagation) e.stopPropagation();
+                        return false;
+                    }
+                    if (originalClick) {
+                        return originalClick.call(this, e);
+                    }
+                };
             }
-        }, false);
+        }
     }
 })();
 // ========== 【修复结束】 ==========
