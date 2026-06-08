@@ -138,7 +138,27 @@
     if (isIE) {
         // 修复 IE 下 URL 跳转失败问题
         var originalSubmitBtnClick = null;
-        document.addEventListener('DOMContentLoaded', function() {
+        // 【修复】IE8 兼容：使用 attachEvent 替代 addEventListener
+        function onDomReady(callback) {
+            if (document.readyState === 'complete') {
+                setTimeout(callback, 1);
+            } else if (document.attachEvent) {
+                document.attachEvent('onreadystatechange', function() {
+                    if (document.readyState === 'complete') {
+                        callback();
+                    }
+                });
+                var oldOnLoad = window.onload;
+                window.onload = function() {
+                    if (oldOnLoad) oldOnLoad();
+                    callback();
+                };
+            } else {
+                window.onload = callback;
+            }
+        }
+        
+        onDomReady(function() {
             var submitBtn = document.getElementById('submitBtn');
             var urlInput = document.getElementById('urlInput');
             
@@ -176,7 +196,6 @@
         });
     }
 })();
-// ========== IE 跳转补丁结束 ==========
 
 
 // ========== IE 完整兼容补丁 ==========
@@ -232,6 +251,7 @@
 
 
 // ========== 跨浏览器事件绑定辅助函数 ==========
+// 【修复】IE8 兼容：使用 attachEvent 替代 addEventListener
 function addEvent(element, eventName, handler) {
     if (!element) return;
     if (element.addEventListener) {
@@ -254,11 +274,13 @@ function removeEvent(element, eventName, handler) {
     }
 }
 
-// DOM 加载完成检测
+// DOM 加载完成检测（IE8 兼容）
 function onDomReady(callback) {
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    if (document.readyState === 'complete') {
         setTimeout(callback, 1);
-    } else if (document.addEventListener) {
+        return;
+    }
+    if (document.addEventListener) {
         document.addEventListener('DOMContentLoaded', callback);
     } else if (document.attachEvent) {
         document.attachEvent('onreadystatechange', function() {
@@ -266,7 +288,49 @@ function onDomReady(callback) {
                 callback();
             }
         });
+        var oldOnLoad = window.onload;
+        window.onload = function() {
+            if (oldOnLoad) oldOnLoad();
+            callback();
+        };
+    } else {
+        window.onload = callback;
     }
+}
+
+// 【修复】提供全局的 addEventListener 兼容包装函数
+if (!window.addEventListener) {
+    window.addEventListener = function(eventName, handler, useCapture) {
+        if (window.attachEvent) {
+            window.attachEvent('on' + eventName, handler);
+        } else {
+            window['on' + eventName] = handler;
+        }
+    };
+    window.removeEventListener = function(eventName, handler, useCapture) {
+        if (window.detachEvent) {
+            window.detachEvent('on' + eventName, handler);
+        } else {
+            window['on' + eventName] = null;
+        }
+    };
+}
+
+if (!document.addEventListener) {
+    document.addEventListener = function(eventName, handler, useCapture) {
+        if (document.attachEvent) {
+            document.attachEvent('on' + eventName, handler);
+        } else {
+            document['on' + eventName] = handler;
+        }
+    };
+    document.removeEventListener = function(eventName, handler, useCapture) {
+        if (document.detachEvent) {
+            document.detachEvent('on' + eventName, handler);
+        } else {
+            document['on' + eventName] = null;
+        }
+    };
 }
 // ========== 辅助函数结束 ==========
 
