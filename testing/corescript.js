@@ -322,9 +322,8 @@
         onDomReady(function() {
             var submitBtn = document.getElementById('submitBtn');
             var urlInput = document.getElementById('urlInput');
-            var engineSelect = document.getElementById('engineSelect');
             
-            if (submitBtn && urlInput && engineSelect) {
+            if (submitBtn && urlInput) {
                 // 移除原有事件，使用更可靠的跳转方式
                 var newBtn = submitBtn.cloneNode(true);
                 submitBtn.parentNode.replaceChild(newBtn, submitBtn);
@@ -332,120 +331,25 @@
                 
                 submitBtn.onclick = function(e) {
                     e = e || window.event;
-                    var searchText = urlInput.value;
-                    var engine = engineSelect.value;
+                    var url = urlInput.value;
+                    var engine = document.getElementById('engineSelect').value;
                     
-                    if (!searchText || searchText === 'https://') return false;
+                    if (!url || url === 'https://') return false;
                     
-                    // IE 下构建搜索URL
+                    // IE 下直接跳转
                     try {
-                        // 处理 iFrameFree 模式
                         if (engine === 'iFrameFree') {
                             var iframe = document.getElementById('webFrame');
-                            if (iframe) {
-                                iframe.src = searchText;
-                            }
-                            var iframeContainer = document.getElementById('iframeContainer');
-                            if (iframeContainer) iframeContainer.style.display = 'block';
+                            if (iframe) iframe.src = url;
                             return false;
                         }
-                        
-                        // 构建搜索URL
-                        var searchUrl = searchText;
-                        var isDirectUrl = false;
-                        
-                        // 检查是否为直接URL（包含协议或域名格式）
-                        if (searchText.indexOf('://') !== -1 || 
-                            /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/.test(searchText)) {
-                            isDirectUrl = true;
-                            if (searchText.indexOf('://') === -1) {
-                                searchUrl = 'https://' + searchText;
-                            }
-                        }
-                        
-                        // 根据搜索引擎构建搜索URL（非直接URL时）
-                        if (!isDirectUrl) {
-                            switch (engine) {
-                                case 'baidu':
-                                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'google':
-                                    searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'bing':
-                                    searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'sogou':
-                                    searchUrl = 'https://www.sogou.com/web?query=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'so':
-                                    searchUrl = 'https://www.so.com/s?q=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'yandex':
-                                    searchUrl = 'https://yandex.com/search/?text=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'duckduckgo':
-                                    searchUrl = 'https://duckduckgo.com/?q=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'yahooSearch':
-                                    searchUrl = 'https://sg.search.yahoo.com/search?p=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'braveSearch':
-                                    searchUrl = 'https://search.brave.com/search?q=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'autofillHttp1':
-                                    searchUrl = 'http://' + searchText;
-                                    break;
-                                case 'autofillHttps':
-                                    searchUrl = 'https://' + searchText;
-                                    break;
-                                case 'customSearch':
-                                    var customUrl = null;
-                                    try { customUrl = localStorage.getItem('customSearchUrl'); } catch(err) {}
-                                    if (customUrl && customUrl.indexOf('{keywords}') !== -1) {
-                                        searchUrl = customUrl.replace('{keywords}', encodeURIComponent(searchText));
-                                    } else {
-                                        searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                                    }
-                                    break;
-                                default:
-                                    if (engine.indexOf('customSearch_') === 0) {
-                                        var customSearches = [];
-                                        try { customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]'); } catch(err) {}
-                                        var order = parseInt(engine.split('_')[1]);
-                                        for (var i = 0; i < customSearches.length; i++) {
-                                            if (customSearches[i].order === order && customSearches[i].url.indexOf('{keywords}') !== -1) {
-                                                searchUrl = customSearches[i].url.replace('{keywords}', encodeURIComponent(searchText));
-                                                break;
-                                            }
-                                        }
-                                        if (!searchUrl || searchUrl === searchText) {
-                                            searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                                        }
-                                    } else {
-                                        searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                                    }
-                                    break;
-                            }
-                        }
-                        
-                        // 执行跳转
-                        if (searchUrl) {
-                            try {
-                                window.location.href = searchUrl;
-                            } catch(e) {
-                                window.location = searchUrl;
-                            }
-                        } else {
-                            return false;
-                        }
-                    } catch(err) {
-                        // 最后回退：使用百度搜索
                         try {
-                            window.location.href = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                        } catch(e2) {
-                            window.location = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                        }
+    window.location.href = url;
+} catch(e) {
+    window.location = url;
+}
+                    } catch(err) {
+                        window.location = url;
                     }
                     return false;
                 };
