@@ -1058,7 +1058,7 @@ onDomReady(function() {
                     if (isDisabled) {
                         if (e && e.preventDefault) e.preventDefault();
                         if (e && e.stopPropagation) e.stopPropagation();
-                        return false;
+                        return;
                     }
                     if (originalClick) {
                         return originalClick.call(this, e);
