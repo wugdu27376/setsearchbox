@@ -359,6 +359,64 @@
 })();
 
 
+// ========== localStorage 兼容补丁（最低 IE6+） ==========
+(function() {
+    if (typeof window.localStorage === 'undefined') {
+        var memoryStorage = {};
+        window.localStorage = {
+            setItem: function(key, value) {
+                try {
+                    memoryStorage[key] = String(value);
+                } catch(e) {}
+            },
+            getItem: function(key) {
+                try {
+                    return memoryStorage.hasOwnProperty(key) ? memoryStorage[key] : null;
+                } catch(e) {
+                    return null;
+                }
+            },
+            removeItem: function(key) {
+                try {
+                    delete memoryStorage[key];
+                } catch(e) {}
+            },
+            clear: function() {
+                try {
+                    memoryStorage = {};
+                } catch(e) {}
+            },
+            key: function(index) {
+                try {
+                    var keys = [];
+                    for (var k in memoryStorage) {
+                        if (memoryStorage.hasOwnProperty(k)) keys.push(k);
+                    }
+                    return keys[index] || null;
+                } catch(e) {
+                    return null;
+                }
+            }
+        };
+        Object.defineProperty(window.localStorage, 'length', {
+            get: function() {
+                try {
+                    var count = 0;
+                    for (var k in memoryStorage) {
+                        if (memoryStorage.hasOwnProperty(k)) count++;
+                    }
+                    return count;
+                } catch(e) {
+                    return 0;
+                }
+            },
+            configurable: true
+        });
+    }
+})();
+// ========== localStorage 兼容补丁结束 ==========
+
+
 // ========== IE 完整兼容补丁 ==========
 (function() {
     var isIE = false;
