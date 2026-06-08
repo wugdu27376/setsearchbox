@@ -2735,12 +2735,20 @@ function bindSubmitEvent() {
             }
         }
         
-        // 最终跳转
+        // 最终跳转（IE8 兼容）
         if (searchUrl) {
             var autoNewTabCheckbox = document.getElementById('autoNewTabCheckbox');
             var isAutoNewTabChecked = autoNewTabCheckbox ? autoNewTabCheckbox.checked : false;
+            // 【修复】IE8 兼容：使用自定义 indexOf 替代原生方法
             var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
-            var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
+            var isExcluded = false;
+            for (var i = 0; i < excludedEngines.length; i++) {
+                if (excludedEngines[i] === engine) {
+                    isExcluded = true;
+                    break;
+                }
+            }
+            var shouldOpenNewTab = isAutoNewTabChecked && !isExcluded;
             
             if (shouldOpenNewTab) {
                 window.open(searchUrl, '_blank');
@@ -2759,7 +2767,11 @@ function bindSubmitEvent() {
                     form.submit();
                     document.body.removeChild(form);
                 } catch(err) {
-                    window.location.href = searchUrl;
+                    try {
+                        window.location.href = searchUrl;
+                    } catch(e) {
+                        window.location = searchUrl;
+                    }
                 }
                 return;
             } else {
