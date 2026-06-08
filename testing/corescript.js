@@ -560,6 +560,7 @@
                     case 'bing': return 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
                     case 'sogou': return 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
                     case 'so': return 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
+                    case 'yandex': return 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
                     default: return 'https://pan.baidu.com/s?wd=' + encodeURIComponent(keyword);
                 }
             }
