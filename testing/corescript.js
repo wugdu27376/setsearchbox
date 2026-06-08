@@ -172,47 +172,52 @@
 // ========== 全局 addEventListener 兼容结束 ==========
 
 
-// ========== 【修复】全局 appendChild 兼容 IE8（确保父元素存在） ==========
+// ========== 【修复】全局 appendChild 兼容 IE8（确保父元素存在，并解决 Node 未定义问题） ==========
 (function() {
     // 修复 document.head 为 null 的问题
     if (!document.head) {
         document.head = document.getElementsByTagName('head')[0];
     }
     
-    // 安全包装 appendChild 方法
-    var originalAppendChild = Node.prototype.appendChild;
-    if (originalAppendChild) {
-        Node.prototype.appendChild = function(child) {
-            if (!this) {
-                return child;
-            }
-            try {
-                return originalAppendChild.call(this, child);
-            } catch(e) {
-                if (document.body && this !== document.body) {
-                    try {
-                        return document.body.appendChild(child);
-                    } catch(e2) {}
-                }
-                return child;
-            }
+    // 修复 Node 未定义问题（IE8 不支持 Node 接口）
+    if (typeof window.Node === 'undefined') {
+        window.Node = {
+            ELEMENT_NODE: 1,
+            ATTRIBUTE_NODE: 2,
+            TEXT_NODE: 3,
+            COMMENT_NODE: 8,
+            DOCUMENT_NODE: 9,
+            DOCUMENT_FRAGMENT_NODE: 11
         };
     }
     
-    // 为 Element 提供安全的 appendChild（IE8 兼容）
-    if (window.Element && Element.prototype && !Element.prototype.appendChild) {
-        Element.prototype.appendChild = function(child) {
-            if (this && this.appendChild) {
-                try {
-                    return this.appendChild(child);
-                } catch(e) {
-                    if (document.body) {
-                        return document.body.appendChild(child);
-                    }
+    // 安全包装 appendChild 方法（使用 Element 替代 Node）
+    var originalAppendChild = null;
+    if (window.Element && Element.prototype && Element.prototype.appendChild) {
+        originalAppendChild = Element.prototype.appendChild;
+    } else if (HTMLElement && HTMLElement.prototype && HTMLElement.prototype.appendChild) {
+        originalAppendChild = HTMLElement.prototype.appendChild;
+    }
+    
+    if (originalAppendChild) {
+        var targetProto = (window.Element && Element.prototype) || (HTMLElement && HTMLElement.prototype);
+        if (targetProto) {
+            targetProto.appendChild = function(child) {
+                if (!this) {
+                    return child;
                 }
-            }
-            return child;
-        };
+                try {
+                    return originalAppendChild.call(this, child);
+                } catch(e) {
+                    if (document.body && this !== document.body) {
+                        try {
+                            return document.body.appendChild(child);
+                        } catch(e2) {}
+                    }
+                    return child;
+                }
+            };
+        }
     }
     
     // 确保每个 appendChild 调用前父元素存在
