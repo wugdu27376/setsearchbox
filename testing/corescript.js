@@ -240,6 +240,53 @@
 // ========== 全局 appendChild 兼容结束 ==========
 
 
+// ========== 【修复】全局 indexOf 兼容 IE8 ==========
+(function() {
+    // 修复 String.prototype.indexOf（IE8 原生支持，但某些情况需要安全调用）
+    if (typeof String.prototype.indexOf !== 'function') {
+        String.prototype.indexOf = function(searchValue, fromIndex) {
+            var len = this.length;
+            var start = fromIndex ? Number(fromIndex) : 0;
+            if (start < 0) start = 0;
+            for (var i = start; i < len; i++) {
+                if (this.charAt(i) === searchValue) return i;
+            }
+            return -1;
+        };
+    }
+    
+    // 修复 Array.prototype.indexOf（IE8 及以下不支持）
+    if (!Array.prototype.indexOf) {
+        Array.prototype.indexOf = function(searchElement, fromIndex) {
+            if (this == null) {
+                throw new TypeError('"this" is null or not defined');
+            }
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (len === 0) return -1;
+            var n = fromIndex | 0;
+            if (n >= len) return -1;
+            var k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+            while (k < len) {
+                if (k in O && O[k] === searchElement) return k;
+                k++;
+            }
+            return -1;
+        };
+    }
+    
+    // 安全调用 indexOf 的包装函数（用于处理 null/undefined 情况）
+    window.safeIndexOf = function(str, searchValue) {
+        if (str == null) return -1;
+        if (typeof str.indexOf === 'function') {
+            return str.indexOf(searchValue);
+        }
+        return -1;
+    };
+})();
+// ========== 全局 indexOf 兼容结束 ==========
+
+
 // ========== IE 跳转兼容补丁 ==========
 (function() {
     var isIE = false;
