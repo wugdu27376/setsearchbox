@@ -64,27 +64,37 @@
         
         // localStorage检测警告
         try {
-            var test = '__ie_test__';
-            localStorage.setItem(test, test);
-            localStorage.removeItem(test);
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var test = '__ie_test__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+            }
         } catch(e) {
         //    alert('提示：当前浏览器隐私模式可能导致部分功能无法保存设置，建议关闭隐私模式后使用。');
         }
     }
     
     // classList兼容（针对IE9-10）
-    // 【修复】IE8 兼容：检测 HTMLElement 是否存在，避免 undefined 错误
+    // 【修复】IE8/IE7 兼容：检测 HTMLElement 和 Element 是否存在，避免 undefined 错误
     if (!('classList' in document.documentElement)) {
         var classListTarget = null;
-        if (window.HTMLElement) {
+        // 【修复】IE7 及以下：window.HTMLElement 和 window.Element 可能为 undefined
+        if (typeof window.HTMLElement !== 'undefined' && window.HTMLElement) {
             classListTarget = HTMLElement.prototype;
-        } else if (window.Element) {
+        } else if (typeof window.Element !== 'undefined' && window.Element) {
             classListTarget = Element.prototype;
+        } else if (typeof window.HTMLDocument !== 'undefined' && window.HTMLDocument) {
+            // IE7 及以下使用 HTMLDocument.prototype
+            classListTarget = HTMLDocument.prototype;
+        } else if (document && document.documentElement) {
+            // 最终回退：使用 document 对象
+            classListTarget = Object.getPrototypeOf ? Object.getPrototypeOf(document.documentElement) : document.documentElement;
         }
         if (classListTarget && !classListTarget.classList) {
             (function(proto) {
-                Object.defineProperty(proto, 'classList', {
-                    get: function() {
+                // 【修复】IE7 不支持 Object.defineProperty，使用 __defineGetter__ 替代
+                if (proto.__defineGetter__) {
+                    proto.__defineGetter__('classList', function() {
                         var self = this;
                         function update(fn) {
                             return function(value) {
@@ -105,9 +115,34 @@
                                 return self.className.split(/\s+/).indexOf(value) !== -1;
                             }
                         };
-                    },
-                    configurable: true
-                });
+                    });
+                } else if (Object.defineProperty) {
+                    Object.defineProperty(proto, 'classList', {
+                        get: function() {
+                            var self = this;
+                            function update(fn) {
+                                return function(value) {
+                                    var classes = self.className.split(/\s+/);
+                                    var index = classes.indexOf(value);
+                                    fn(classes, index, value);
+                                    self.className = classes.join(' ');
+                                };
+                            }
+                            return {
+                                add: update(function(classes, index, value) {
+                                    if (index === -1) classes.push(value);
+                                }),
+                                remove: update(function(classes, index, value) {
+                                    if (index !== -1) classes.splice(index, 1);
+                                }),
+                                contains: function(value) {
+                                    return self.className.split(/\s+/).indexOf(value) !== -1;
+                                }
+                            };
+                        },
+                        configurable: true
+                    });
+                }
             })(classListTarget);
         }
     }
@@ -172,14 +207,14 @@
 // ========== 全局 addEventListener 兼容结束 ==========
 
 
-// ========== 【修复】全局 appendChild 兼容 IE8（确保父元素存在，并解决 Node 未定义问题） ==========
+// ========== 【修复】全局 appendChild 兼容 IE8/IE7 ==========
 (function() {
     // 修复 document.head 为 null 的问题
     if (!document.head) {
         document.head = document.getElementsByTagName('head')[0];
     }
     
-    // 修复 Node 未定义问题（IE8 不支持 Node 接口）
+    // 修复 Node 未定义问题（IE8/IE7 不支持 Node 接口）
     if (typeof window.Node === 'undefined') {
         window.Node = {
             ELEMENT_NODE: 1,
@@ -191,17 +226,32 @@
         };
     }
     
+    // 【修复】IE7 兼容：安全检测 HTMLElement 和 Element 是否存在
+    var hasElement = (typeof window.Element !== 'undefined' && window.Element);
+    var hasHTMLElement = (typeof window.HTMLElement !== 'undefined' && window.HTMLElement);
+    
     // 安全包装 appendChild 方法（使用 Element 替代 Node）
     var originalAppendChild = null;
-    if (window.Element && Element.prototype && Element.prototype.appendChild) {
+    if (hasElement && Element.prototype && Element.prototype.appendChild) {
         originalAppendChild = Element.prototype.appendChild;
-    } else if (HTMLElement && HTMLElement.prototype && HTMLElement.prototype.appendChild) {
+    } else if (hasHTMLElement && HTMLElement.prototype && HTMLElement.prototype.appendChild) {
         originalAppendChild = HTMLElement.prototype.appendChild;
+    } else if (document.body && document.body.appendChild) {
+        // IE7 最终回退：使用 document.body.appendChild 作为参考
+        originalAppendChild = document.body.appendChild;
     }
     
     if (originalAppendChild) {
-        var targetProto = (window.Element && Element.prototype) || (HTMLElement && HTMLElement.prototype);
-        if (targetProto) {
+        var targetProto = null;
+        if (hasElement && Element.prototype) {
+            targetProto = Element.prototype;
+        } else if (hasHTMLElement && HTMLElement.prototype) {
+            targetProto = HTMLElement.prototype;
+        } else if (document.body && document.body.appendChild) {
+            targetProto = Object.getPrototypeOf ? Object.getPrototypeOf(document.body) : document.body;
+        }
+        if (targetProto && !targetProto.appendChildModified) {
+            targetProto.appendChildModified = true;
             targetProto.appendChild = function(child) {
                 if (!this) {
                     return child;
@@ -290,160 +340,21 @@
 // ========== IE 跳转兼容补丁 ==========
 (function() {
     var isIE = false;
-    var ieVersion = 0;
     try {
         isIE = /*@cc_on!@*/false || !!document.documentMode;
-        var ua = navigator.userAgent;
-        var msie = ua.indexOf('MSIE ');
-        if (msie > 0) {
-            isIE = true;
-            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
-        }
-        var trident = ua.indexOf('Trident/');
-        if (trident > 0) {
-            isIE = true;
-            var rv = ua.indexOf('rv:');
-            if (rv > 0) {
-                ieVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
-            }
-        }
     } catch(e) {
         isIE = false;
-        ieVersion = 0;
     }
     
-    // ========== IE8及以下版本专用跳转修复 ==========
-    if (isIE && ieVersion <= 8) {
-        function onDomReady(callback) {
-            if (document.readyState === 'complete') {
-                setTimeout(callback, 1);
-            } else if (document.attachEvent) {
-                document.attachEvent('onreadystatechange', function() {
-                    if (document.readyState === 'complete') {
-                        callback();
-                    }
-                });
-                var oldOnLoad = window.onload;
-                window.onload = function() {
-                    if (oldOnLoad) oldOnLoad();
-                    callback();
-                };
-            } else {
-                window.onload = callback;
-            }
-        }
-        
-        onDomReady(function() {
-            var submitBtn = document.getElementById('submitBtn');
-            var urlInput = document.getElementById('urlInput');
-            var engineSelect = document.getElementById('engineSelect');
-            
-            if (submitBtn && urlInput && engineSelect) {
-                var newBtn = submitBtn.cloneNode(true);
-                submitBtn.parentNode.replaceChild(newBtn, submitBtn);
-                submitBtn = newBtn;
-                
-                submitBtn.onclick = function(e) {
-                    e = e || window.event;
-                    var searchText = urlInput.value;
-                    var engine = engineSelect.value;
-                    
-                    if (!searchText || searchText === 'https://') return false;
-                    
-                    try {
-                        if (engine === 'iFrameFree') {
-                            var iframe = document.getElementById('webFrame');
-                            if (iframe) iframe.src = searchText;
-                            return false;
-                        }
-                        
-                        var searchUrl = searchText;
-                        var isDirectUrl = false;
-                        
-                        if (searchText.indexOf('://') !== -1 || 
-                            /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/.test(searchText)) {
-                            isDirectUrl = true;
-                            if (searchText.indexOf('://') === -1) {
-                                searchUrl = 'https://' + searchText;
-                            }
-                        }
-                        
-                        if (!isDirectUrl) {
-                            switch (engine) {
-                                case 'baidu':
-                                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'google':
-                                    searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'bing':
-                                    searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'sogou':
-                                    searchUrl = 'https://www.sogou.com/web?query=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'so':
-                                    searchUrl = 'https://www.so.com/s?q=' + encodeURIComponent(searchText);
-                                    break;
-                                case 'autofillHttp1':
-                                    searchUrl = 'http://' + searchText;
-                                    break;
-                                case 'autofillHttps':
-                                    searchUrl = 'https://' + searchText;
-                                    break;
-                                default:
-                                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                                    break;
-                            }
-                        }
-                        
-                        if (searchUrl) {
-                            try {
-                                window.location.href = searchUrl;
-                            } catch(e) {
-                                window.location = searchUrl;
-                            }
-                        }
-                    } catch(err) {
-                        try {
-                            window.location.href = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                        } catch(e2) {
-                            window.location = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
-                        }
-                    }
-                    return false;
-                };
-            }
-        });
-    }
-    // ========== IE9及以上版本原有代码 ==========
-    else if (isIE && ieVersion >= 9) {
+    if (isIE) {
         // 修复 IE 下 URL 跳转失败问题
         var originalSubmitBtnClick = null;
-        function onDomReady(callback) {
-            if (document.readyState === 'complete') {
-                setTimeout(callback, 1);
-            } else if (document.attachEvent) {
-                document.attachEvent('onreadystatechange', function() {
-                    if (document.readyState === 'complete') {
-                        callback();
-                    }
-                });
-                var oldOnLoad = window.onload;
-                window.onload = function() {
-                    if (oldOnLoad) oldOnLoad();
-                    callback();
-                };
-            } else {
-                window.onload = callback;
-            }
-        }
-        
-        onDomReady(function() {
+        document.addEventListener('DOMContentLoaded', function() {
             var submitBtn = document.getElementById('submitBtn');
             var urlInput = document.getElementById('urlInput');
             
             if (submitBtn && urlInput) {
+                // 移除原有事件，使用更可靠的跳转方式
                 var newBtn = submitBtn.cloneNode(true);
                 submitBtn.parentNode.replaceChild(newBtn, submitBtn);
                 submitBtn = newBtn;
@@ -455,6 +366,7 @@
                     
                     if (!url || url === 'https://') return false;
                     
+                    // IE 下直接跳转
                     try {
                         if (engine === 'iFrameFree') {
                             var iframe = document.getElementById('webFrame');
@@ -462,10 +374,10 @@
                             return false;
                         }
                         try {
-                            window.location.href = url;
-                        } catch(e) {
-                            window.location = url;
-                        }
+    window.location.href = url;
+} catch(e) {
+    window.location = url;
+}
                     } catch(err) {
                         window.location = url;
                     }
@@ -475,6 +387,254 @@
         });
     }
 })();
+// ========== IE 跳转补丁结束 ==========
+
+
+// ========== IE8 布局修复函数 ==========
+(function() {
+    var isIE8 = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (version === 8) isIE8 = true;
+        }
+    } catch(e) { isIE8 = false; }
+    
+    if (isIE8) {
+        // 修复 body 布局
+        if (document.body) {
+            document.body.style.margin = '0';
+            document.body.style.padding = '20px';
+            document.body.style.textAlign = 'center';
+            document.body.style.fontFamily = 'Arial, sans-serif';
+        }
+        
+        // 修复 searchContainer 布局（IE8 使用 table 布局替代 flex）
+        var searchContainer = document.getElementById('searchContainer');
+        if (searchContainer) {
+            searchContainer.style.display = 'table';
+            searchContainer.style.width = '100%';
+            searchContainer.style.maxWidth = '800px';
+            searchContainer.style.margin = '0 auto';
+            searchContainer.style.textAlign = 'center';
+            searchContainer.style.borderCollapse = 'collapse';
+            searchContainer.style.tableLayout = 'fixed';
+        }
+        
+        // 修复 engineSelect 布局
+        var engineSelect = document.getElementById('engineSelect');
+        if (engineSelect) {
+            engineSelect.style.display = 'inline-block';
+            engineSelect.style.width = '90px';
+            engineSelect.style.minWidth = '90px';
+            engineSelect.style.height = '24px';
+            engineSelect.style.verticalAlign = 'middle';
+        }
+        
+        // 修复 urlInput 布局
+        var urlInput = document.getElementById('urlInput');
+        if (urlInput) {
+            urlInput.style.display = 'inline-block';
+            urlInput.style.width = '60%';
+            urlInput.style.minWidth = '100px';
+            urlInput.style.height = '24px';
+            urlInput.style.verticalAlign = 'middle';
+        }
+        
+        // 修复 submitBtn 布局
+        var submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            submitBtn.style.display = 'inline-block';
+            submitBtn.style.height = '24px';
+            submitBtn.style.verticalAlign = 'middle';
+            submitBtn.style.marginLeft = '3px';
+            submitBtn.style.cursor = 'pointer';
+        }
+        
+        // 修复 autoFillhttps 容器布局
+        var autoFillhttps = document.getElementById('autoFillhttps');
+        if (autoFillhttps) {
+            autoFillhttps.style.textAlign = 'center';
+            autoFillhttps.style.marginTop = '10px';
+            autoFillhttps.style.maxWidth = '560px';
+            autoFillhttps.style.marginLeft = 'auto';
+            autoFillhttps.style.marginRight = 'auto';
+        }
+        
+        // 修复 autoFillhttps 内部子元素布局
+        if (autoFillhttps) {
+            var children = autoFillhttps.children;
+            for (var i = 0; i < children.length; i++) {
+                if (children[i].tagName === 'DIV') {
+                    children[i].style.display = 'inline-block';
+                    children[i].style.zoom = '1';
+                }
+            }
+        }
+    }
+})();
+// ========== IE8 布局修复函数结束 ==========
+
+
+// ========== IE8及以下版本专属兼容代码（最低IE6） ==========
+(function() {
+    var isIELowVersion = false;
+    var ieVersion = 0;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (ieVersion <= 8) isIELowVersion = true;
+        }
+    } catch(e) { isIELowVersion = false; }
+    
+    if (isIELowVersion) {
+        // 修复 console 对象（IE6-7 不支持 console）
+        if (typeof window.console === 'undefined') {
+            window.console = {
+                log: function() {},
+                error: function() {},
+                warn: function() {},
+                info: function() {}
+            };
+        }
+        
+        // 修复 String.trim（IE6-8 不支持）
+        if (typeof String.prototype.trim !== 'function') {
+            String.prototype.trim = function() {
+                return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+            };
+        }
+        
+        // 修复 Array.prototype.indexOf（IE6-8 不支持）
+        if (typeof Array.prototype.indexOf !== 'function') {
+            Array.prototype.indexOf = function(searchElement, fromIndex) {
+                var k;
+                if (this == null) throw new TypeError('"this" is null or not defined');
+                var O = Object(this);
+                var len = O.length >>> 0;
+                if (len === 0) return -1;
+                var n = fromIndex | 0;
+                if (n >= len) return -1;
+                k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+                while (k < len) {
+                    if (k in O && O[k] === searchElement) return k;
+                    k++;
+                }
+                return -1;
+            };
+        }
+        
+        // 获取元素值辅助函数（兼容IE6-8）
+        function getElementValue(el) {
+            if (!el) return '';
+            if (el.tagName === 'SELECT' && el.selectedIndex >= 0) {
+                var opt = el.options[el.selectedIndex];
+                return opt ? opt.value : '';
+            }
+            return el.value || '';
+        }
+        
+        // 绑定提交事件
+        function bindIESubmitEvent() {
+            var submitBtn = document.getElementById('submitBtn');
+            var urlInput = document.getElementById('urlInput');
+            var engineSelect = document.getElementById('engineSelect');
+            
+            if (!submitBtn || !urlInput) return;
+            
+            // 移除已有事件
+            submitBtn.onclick = null;
+            
+            // 构建搜索URL
+            function buildSearchUrl(keyword, engine) {
+                if (!keyword) return '';
+                if (keyword.indexOf('://') !== -1) return keyword;
+                
+                switch (engine) {
+                    case 'baidu': return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+                    case 'google': return 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
+                    case 'bing': return 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
+                    case 'sogou': return 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+                    case 'so': return 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
+                    default: return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+                }
+            }
+            
+            // 执行跳转
+            function doNavigate(url) {
+                if (!url) return;
+                try {
+                    window.location.href = url;
+                } catch(e) {
+                    window.location = url;
+                }
+            }
+            
+            // 提交按钮点击事件
+            submitBtn.onclick = function(e) {
+                e = e || window.event;
+                var keyword = urlInput.value;
+                if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                    return false;
+                }
+                
+                var engine = engineSelect ? getElementValue(engineSelect) : 'baidu';
+                try {
+                    if (window.localStorage && localStorage.setItem) {
+                        localStorage.setItem('selectedEngine', engine);
+                    }
+                } catch(err) {}
+                
+                var searchUrl = buildSearchUrl(keyword, engine);
+                doNavigate(searchUrl);
+                return false;
+            };
+            
+            // Enter 键事件（IE6-8 使用 attachEvent）
+            if (urlInput.attachEvent) {
+                urlInput.attachEvent('onkeydown', function(e) {
+                    e = e || window.event;
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode === 13) {
+                        e.returnValue = false;
+                        if (e.cancelBubble !== undefined) e.cancelBubble = true;
+                        if (submitBtn && submitBtn.onclick) {
+                            submitBtn.onclick(e);
+                        } else if (submitBtn && submitBtn.click) {
+                            submitBtn.click();
+                        }
+                        return false;
+                    }
+                });
+            } else if (urlInput.addEventListener) {
+                urlInput.addEventListener('keydown', function(e) {
+                    if (e.keyCode === 13) {
+                        e.preventDefault();
+                        if (submitBtn && submitBtn.onclick) submitBtn.onclick(e);
+                    }
+                });
+            }
+        }
+        
+        // 页面加载完成后绑定（兼容IE6-8的onreadystatechange）
+        if (document.attachEvent) {
+            document.attachEvent('onreadystatechange', function() {
+                if (document.readyState === 'complete') {
+                    bindIESubmitEvent();
+                }
+            });
+        } else if (document.addEventListener) {
+            document.addEventListener('DOMContentLoaded', bindIESubmitEvent);
+        } else {
+            window.onload = bindIESubmitEvent;
+        }
+    }
+})();
+// ========== IE8及以下版本专属兼容代码结束 ==========
 
 
 // ========== IE 完整兼容补丁 ==========
@@ -693,6 +853,12 @@ function bindSubmitButtonEvent() {
     }
 }
 
+// 在 DOM 加载完成后调用
+onDomReady(function() {
+    bindSubmitButtonEvent();
+});
+
+
 // IE 浏览器点击链接时激活为红色状态
 (function() {
     var isIE = false;
@@ -728,11 +894,6 @@ function bindSubmitButtonEvent() {
         }
     }
 })();
-
-// 在 DOM 加载完成后调用
-onDomReady(function() {
-    bindSubmitButtonEvent();
-});
 
 
 // ========== 全局 Enter 键回退方案（最低 IE6 兼容） ==========
@@ -978,7 +1139,6 @@ onDomReady(function() {
     }
     
     // 9. classList polyfill (用于 IE9)
-    // 【修复】IE8 兼容：检测 HTMLElement 是否存在，不存在则使用 Element
     if (window.document && !('classList' in document.documentElement)) {
         (function() {
             var proto = window.HTMLElement ? HTMLElement.prototype : (window.Element ? Element.prototype : null);
@@ -1027,30 +1187,25 @@ onDomReady(function() {
     // 10. localStorage 安全包装
     var localStorageAvailable = true;
     try {
-        var testKey = '__test__' + Date.now();
-        localStorage.setItem(testKey, testKey);
-        localStorage.removeItem(testKey);
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var testKey = '__test__' + Date.now();
+            localStorage.setItem(testKey, testKey);
+            localStorage.removeItem(testKey);
+        } else {
+            throw new Error('localStorage not available');
+        }
     } catch(e) {
         localStorageAvailable = false;
         // 创建内存存储替代
         var memoryStorage = {};
-        // 【修复】IE8 兼容：使用 defineProperty 定义 length 属性，避免 get 语法错误
-window.localStorage = {
-    setItem: function(key, value) { try { memoryStorage[key] = String(value); } catch(e) {} },
-    getItem: function(key) { try { return memoryStorage[key] !== undefined ? memoryStorage[key] : null; } catch(e) { return null; } },
-    removeItem: function(key) { try { delete memoryStorage[key]; } catch(e) {} },
-    clear: function() { try { memoryStorage = {}; } catch(e) {} },
-    key: function(index) { try { var keys = []; for (var k in memoryStorage) { if (memoryStorage.hasOwnProperty(k)) keys.push(k); } return keys[index] || null; } catch(e) { return null; } }
-};
-// 为 IE8 单独定义 length 属性
-if (Object.defineProperty) {
-    Object.defineProperty(window.localStorage, 'length', {
-        get: function() { try { var count = 0; for (var k in memoryStorage) { if (memoryStorage.hasOwnProperty(k)) count++; } return count; } catch(e) { return 0; } },
-        configurable: true
-    });
-} else {
-    window.localStorage.length = 0;
-}
+        window.localStorage = {
+            setItem: function(key, value) { try { memoryStorage[key] = String(value); } catch(e) {} },
+            getItem: function(key) { try { return memoryStorage[key] !== undefined ? memoryStorage[key] : null; } catch(e) { return null; } },
+            removeItem: function(key) { try { delete memoryStorage[key]; } catch(e) {} },
+            clear: function() { try { memoryStorage = {}; } catch(e) {} },
+            "length": function() { try { var count = 0; for (var k in memoryStorage) { if (memoryStorage.hasOwnProperty(k)) count++; } return count; } catch(e) { return 0; } },
+            key: function(index) { try { var keys = []; for (var k in memoryStorage) { if (memoryStorage.hasOwnProperty(k)) keys.push(k); } return keys[index] || null; } catch(e) { return null; } }
+        };
     }
     
     // 11. console 安全包装
@@ -1092,6 +1247,26 @@ if (Object.defineProperty) {
         }
         if (window.HTMLCollection && !HTMLCollection.prototype.forEach) {
             HTMLCollection.prototype.forEach = Array.prototype.forEach;
+        }
+    }
+    
+    // 检测 IE8 并添加专用类
+    var isIE8 = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (version === 8) isIE8 = true;
+        }
+    } catch(e) { isIE8 = false; }
+    
+    if (isIE8) {
+        if (document.body) {
+            document.body.className += ' ie8-legacy';
+        }
+        if (document.documentElement) {
+            document.documentElement.className += ' ie8-legacy';
         }
     }
 })();
@@ -1228,37 +1403,6 @@ if (Object.defineProperty) {
     }
 })();
 // ========== IE9/10 搜索建议补丁结束 ==========
-
-
-// IE9 浏览器禁用 hitokotoCheckbox
-(function() {
-    var isIE9 = false;
-    try {
-        var ua = navigator.userAgent;
-        var msie = ua.indexOf('MSIE ');
-        if (msie > 0) {
-            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
-            if (version === 9) isIE9 = true;
-        }
-    } catch(e) {
-        isIE9 = false;
-    }
-    
-    if (isIE9) {
-        var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
-        if (hitokotoCheckbox) {
-            hitokotoCheckbox.disabled = true;
-            var hitokotoLabel = document.querySelector('label[for="hitokotoCheckbox"]');
-            if (hitokotoLabel) {
-                hitokotoLabel.style.opacity = '0.7';
-                hitokotoLabel.style.cursor = 'not-allowed';
-            }
-            // 确保一言显示功能被关闭
-            document.getElementById('hitokotoDisplay').style.display = 'none';
-            localStorage.setItem('hitokotoChecked', 'false');
-        }
-    }
-})();
 
 
 // ========== 内存泄漏防护 - 资源管理器 ==========
@@ -6449,9 +6593,37 @@ if (inputEventElement) {
 }
 
 var savedEngine = localStorage.getItem('selectedEngine');
-if (savedEngine) {
-    document.getElementById('engineSelect').value = savedEngine;
+// ========== 【修复】localStorage安全访问辅助函数 ==========
+function safeLocalStorageGet(key, defaultValue) {
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
+            var value = localStorage.getItem(key);
+            return value !== null && value !== undefined ? value : defaultValue;
+        }
+    } catch(e) {}
+    return defaultValue;
 }
+
+function safeLocalStorageSet(key, value) {
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.setItem === 'function') {
+            localStorage.setItem(key, value);
+            return true;
+        }
+    } catch(e) {}
+    return false;
+}
+
+function safeLocalStorageRemove(key) {
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.removeItem === 'function') {
+            localStorage.removeItem(key);
+            return true;
+        }
+    } catch(e) {}
+    return false;
+}
+// ========== localStorage安全访问辅助函数结束 ==========
 
 // 显示/隐藏链接的checkbox
 document.getElementById('showLinkCheckbox').addEventListener('change', function() {
@@ -8556,24 +8728,34 @@ function updateHistoryLinksColor(color) {
 }
 
 // 加载保存的历史记录链接颜色
-var savedHistoryLinksColor = localStorage.getItem('historyLinksColor');
-if (savedHistoryLinksColor) {
-    var historyLinksColorValueSpan = document.getElementById('historyLinksColorValue');
-    if (historyLinksColorValueSpan) {
-        historyLinksColorValueSpan.textContent = savedHistoryLinksColor;
-        truncateText('historyLinksColorValue', savedHistoryLinksColor, 80);
+// ========== 【IE8修复】添加localStorage存在性检查 ==========
+if (typeof localStorage !== 'undefined' && localStorage !== null) {
+    var savedHistoryLinksColor = localStorage.getItem('historyLinksColor');
+    if (savedHistoryLinksColor) {
+        var historyLinksColorValueSpan = document.getElementById('historyLinksColorValue');
+        if (historyLinksColorValueSpan) {
+            historyLinksColorValueSpan.textContent = savedHistoryLinksColor;
+            truncateText('historyLinksColorValue', savedHistoryLinksColor, 80);
+        }
+        setTimeout(function() {
+            updateHistoryLinksColor(savedHistoryLinksColor);
+        }, 100);
+    } else {
+        // === 修复：如果没有保存的颜色，确保显示默认颜色 ===
+        var historyLinksColorValueSpan = document.getElementById('historyLinksColorValue');
+        if (historyLinksColorValueSpan) {
+            historyLinksColorValueSpan.textContent = '#0000ee';
+        }
+        // === 修复代码结束 ===
     }
-    setTimeout(function() {
-        updateHistoryLinksColor(savedHistoryLinksColor);
-    }, 100);
 } else {
-    // === 修复：如果没有保存的颜色，确保显示默认颜色 ===
+    // localStorage不可用时，显示默认颜色
     var historyLinksColorValueSpan = document.getElementById('historyLinksColorValue');
     if (historyLinksColorValueSpan) {
         historyLinksColorValueSpan.textContent = '#0000ee';
     }
-    // === 修复代码结束 ===
 }
+// ========== 【IE8修复结束】 ==========
 
 // 更新快捷链接颜色的函数
 function updateQuickLinksColor(color) {
@@ -10340,54 +10522,75 @@ window.onload = function() {
 
 // 添加快捷键切换搜索引擎（仅电脑端）
 if (isDesktop()) {
+    // 获取搜索引擎下拉框的可见选项（兼容所有浏览器）
+    function getVisibleEngineOptions() {
+        var engineSelect = document.getElementById('engineSelect');
+        if (!engineSelect) return [];
+        var options = engineSelect.options;
+        var visibleOptions = [];
+        for (var i = 0; i < options.length; i++) {
+            var opt = options[i];
+            // 检查选项是否可见（非隐藏、非禁用、非空选项）
+            var isHidden = false;
+            try {
+                isHidden = (opt.style.display === 'none') || 
+                           (opt.parentNode && opt.parentNode.style.display === 'none') ||
+                           (opt.disabled === true);
+            } catch(e) {
+                isHidden = opt.disabled === true;
+            }
+            if (!isHidden && opt.value && opt.value !== '') {
+                visibleOptions.push({ index: i, value: opt.value });
+            }
+        }
+        return visibleOptions;
+    }
+    
     document.addEventListener('keydown', function(e) {
         e = e || window.event;
         var keyCode = e.keyCode || e.which;
         
         // 判断 Alt 键是否按下
-        var altPressed = e.altKey || e.altKey === 1;
+        var altPressed = e.altKey === true;
         if (!altPressed) return;
         
         // 检查是否有模态框打开
         var modals = document.querySelectorAll('div[style*="position: fixed"][style*="z-index: 10000"]');
+        var modalOpen = false;
         for (var i = 0; i < modals.length; i++) {
             if (modals[i].style.display !== 'none' && modals[i].parentNode) {
-                return;
+                modalOpen = true;
+                break;
             }
         }
+        if (modalOpen) return;
         
         // 搜索框隐藏时不处理
-        if (document.getElementById('hideSearchContainerCheckbox') && 
-            document.getElementById('hideSearchContainerCheckbox').checked) {
-            return;
-        }
+        var hideSearchCheckbox = document.getElementById('hideSearchContainerCheckbox');
+        if (hideSearchCheckbox && hideSearchCheckbox.checked) return;
         
         var engineSelect = document.getElementById('engineSelect');
         if (!engineSelect) return;
         
-        var options = engineSelect.options;
-        var currentIndex = engineSelect.selectedIndex;
+        var visibleOptions = getVisibleEngineOptions();
+        if (visibleOptions.length === 0) return;
         
-        // 获取下一个可用选项（非隐藏、非禁用）
-        function getNextEnabled(current, step) {
-            var newIndex = current + step;
-            while (newIndex >= 0 && newIndex < options.length) {
-                var opt = options[newIndex];
-                var isHidden = opt.style.display === 'none';
-                var isDisabled = opt.disabled === true;
-                if (!isHidden && !isDisabled) {
-                    return newIndex;
-                }
-                newIndex += step;
+        var currentValue = engineSelect.value;
+        var currentIndex = -1;
+        for (var i = 0; i < visibleOptions.length; i++) {
+            if (visibleOptions[i].value === currentValue) {
+                currentIndex = i;
+                break;
             }
-            return current;
         }
         
         // 执行切换
         function performSwitch(step) {
-            var newIndex = getNextEnabled(currentIndex, step);
-            if (newIndex !== currentIndex) {
-                engineSelect.selectedIndex = newIndex;
+            var newIndex = currentIndex + step;
+            if (newIndex < 0) newIndex = visibleOptions.length - 1;
+            if (newIndex >= visibleOptions.length) newIndex = 0;
+            if (newIndex !== currentIndex && visibleOptions[newIndex]) {
+                engineSelect.selectedIndex = visibleOptions[newIndex].index;
                 // 触发 change 事件（兼容所有浏览器）
                 if (document.createEvent) {
                     var evt = document.createEvent('HTMLEvents');
@@ -10399,19 +10602,21 @@ if (isDesktop()) {
             }
         }
         
-        // Alt+P 或 Alt+↑ (上箭头键码38) 切换上一个搜索引擎
+        // Alt+P (keyCode 80) 或 Alt+↑ (keyCode 38) 切换上一个搜索引擎
         if (keyCode === 80 || keyCode === 38) {
             e.preventDefault();
             performSwitch(-1);
             return false;
         }
         
-        // Alt+N 或 Alt+↓ (下箭头键码40) 切换下一个搜索引擎
+        // Alt+N (keyCode 78) 或 Alt+↓ (keyCode 40) 切换下一个搜索引擎
         if (keyCode === 78 || keyCode === 40) {
             e.preventDefault();
             performSwitch(1);
             return false;
         }
+        
+        return true;
     });
 }
 
