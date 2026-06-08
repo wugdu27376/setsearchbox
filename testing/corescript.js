@@ -207,23 +207,32 @@
     
     if (isIE) {
         // 修复 IE 下 select 元素 value 读取问题
-        if (!HTMLSelectElement.prototype.hasOwnProperty('value')) {
-            Object.defineProperty(HTMLSelectElement.prototype, 'value', {
-                get: function() {
-                    if (this.selectedIndex >= 0 && this.options[this.selectedIndex]) {
-                        return this.options[this.selectedIndex].value;
-                    }
-                    return '';
-                },
-                set: function(val) {
-                    for (var i = 0; i < this.options.length; i++) {
-                        if (this.options[i].value == val) {
-                            this.selectedIndex = i;
-                            break;
+        // 【修复】IE8 兼容：使用 Object.prototype.hasOwnProperty 替代直接调用
+        if (HTMLSelectElement && HTMLSelectElement.prototype) {
+            var hasValueProp = false;
+            try {
+                hasValueProp = Object.prototype.hasOwnProperty.call(HTMLSelectElement.prototype, 'value');
+            } catch(e) {
+                hasValueProp = false;
+            }
+            if (!hasValueProp) {
+                Object.defineProperty(HTMLSelectElement.prototype, 'value', {
+                    get: function() {
+                        if (this.selectedIndex >= 0 && this.options[this.selectedIndex]) {
+                            return this.options[this.selectedIndex].value;
+                        }
+                        return '';
+                    },
+                    set: function(val) {
+                        for (var i = 0; i < this.options.length; i++) {
+                            if (this.options[i].value == val) {
+                                this.selectedIndex = i;
+                                break;
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
         
         // 修复 console 对象
