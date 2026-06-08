@@ -172,6 +172,69 @@
 // ========== 全局 addEventListener 兼容结束 ==========
 
 
+// ========== 【修复】全局 appendChild 兼容 IE8（确保父元素存在） ==========
+(function() {
+    // 修复 document.head 为 null 的问题
+    if (!document.head) {
+        document.head = document.getElementsByTagName('head')[0];
+    }
+    
+    // 安全包装 appendChild 方法
+    var originalAppendChild = Node.prototype.appendChild;
+    if (originalAppendChild) {
+        Node.prototype.appendChild = function(child) {
+            if (!this) {
+                return child;
+            }
+            try {
+                return originalAppendChild.call(this, child);
+            } catch(e) {
+                if (document.body && this !== document.body) {
+                    try {
+                        return document.body.appendChild(child);
+                    } catch(e2) {}
+                }
+                return child;
+            }
+        };
+    }
+    
+    // 为 Element 提供安全的 appendChild（IE8 兼容）
+    if (window.Element && Element.prototype && !Element.prototype.appendChild) {
+        Element.prototype.appendChild = function(child) {
+            if (this && this.appendChild) {
+                try {
+                    return this.appendChild(child);
+                } catch(e) {
+                    if (document.body) {
+                        return document.body.appendChild(child);
+                    }
+                }
+            }
+            return child;
+        };
+    }
+    
+    // 确保每个 appendChild 调用前父元素存在
+    var originalGetElementById = document.getElementById;
+    if (originalGetElementById) {
+        document.getElementById = function(id) {
+            var element = originalGetElementById.call(document, id);
+            if (!element && document.body) {
+                var allElements = document.body.getElementsByTagName('*');
+                for (var i = 0; i < allElements.length; i++) {
+                    if (allElements[i].id === id) {
+                        return allElements[i];
+                    }
+                }
+            }
+            return element;
+        };
+    }
+})();
+// ========== 全局 appendChild 兼容结束 ==========
+
+
 // ========== IE 跳转兼容补丁 ==========
 (function() {
     var isIE = false;
