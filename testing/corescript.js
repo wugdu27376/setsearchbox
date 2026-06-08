@@ -614,10 +614,11 @@ onDomReady(function() {
     }
     
     // 9. classList polyfill (用于 IE9)
+    // 【修复】IE8 兼容：检测 HTMLElement 是否存在，不存在则使用 Element
     if (window.document && !('classList' in document.documentElement)) {
         (function() {
-            var proto = HTMLElement.prototype;
-            if (!proto.classList) {
+            var proto = window.HTMLElement ? HTMLElement.prototype : (window.Element ? Element.prototype : null);
+            if (proto && !proto.classList) {
                 Object.defineProperty(proto, 'classList', {
                     get: function() {
                         var self = this;
