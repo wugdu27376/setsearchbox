@@ -1728,10 +1728,40 @@ function isMobileAndroidApple() {
 
 // 页面加载时恢复保存的选择
 document.addEventListener('DOMContentLoaded', function() {
-    var savedEngine = localStorage.getItem('selectedEngine');
-    if (savedEngine) {
-        document.getElementById('engineSelect').value = savedEngine;
+    // ========== 【修复】恢复保存的搜索引擎选择（IE8兼容） ==========
+    var savedEngine = null;
+    // 优先从 localStorage 读取
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage !== null) {
+            savedEngine = localStorage.getItem('selectedEngine');
+        }
+    } catch(e) {
+        savedEngine = null;
     }
+    // localStorage 不可用时从 cookie 读取
+    if (!savedEngine && typeof document !== 'undefined') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].replace(/^\s+/, '');
+            if (cookie.indexOf('selectedEngine=') === 0) {
+                savedEngine = decodeURIComponent(cookie.substring('selectedEngine='.length));
+                break;
+            }
+        }
+    }
+    if (savedEngine) {
+        var engineSelectElem = document.getElementById('engineSelect');
+        if (engineSelectElem) {
+            // 遍历选项查找匹配值（兼容 IE8）
+            for (var i = 0; i < engineSelectElem.options.length; i++) {
+                if (engineSelectElem.options[i].value === savedEngine) {
+                    engineSelectElem.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+    }
+    // ========== 【修复结束】 ==========
     // 如果保存的选择是iFrameFree，则显示iframe容器
     if (savedEngine === 'iFrameFree') {
         document.getElementById('iframeContainer').style.display = 'block';
@@ -2471,8 +2501,19 @@ function bindSubmitEvent() {
         
         // 保存当前选择
         try {
-            localStorage.setItem('selectedEngine', engine);
+            if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                localStorage.setItem('selectedEngine', engine);
+            }
         } catch(err) {}
+        // IE8 及以下降级方案：使用 cookie 保存
+        try {
+            if (typeof document !== 'undefined') {
+                var expiryDate = new Date();
+                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+                document.cookie = 'selectedEngine=' + encodeURIComponent(engine) + '; path=/; expires=' + expiryDate.toUTCString();
+            }
+        } catch(err) {}
+        // ========== 【修复结束】 ==========
         
         // ========== 【修改位置】跳转/搜索前，记录即将失焦状态 ==========
         // 设置一个标记，表示即将进行跳转
@@ -3636,7 +3677,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 监听选择变化并保存
 document.getElementById('engineSelect').addEventListener('change', function() {
-    localStorage.setItem('selectedEngine', this.value);
+    // ========== 【修复】搜索引擎变化时保存（IE8兼容） ==========
+    var selectedVal = this.value;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage !== null) {
+            localStorage.setItem('selectedEngine', selectedVal);
+        }
+    } catch(e) {}
+    // IE8 及以下降级方案：使用 cookie 保存
+    try {
+        if (typeof document !== 'undefined') {
+            var expiryDate = new Date();
+            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+            document.cookie = 'selectedEngine=' + encodeURIComponent(selectedVal) + '; path=/; expires=' + expiryDate.toUTCString();
+        }
+    } catch(e) {}
+    // ========== 【修复结束】 ==========
     // 检查order0自定义搜索是否被隐藏
     var isOrder0Hidden = localStorage.getItem('hideOrder0Search') === 'true';
     if (isOrder0Hidden && this.value === 'customSearch') {
