@@ -126,6 +126,52 @@
 // ========== IE兼容性补丁结束 ==========
 
 
+// ========== 【修复】全局 addEventListener/removeEventListener 兼容 IE8 ==========
+(function() {
+    if (typeof window.Element !== 'undefined') {
+        if (!Element.prototype.addEventListener) {
+            Element.prototype.addEventListener = function(type, listener, useCapture) {
+                if (this.attachEvent) {
+                    this.attachEvent('on' + type, listener);
+                }
+            };
+            Element.prototype.removeEventListener = function(type, listener, useCapture) {
+                if (this.detachEvent) {
+                    this.detachEvent('on' + type, listener);
+                }
+            };
+        }
+    }
+    
+    if (typeof window.addEventListener === 'undefined') {
+        window.addEventListener = function(type, listener, useCapture) {
+            if (this.attachEvent) {
+                this.attachEvent('on' + type, listener);
+            }
+        };
+        window.removeEventListener = function(type, listener, useCapture) {
+            if (this.detachEvent) {
+                this.detachEvent('on' + type, listener);
+            }
+        };
+    }
+    
+    if (typeof document.addEventListener === 'undefined') {
+        document.addEventListener = function(type, listener, useCapture) {
+            if (this.attachEvent) {
+                this.attachEvent('on' + type, listener);
+            }
+        };
+        document.removeEventListener = function(type, listener, useCapture) {
+            if (this.detachEvent) {
+                this.detachEvent('on' + type, listener);
+            }
+        };
+    }
+})();
+// ========== 全局 addEventListener 兼容结束 ==========
+
+
 // ========== IE 跳转兼容补丁 ==========
 (function() {
     var isIE = false;
