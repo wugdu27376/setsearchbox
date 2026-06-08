@@ -2186,32 +2186,6 @@ function bindSubmitEvent() {
     
     if (!submitBtn) return;
     
-    // 【修复】IE8 安全编码函数（替代 encodeURIComponent）
-    function safeEncode(str) {
-        if (!str) return '';
-        try {
-            // 先尝试标准编码
-            return encodeURIComponent(str);
-        } catch(e) {
-            // IE8 降级方案：手动替换特殊字符
-            return String(str).replace(/[^a-zA-Z0-9\-_.!~*'()]/g, function(c) {
-                var hex = c.charCodeAt(0).toString(16).toUpperCase();
-                return '%' + (hex.length === 2 ? hex : '0' + hex);
-            });
-        }
-    }
-    
-    // 安全获取搜索引擎值
-    function getSelectedEngineValue() {
-        var engineSelect = document.getElementById('engineSelect');
-        if (!engineSelect) return 'baidu';
-        var selectedIndex = engineSelect.selectedIndex;
-        if (selectedIndex >= 0 && engineSelect.options[selectedIndex]) {
-            return engineSelect.options[selectedIndex].value;
-        }
-        return 'baidu';
-    }
-    
     // ========== 【修复】使用更安全的事件绑定方式，避免 cloneNode 导致内存泄漏 ==========
     // 先移除旧事件（如果存在）
     if (submitBtn._boundClickHandler) {
@@ -2481,28 +2455,28 @@ function bindSubmitEvent() {
             // 根据选择的搜索引擎构建搜索URL
             switch (engine) {
                 case 'baidu':
-                    searchUrl = 'https://www.baidu.com/s?wd=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
                     break;
                 case 'google':
-                    searchUrl = 'https://www.google.com/search?q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'bing':
-                    searchUrl = 'https://www.bing.com/search?q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'sogou':
-                    searchUrl = 'https://www.sogou.com/web?query=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.sogou.com/web?query=' + encodeURIComponent(searchUrl);
                     break;
                 case 'so':
-                    searchUrl = 'https://www.so.com/s?q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.so.com/s?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'yandex':
-                    searchUrl = 'https://yandex.com/search/?text=' + safeEncode(searchUrl);
+                    searchUrl = 'https://yandex.com/search/?text=' + encodeURIComponent(searchUrl);
                     break;
                 case 'braveSearch':
-                    searchUrl = 'https://search.brave.com/search?q=' + safeEncode(searchUrl) + '&source=web';
+                    searchUrl = 'https://search.brave.com/search?q=' + encodeURIComponent(searchUrl) + '&source=web';
                     break;
                 case 'yahooSearch':
-                    searchUrl = 'https://sg.search.yahoo.com/search?p=' + safeEncode(searchUrl);
+                    searchUrl = 'https://sg.search.yahoo.com/search?p=' + encodeURIComponent(searchUrl);
                     break;
                 case 'autofillHttp1':
                     searchUrl = 'http://' + searchUrl;
@@ -2542,170 +2516,170 @@ function bindSubmitEvent() {
                     }
                     return;
                 case 'duckduckgo':
-                    searchUrl = 'https://duckduckgo.com/?q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://duckduckgo.com/?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'sodouyinM':
-                    searchUrl = 'https://so.douyin.com/s?keyword=' + safeEncode(searchUrl);
+                    searchUrl = 'https://so.douyin.com/s?keyword=' + encodeURIComponent(searchUrl);
                     break;
                 case 'yzmsmM':
-                    searchUrl = 'https://yz.m.sm.cn/s?q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://yz.m.sm.cn/s?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'sotoutiaoM':
                     if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
-                        searchUrl = 'https://so.toutiao.com/search?keyword=' + safeEncode(searchUrl);
+                        searchUrl = 'https://so.toutiao.com/search?keyword=' + encodeURIComponent(searchUrl);
                     } else {
-                        searchUrl = 'https://so.toutiao.com/search?dvpf=pc&source=input&keyword=' + safeEncode(searchUrl) + '&lang=en2zh';
+                        searchUrl = 'https://so.toutiao.com/search?dvpf=pc&source=input&keyword=' + encodeURIComponent(searchUrl) + '&lang=en2zh';
                     }
                     break;
                 case 'qksmSearch':
-                    searchUrl = 'https://quark.sm.cn/s?q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://quark.sm.cn/s?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'baiduMEasy':
-                    searchUrl = 'https://m.baidu.com/from=1030335w/pu=sz%401321_1001/s?word=' + safeEncode(searchUrl);
+                    searchUrl = 'https://m.baidu.com/from=1030335w/pu=sz%401321_1001/s?word=' + encodeURIComponent(searchUrl);
                     break;
                 case 'metasosuoAI':
-                    searchUrl = 'https://metaso.cn/?s=nyzav&referrer_s=nyzav&q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://metaso.cn/?s=nyzav&referrer_s=nyzav&q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'baiduAI':
-                    searchUrl = 'https://chat.baidu.com/search?word=' + safeEncode(searchUrl);
+                    searchUrl = 'https://chat.baidu.com/search?word=' + encodeURIComponent(searchUrl);
                     break;
                 case '360namisoAI':
-                    searchUrl = 'https://www.n.cn/?src=360ai_so&s_type=l&q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.n.cn/?src=360ai_so&s_type=l&q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'zhihuZhiDaAI':
-                    searchUrl = 'https://zhida.zhihu.com/search?q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://zhida.zhihu.com/search?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'quarkpcAI':
-                    searchUrl = 'https://ai.quark.cn/s?ch=pcquark%40homepage_quarkweb&q=' + safeEncode(searchUrl) + '&frame_scene=deep_think_light_r1lite&by=deepthink_light';
+                    searchUrl = 'https://ai.quark.cn/s?ch=pcquark%40homepage_quarkweb&q=' + encodeURIComponent(searchUrl) + '&frame_scene=deep_think_light_r1lite&by=deepthink_light';
                     break;
                 case 'googleTranslate':
-                    searchUrl = 'https://translate.google.com/?sl=auto&tl=zh-CN&text=' + safeEncode(searchUrl);
+                    searchUrl = 'https://translate.google.com/?sl=auto&tl=zh-CN&text=' + encodeURIComponent(searchUrl);
                     break;
                 case 'mcTranslator':
-                    searchUrl = 'https://cn.bing.com/translator?text=' + safeEncode(searchUrl) + '&from=en&to=zh-Hans';
+                    searchUrl = 'https://cn.bing.com/translator?text=' + encodeURIComponent(searchUrl) + '&from=en&to=zh-Hans';
                     break;
                 case 'yandexTranslate':
-                    searchUrl = 'https://translate.yandex.com/?source_lang=en&target_lang=zh&text=' + safeEncode(searchUrl);
+                    searchUrl = 'https://translate.yandex.com/?source_lang=en&target_lang=zh&text=' + encodeURIComponent(searchUrl);
                     break;
                 case 'sogouFanyi':
-                    searchUrl = 'https://fanyi.sogou.com/text?fr=default&keyword=' + safeEncode(searchUrl);
+                    searchUrl = 'https://fanyi.sogou.com/text?fr=default&keyword=' + encodeURIComponent(searchUrl);
                     break;
                 case 'oldBaiduFanyi':
                     if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
-                        searchUrl = 'https://fanyi.baidu.com/translate#auto/zh/' + safeEncode(searchUrl);
+                        searchUrl = 'https://fanyi.baidu.com/translate#auto/zh/' + encodeURIComponent(searchUrl);
                     } else {
-                        searchUrl = 'https://fanyi.baidu.com/mtpe-individual/transText?query=' + safeEncode(searchUrl) + '&lang=en2zh';
+                        searchUrl = 'https://fanyi.baidu.com/mtpe-individual/transText?query=' + encodeURIComponent(searchUrl) + '&lang=en2zh';
                     }
                     break;
                 case 'fanyiSo':
-                    searchUrl = 'https://fanyi.so.com/#' + safeEncode(searchUrl);
+                    searchUrl = 'https://fanyi.so.com/#' + encodeURIComponent(searchUrl);
                     break;
                 case 'quarkTranslateTools':
-                    searchUrl = 'https://vt.quark.cn/blm/translation-486/translate?query=' + safeEncode(searchUrl) + '&source_language=detect&target_language=zh&from=douyin';
+                    searchUrl = 'https://vt.quark.cn/blm/translation-486/translate?query=' + encodeURIComponent(searchUrl) + '&source_language=detect&target_language=zh&from=douyin';
                     break;
                 case 'transmartQQTs':
-                    searchUrl = 'https://transmart.qq.com/zh-CN/index?sourcelang=auto&targetlang=zh&source=' + safeEncode(searchUrl);
+                    searchUrl = 'https://transmart.qq.com/zh-CN/index?sourcelang=auto&targetlang=zh&source=' + encodeURIComponent(searchUrl);
                     break;
                 case 'taobaoWeb':
                     if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
-                        searchUrl = 'https://main.m.taobao.com/search/index.html?q=' + safeEncode(searchUrl);
+                        searchUrl = 'https://main.m.taobao.com/search/index.html?q=' + encodeURIComponent(searchUrl);
                     } else {
-                        searchUrl = 'https://s.taobao.com/search?q=' + safeEncode(searchUrl);
+                        searchUrl = 'https://s.taobao.com/search?q=' + encodeURIComponent(searchUrl);
                     }
                     break;
                 case 'jdWebPage':
                     if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
-                        searchUrl = 'https://so.m.jd.com/ware/search.action?keyword=' + safeEncode(searchUrl);
+                        searchUrl = 'https://so.m.jd.com/ware/search.action?keyword=' + encodeURIComponent(searchUrl);
                     } else {
-                        searchUrl = 'https://search.jd.com/Search?keyword=' + safeEncode(searchUrl);
+                        searchUrl = 'https://search.jd.com/Search?keyword=' + encodeURIComponent(searchUrl);
                     }
                     break;
                 case 'pddWebPage':
-                    searchUrl = 'https://mobile.yangkeduo.com/search_result.html?search_key=' + safeEncode(searchUrl) + '&search_type=goods&options=1&search_met_track=manual&refer_page_name=search_result';
+                    searchUrl = 'https://mobile.yangkeduo.com/search_result.html?search_key=' + encodeURIComponent(searchUrl) + '&search_type=goods&options=1&search_met_track=manual&refer_page_name=search_result';
                     break;
                 case 'githubCode':
-                    searchUrl = 'https://github.com/search?q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://github.com/search?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'gitCodeRepo':
-                    searchUrl = 'https://gitcode.com/search?q=' + safeEncode(searchUrl) + '&type=repo';
+                    searchUrl = 'https://gitcode.com/search?q=' + encodeURIComponent(searchUrl) + '&type=repo';
                     break;
                 case 'giteeCode':
-                    searchUrl = 'https://so.gitee.com/?q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://so.gitee.com/?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'baiduTw':
-                    searchUrl = 'https://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(searchUrl);
                     break;
                 case 'biliTv':
-                    searchUrl = 'http://search.bilibili.com/all?keyword=' + safeEncode(searchUrl);
+                    searchUrl = 'http://search.bilibili.com/all?keyword=' + encodeURIComponent(searchUrl);
                     break;
                 case 'dyIsWindows':
-                    searchUrl = 'https://www.douyin.com/root/search/' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.douyin.com/root/search/' + encodeURIComponent(searchUrl);
                     break;
                 case 'haokanVideo':
                     if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
-                        searchUrl = 'https://haokan.baidu.com/videoui/page/search/result?searchword=' + safeEncode(searchUrl);
+                        searchUrl = 'https://haokan.baidu.com/videoui/page/search/result?searchword=' + encodeURIComponent(searchUrl);
                     } else {
-                        searchUrl = 'https://haokan.baidu.com/web/search/page?query=' + safeEncode(searchUrl);
+                        searchUrl = 'https://haokan.baidu.com/web/search/page?query=' + encodeURIComponent(searchUrl);
                     }
                     break;
                 case 'fastHandVideo':
-                    searchUrl = 'https://www.kuaishou.com/search/' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.kuaishou.com/search/' + encodeURIComponent(searchUrl);
                     break;
                 case 'hongshuVideo':
-                    searchUrl = 'https://www.xiaohongshu.com/search_result?keyword=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.xiaohongshu.com/search_result?keyword=' + encodeURIComponent(searchUrl);
                     break;
                 case 'enUsYoutubeVideo':
-                    searchUrl = 'https://www.youtube.com/results?search_query=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(searchUrl);
                     break;
                 case 'soHuVideo':
                     if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
-                        searchUrl = 'https://m.tv.sohu.com/upload/h5/m/mso.html?key=' + safeEncode(searchUrl);
+                        searchUrl = 'https://m.tv.sohu.com/upload/h5/m/mso.html?key=' + encodeURIComponent(searchUrl);
                     } else {
-                        searchUrl = 'https://tv.sohu.com/mts/?key=' + safeEncode(searchUrl);
+                        searchUrl = 'https://tv.sohu.com/mts/?key=' + encodeURIComponent(searchUrl);
                     }
                     break;
                 case 'tencentTv':
                     if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
-                        searchUrl = 'https://m.v.qq.com/hippysearch/index.html#/result?query=' + safeEncode(searchUrl);
+                        searchUrl = 'https://m.v.qq.com/hippysearch/index.html#/result?query=' + encodeURIComponent(searchUrl);
                     } else {
-                        searchUrl = 'https://v.qq.com/x/search/?q=' + safeEncode(searchUrl) + '&lang=en2zh';
+                        searchUrl = 'https://v.qq.com/x/search/?q=' + encodeURIComponent(searchUrl) + '&lang=en2zh';
                     }
                     break;
                 case 'zhihuFriends':
-                    searchUrl = 'https://www.zhihu.com/search?type=content&q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.zhihu.com/search?type=content&q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'csdnWebPage':
                     if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
-                        searchUrl = 'https://so.csdn.net/so/search?q=' + safeEncode(searchUrl);
+                        searchUrl = 'https://so.csdn.net/so/search?q=' + encodeURIComponent(searchUrl);
                     } else {
-                        searchUrl = 'https://so.csdn.net/so/search?spm=0&q=' + safeEncode(searchUrl);
+                        searchUrl = 'https://so.csdn.net/so/search?spm=0&q=' + encodeURIComponent(searchUrl);
                     }
                     break;
                 case 'weiboFriends':
-                    searchUrl = 'https://s.weibo.com/weibo?q=' + safeEncode(searchUrl);
+                    searchUrl = 'https://s.weibo.com/weibo?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'bdZhidao':
                     if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
-                        searchUrl = 'https://zhidao.baidu.com/index?word=' + safeEncode(searchUrl);
+                        searchUrl = 'https://zhidao.baidu.com/index?word=' + encodeURIComponent(searchUrl);
                     } else {
-                        searchUrl = 'https://zhidao.baidu.com/search?word=' + safeEncode(searchUrl);
+                        searchUrl = 'https://zhidao.baidu.com/search?word=' + encodeURIComponent(searchUrl);
                     }
                     break;
                 case 'showCheckbox':
-                    searchUrl = 'https://www.baidu.com/s?wd=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
                     break;
                 case 'kfBaidu':
-                    searchUrl = 'https://kaifa.baidu.com/searchPage?wd=' + safeEncode(searchUrl);
+                    searchUrl = 'https://kaifa.baidu.com/searchPage?wd=' + encodeURIComponent(searchUrl);
                     break;
                 case 'weixinSogou':
                     if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
-                        searchUrl = 'https://weixin.sogou.com/weixinwap?type=2&query=' + safeEncode(searchUrl);
+                        searchUrl = 'https://weixin.sogou.com/weixinwap?type=2&query=' + encodeURIComponent(searchUrl);
                     } else {
-                        searchUrl = 'https://weixin.sogou.com/weixin?type=2&query=' + safeEncode(searchUrl);
+                        searchUrl = 'https://weixin.sogou.com/weixin?type=2&query=' + encodeURIComponent(searchUrl);
                     }
                     break;
                 case 'baidu_0':
-                    searchUrl = 'https://www.baidu.com/s?wd=' + safeEncode(searchUrl);
+                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
                     break;
                 case 'customSearch':
                     var customSearchUrl = null;
@@ -2713,7 +2687,7 @@ function bindSubmitEvent() {
                     if (customSearchUrl) {
                         searchUrl = customSearchUrl.replace('{keywords}', encodeURIComponent(searchUrl));
                     } else {
-                        searchUrl = 'https://www.baidu.com/s?wd=' + safeEncode(searchUrl);
+                        searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
                     }
                     break;
                 default:
@@ -2731,7 +2705,7 @@ function bindSubmitEvent() {
                         if (customSearch) {
                             searchUrl = customSearch.url.replace('{keywords}', encodeURIComponent(searchUrl));
                         } else {
-                            searchUrl = 'https://www.baidu.com/s?wd=' + safeEncode(searchUrl);
+                            searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
                         }
                     }
                     break;
@@ -2761,53 +2735,66 @@ function bindSubmitEvent() {
             }
         }
         
-        // 最终跳转（IE8 兼容）
-        if (searchUrl) {
-            var autoNewTabCheckbox = document.getElementById('autoNewTabCheckbox');
-            var isAutoNewTabChecked = autoNewTabCheckbox ? autoNewTabCheckbox.checked : false;
-            // 【修复】IE8 兼容：使用自定义 indexOf 替代原生方法
-            var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
-            var isExcluded = false;
-            for (var i = 0; i < excludedEngines.length; i++) {
-                if (excludedEngines[i] === engine) {
-                    isExcluded = true;
-                    break;
-                }
-            }
-            var shouldOpenNewTab = isAutoNewTabChecked && !isExcluded;
-            
-            if (shouldOpenNewTab) {
-                window.open(searchUrl, '_blank');
-                return;
-            } else if (engine === 'httpsAutoFill' && searchUrl) {
-                try {
-                    var form = document.createElement('form');
-                    form.action = searchUrl;
-                    form.target = '_self';
-                    form.method = 'post';
-                    form.style.display = 'none';
-                    var submitButton = document.createElement('button');
-                    submitButton.type = 'submit';
-                    form.appendChild(submitButton);
-                    document.body.appendChild(form);
-                    form.submit();
-                    document.body.removeChild(form);
-                } catch(err) {
+                    // 最终跳转
+            if (searchUrl) {
+                var autoNewTabCheckbox = document.getElementById('autoNewTabCheckbox');
+                var isAutoNewTabChecked = autoNewTabCheckbox ? autoNewTabCheckbox.checked : false;
+                var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
+                var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
+                
+                if (shouldOpenNewTab) {
+                    window.open(searchUrl, '_blank');
+                    return;
+                } else if (engine === 'httpsAutoFill' && searchUrl) {
                     try {
-                        window.location.href = searchUrl;
-                    } catch(e) {
-                        window.location = searchUrl;
+                        var form = document.createElement('form');
+                        form.action = searchUrl;
+                        form.target = '_self';
+                        form.method = 'post';
+                        form.style.display = 'none';
+                        var submitButton = document.createElement('button');
+                        submitButton.type = 'submit';
+                        form.appendChild(submitButton);
+                        document.body.appendChild(form);
+                        form.submit();
+                        document.body.removeChild(form);
+                    } catch(err) {
+                        // 【修复】IE8 兼容跳转
+                        if (navigator.userAgent.indexOf('MSIE 8') !== -1) {
+                            try { window.location.href = searchUrl; } catch(e) { window.location = searchUrl; }
+                        } else {
+                            window.location.href = searchUrl;
+                        }
+                    }
+                    return;
+                } else {
+                    // 【修复】IE8 兼容：确保跳转和搜索关键词正确执行
+                    try {
+                        if (navigator.userAgent.indexOf('MSIE 8') !== -1) {
+                            var isSuccess = false;
+                            try {
+                                window.location.href = searchUrl;
+                                isSuccess = true;
+                            } catch(e) {}
+                            if (!isSuccess) {
+                                try {
+                                    window.location = searchUrl;
+                                } catch(e2) {
+                                    window.location.replace(searchUrl);
+                                }
+                            }
+                        } else {
+                            window.location.href = searchUrl;
+                        }
+                    } catch(err) {
+                        try {
+                            window.location = searchUrl;
+                        } catch(e) {
+                            window.location.replace(searchUrl);
+                        }
                     }
                 }
-                return;
-            } else {
-                try {
-                    window.location.href = searchUrl;
-                } catch(err) {
-                    window.location = searchUrl;
-                }
             }
-        }
     };
 }
 
