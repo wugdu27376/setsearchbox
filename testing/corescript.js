@@ -8930,6 +8930,7 @@ function clearAllSettingsThreeConfirm() {
 }
 
 // 导出链接功能
+// 兼容 IE 所有版本及旧版浏览器正常导出文件
 document.querySelector('label[for="exportLinksBtn"]').addEventListener('click', function() {
     var links = JSON.parse(localStorage.getItem('quickLinks') || '[]');
     if (links.length === 0) {
@@ -8937,13 +8938,74 @@ document.querySelector('label[for="exportLinksBtn"]').addEventListener('click', 
     }
     
     var jsonContent = JSON.stringify(links, null, 2);
-    var base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
-    var dataUrl = 'data:application/json;base64,' + base64Content;
     
-    var a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = 'quick_links_backup.json';
-    a.click();
+    // 生成带日期时间的文件名
+    function getFormattedDateTime() {
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = (now.getMonth() + 1);
+        var day = now.getDate();
+        var hours = now.getHours();
+        var minutes = now.getMinutes();
+        var seconds = now.getSeconds();
+        
+        function padZero(num) {
+            return (num < 10 ? '0' : '') + num;
+        }
+        
+        return year + padZero(month) + padZero(day) + '_' + padZero(hours) + padZero(minutes) + padZero(seconds);
+    }
+    
+    var fileName = 'quick_links_' + getFormattedDateTime() + '.json';
+    
+    // 方法1：尝试使用 Blob（IE10+ 支持）
+    var blobSupported = false;
+    try {
+        blobSupported = typeof Blob !== 'undefined' && typeof URL !== 'undefined';
+    } catch(e) {
+        blobSupported = false;
+    }
+    
+    if (blobSupported) {
+        try {
+            var blob = new Blob([jsonContent], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            if (a.click) {
+                a.click();
+            } else if (a.fireEvent) {
+                a.fireEvent('onclick');
+            }
+            setTimeout(function() {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            return;
+        } catch(e) {}
+    }
+    
+    // 方法2：IE9 及以下使用 msSaveBlob
+    if (typeof navigator !== 'undefined' && navigator.msSaveBlob) {
+        try {
+            var blob = new Blob([jsonContent], { type: 'application/json' });
+            navigator.msSaveBlob(blob, fileName);
+            return;
+        } catch(e) {}
+    }
+    
+    // 方法3：使用 prompt 降级方案（所有浏览器通用）
+    try {
+        var fallbackMsg = '无法自动下载文件，请手动复制以下内容并保存为 ' + fileName + '：';
+        if (confirm(fallbackMsg)) {
+            prompt('请复制以下内容并保存为 ' + fileName, jsonContent);
+        }
+    } catch(e) {
+        alert('导出失败：' + e.message);
+    }
 });
 
 // 导入链接功能
