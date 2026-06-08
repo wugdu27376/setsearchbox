@@ -297,58 +297,162 @@
     }
     
     if (isIE) {
-        // 仅保留必要的IE兼容辅助逻辑，不干预提交按钮的点击事件
-        // 主流程中的 bindSubmitEvent 已包含完整的搜索引擎处理，且兼容IE8
-        // 修复 IE 下 select 元素 value 读取问题
-        if (HTMLSelectElement && HTMLSelectElement.prototype) {
-            var hasValueProp = false;
-            try {
-                hasValueProp = Object.prototype.hasOwnProperty.call(HTMLSelectElement.prototype, 'value');
-            } catch(e) {
-                hasValueProp = false;
-            }
-            if (!hasValueProp) {
-                Object.defineProperty(HTMLSelectElement.prototype, 'value', {
-                    get: function() {
-                        if (this.selectedIndex >= 0 && this.options[this.selectedIndex]) {
-                            return this.options[this.selectedIndex].value;
-                        }
-                        return '';
-                    },
-                    set: function(val) {
-                        for (var i = 0; i < this.options.length; i++) {
-                            if (this.options[i].value == val) {
-                                this.selectedIndex = i;
-                                break;
-                            }
-                        }
+        // 修复 IE 下 URL 跳转失败问题
+        var originalSubmitBtnClick = null;
+        // 【修复】IE8 兼容：使用 attachEvent 替代 addEventListener
+        function onDomReady(callback) {
+            if (document.readyState === 'complete') {
+                setTimeout(callback, 1);
+            } else if (document.attachEvent) {
+                document.attachEvent('onreadystatechange', function() {
+                    if (document.readyState === 'complete') {
+                        callback();
                     }
                 });
+                var oldOnLoad = window.onload;
+                window.onload = function() {
+                    if (oldOnLoad) oldOnLoad();
+                    callback();
+                };
+            } else {
+                window.onload = callback;
             }
         }
         
-        // 修复 console 对象
-        if (!window.console) {
-            window.console = {
-                log: function() {},
-                error: function() {},
-                warn: function() {},
-                info: function() {}
-            };
-        }
-        
-        // 修复 CustomEvent
-        if (typeof window.CustomEvent !== 'function') {
-            window.CustomEvent = function(event, params) {
-                params = params || { bubbles: false, cancelable: false, detail: undefined };
-                var evt = document.createEvent('CustomEvent');
-                evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
-                return evt;
-            };
-        }
+        onDomReady(function() {
+            var submitBtn = document.getElementById('submitBtn');
+            var urlInput = document.getElementById('urlInput');
+            var engineSelect = document.getElementById('engineSelect');
+            
+            if (submitBtn && urlInput && engineSelect) {
+                // 移除原有事件，使用更可靠的跳转方式
+                var newBtn = submitBtn.cloneNode(true);
+                submitBtn.parentNode.replaceChild(newBtn, submitBtn);
+                submitBtn = newBtn;
+                
+                submitBtn.onclick = function(e) {
+                    e = e || window.event;
+                    var searchText = urlInput.value;
+                    var engine = engineSelect.value;
+                    
+                    if (!searchText || searchText === 'https://') return false;
+                    
+                    // IE 下构建搜索URL
+                    try {
+                        // 处理 iFrameFree 模式
+                        if (engine === 'iFrameFree') {
+                            var iframe = document.getElementById('webFrame');
+                            if (iframe) {
+                                iframe.src = searchText;
+                            }
+                            var iframeContainer = document.getElementById('iframeContainer');
+                            if (iframeContainer) iframeContainer.style.display = 'block';
+                            return false;
+                        }
+                        
+                        // 构建搜索URL
+                        var searchUrl = searchText;
+                        var isDirectUrl = false;
+                        
+                        // 检查是否为直接URL（包含协议或域名格式）
+                        if (searchText.indexOf('://') !== -1 || 
+                            /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/.test(searchText)) {
+                            isDirectUrl = true;
+                            if (searchText.indexOf('://') === -1) {
+                                searchUrl = 'https://' + searchText;
+                            }
+                        }
+                        
+                        // 根据搜索引擎构建搜索URL（非直接URL时）
+                        if (!isDirectUrl) {
+                            switch (engine) {
+                                case 'baidu':
+                                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
+                                    break;
+                                case 'google':
+                                    searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(searchText);
+                                    break;
+                                case 'bing':
+                                    searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(searchText);
+                                    break;
+                                case 'sogou':
+                                    searchUrl = 'https://www.sogou.com/web?query=' + encodeURIComponent(searchText);
+                                    break;
+                                case 'so':
+                                    searchUrl = 'https://www.so.com/s?q=' + encodeURIComponent(searchText);
+                                    break;
+                                case 'yandex':
+                                    searchUrl = 'https://yandex.com/search/?text=' + encodeURIComponent(searchText);
+                                    break;
+                                case 'duckduckgo':
+                                    searchUrl = 'https://duckduckgo.com/?q=' + encodeURIComponent(searchText);
+                                    break;
+                                case 'yahooSearch':
+                                    searchUrl = 'https://sg.search.yahoo.com/search?p=' + encodeURIComponent(searchText);
+                                    break;
+                                case 'braveSearch':
+                                    searchUrl = 'https://search.brave.com/search?q=' + encodeURIComponent(searchText);
+                                    break;
+                                case 'autofillHttp1':
+                                    searchUrl = 'http://' + searchText;
+                                    break;
+                                case 'autofillHttps':
+                                    searchUrl = 'https://' + searchText;
+                                    break;
+                                case 'customSearch':
+                                    var customUrl = null;
+                                    try { customUrl = localStorage.getItem('customSearchUrl'); } catch(err) {}
+                                    if (customUrl && customUrl.indexOf('{keywords}') !== -1) {
+                                        searchUrl = customUrl.replace('{keywords}', encodeURIComponent(searchText));
+                                    } else {
+                                        searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
+                                    }
+                                    break;
+                                default:
+                                    if (engine.indexOf('customSearch_') === 0) {
+                                        var customSearches = [];
+                                        try { customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]'); } catch(err) {}
+                                        var order = parseInt(engine.split('_')[1]);
+                                        for (var i = 0; i < customSearches.length; i++) {
+                                            if (customSearches[i].order === order && customSearches[i].url.indexOf('{keywords}') !== -1) {
+                                                searchUrl = customSearches[i].url.replace('{keywords}', encodeURIComponent(searchText));
+                                                break;
+                                            }
+                                        }
+                                        if (!searchUrl || searchUrl === searchText) {
+                                            searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
+                                        }
+                                    } else {
+                                        searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
+                                    }
+                                    break;
+                            }
+                        }
+                        
+                        // 执行跳转
+                        if (searchUrl) {
+                            try {
+                                window.location.href = searchUrl;
+                            } catch(e) {
+                                window.location = searchUrl;
+                            }
+                        } else {
+                            return false;
+                        }
+                    } catch(err) {
+                        // 最后回退：使用百度搜索
+                        try {
+                            window.location.href = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
+                        } catch(e2) {
+                            window.location = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchText);
+                        }
+                    }
+                    return false;
+                };
+            }
+        });
     }
 })();
-// ========== IE 兼容补丁结束 ==========
 
 
 // ========== IE 完整兼容补丁 ==========
