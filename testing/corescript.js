@@ -1055,6 +1055,89 @@ onDomReady(function() {
 // ========== 【修复结束】 ==========
 
 
+// ========== 【修复】IE10及以下浏览器禁用label按钮点击无操作 ==========
+(function() {
+    // 检测 IE 浏览器版本
+    var ieVersion = 0;
+    var isIELowVersion = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (ieVersion <= 10) {
+                isIELowVersion = true;
+            }
+        }
+        var trident = ua.indexOf('Trident/');
+        if (trident > 0) {
+            var rv = ua.indexOf('rv:');
+            if (rv > 0) {
+                var rvVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+                if (rvVersion <= 10) {
+                    isIELowVersion = true;
+                }
+            }
+        }
+    } catch(e) {
+        isIELowVersion = false;
+    }
+    
+    if (isIELowVersion) {
+        // 拦截所有 label 按钮的点击事件，检查是否处于禁用状态
+        document.addEventListener('click', function(e) {
+            e = e || window.event;
+            var target = e.target || e.srcElement;
+            
+            // 向上查找 label 元素
+            var label = target;
+            while (label && label.tagName !== 'LABEL') {
+                label = label.parentNode;
+                if (!label || label === document.body) break;
+            }
+            
+            if (label && label.tagName === 'LABEL') {
+                // 检查 label 关联的控件或自身是否被禁用
+                var forAttr = label.getAttribute('for');
+                var targetElement = null;
+                if (forAttr) {
+                    targetElement = document.getElementById(forAttr);
+                }
+                
+                var isDisabled = false;
+                // 检查 label 自身的 pointer-events 样式
+                if (label.style.pointerEvents === 'none') {
+                    isDisabled = true;
+                }
+                // 检查关联元素是否禁用
+                if (targetElement && targetElement.disabled === true) {
+                    isDisabled = true;
+                }
+                // 检查 label 自身是否包含 disabled 类或 opacity 样式
+                if (label.style.opacity === '0.7' || label.className.indexOf('disabled') !== -1) {
+                    isDisabled = true;
+                }
+                
+                if (isDisabled) {
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    } else {
+                        e.returnValue = false;
+                    }
+                    if (e.stopPropagation) {
+                        e.stopPropagation();
+                    } else {
+                        e.cancelBubble = true;
+                    }
+                    return false;
+                }
+            }
+        }, false);
+    }
+})();
+// ========== 【修复结束】 ==========
+
+
 // ========== 全局 Enter 键回退方案（最低 IE6 兼容） ==========
 (function() {
     // 确保只绑定一次
