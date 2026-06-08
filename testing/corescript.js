@@ -289,10 +289,10 @@
 
 // ========== IE 跳转兼容补丁 ==========
 (function() {
-    // 检测IE版本
     var isIE = false;
     var ieVersion = 0;
     try {
+        isIE = /*@cc_on!@*/false || !!document.documentMode;
         var ua = navigator.userAgent;
         var msie = ua.indexOf('MSIE ');
         if (msie > 0) {
@@ -416,12 +416,10 @@
             }
         });
     }
-    
-    // ========== IE9及以上版本保持原有逻辑 ==========
-    if (isIE && ieVersion >= 9) {
+    // ========== IE9及以上版本原有代码 ==========
+    else if (isIE && ieVersion >= 9) {
         // 修复 IE 下 URL 跳转失败问题
         var originalSubmitBtnClick = null;
-        // 【修复】IE8 兼容：使用 attachEvent 替代 addEventListener
         function onDomReady(callback) {
             if (document.readyState === 'complete') {
                 setTimeout(callback, 1);
@@ -446,7 +444,6 @@
             var urlInput = document.getElementById('urlInput');
             
             if (submitBtn && urlInput) {
-                // 移除原有事件，使用更可靠的跳转方式
                 var newBtn = submitBtn.cloneNode(true);
                 submitBtn.parentNode.replaceChild(newBtn, submitBtn);
                 submitBtn = newBtn;
@@ -458,7 +455,6 @@
                     
                     if (!url || url === 'https://') return false;
                     
-                    // IE 下直接跳转
                     try {
                         if (engine === 'iFrameFree') {
                             var iframe = document.getElementById('webFrame');
