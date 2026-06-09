@@ -661,14 +661,14 @@
         // 创建提示元素
         var versionTip = document.createElement('div');
         versionTip.id = 'ieVersionTip';
-        versionTip.innerHTML = '你的浏览器版本过低，升级浏览器后可使用完整功能';
+        versionTip.innerHTML = '你的浏览器版本过低，升级浏览器后可体验完整功能';
         
         // 设置样式（兼容 IE6+）
         versionTip.style.position = 'absolute';
         versionTip.style.top = '0';
         versionTip.style.left = '0';
         versionTip.style.fontSize = '12px';
-        versionTip.style.color = '#dddddd';
+        versionTip.style.color = '#cccccc';
         versionTip.style.padding = '2px 6px';
         versionTip.style.zIndex = '9999';
         versionTip.style.fontFamily = 'Arial, sans-serif';
