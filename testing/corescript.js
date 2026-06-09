@@ -1,4 +1,4 @@
-// ========== IE兼容性补丁(第1854行后结束) ==========
+// ========== IE兼容性补丁(第1927行后结束) ==========
 (function() {
     // 检测是否为IE浏览器
     var isIE = /*@cc_on!@*/false || !!document.documentMode;
@@ -994,6 +994,79 @@ function bindSubmitButtonEvent() {
 onDomReady(function() {
     bindSubmitButtonEvent();
 });
+
+
+// ========== 【修复】IE9及以下浏览器禁用一言复选框 ==========
+(function() {
+    // 检测 IE 浏览器版本（支持 IE6+）
+    var ieVersion = 0;
+    var isIELowVersion = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (ieVersion <= 9) {
+                isIELowVersion = true;
+            }
+        }
+        // 检测 Trident 内核（IE11 兼容模式）
+        var trident = ua.indexOf('Trident/');
+        if (trident > 0) {
+            var rv = ua.indexOf('rv:');
+            if (rv > 0) {
+                var rvVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+                if (rvVersion <= 9) {
+                    isIELowVersion = true;
+                }
+            }
+        }
+    } catch(e) {
+        isIELowVersion = false;
+    }
+    
+    if (isIELowVersion) {
+        var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
+        var hitokotoColorBtn = document.getElementById('hitokotoColorBtn');
+        var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
+        var hitokotoSizeLabel = document.querySelector('label[for="hitokotoSizePicker"]');
+        
+        if (hitokotoCheckbox) {
+            hitokotoCheckbox.disabled = true;
+            hitokotoCheckbox.checked = false;
+            // 清除保存的一言启用状态
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                    localStorage.setItem('hitokotoChecked', 'false');
+                }
+            } catch(e) {}
+        }
+        
+        // 禁用相关的颜色、样式、大小按钮
+        if (hitokotoColorBtn) {
+            hitokotoColorBtn.style.opacity = '0.7';
+            hitokotoColorBtn.style.cursor = 'not-allowed';
+            hitokotoColorBtn.style.pointerEvents = 'none';
+        }
+        if (hitokotoStyleBtn) {
+            hitokotoStyleBtn.style.opacity = '0.7';
+            hitokotoStyleBtn.style.cursor = 'not-allowed';
+            hitokotoStyleBtn.style.pointerEvents = 'none';
+        }
+        if (hitokotoSizeLabel) {
+            hitokotoSizeLabel.style.opacity = '0.7';
+            hitokotoSizeLabel.style.cursor = 'not-allowed';
+            hitokotoSizeLabel.style.pointerEvents = 'none';
+        }
+        
+        // 隐藏一言显示区域
+        var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+        if (hitokotoDisplay) {
+            hitokotoDisplay.style.display = 'none';
+        }
+    }
+})();
+// ========== 【修复结束】 ==========
 
 
 // IE 浏览器点击链接时激活为红色状态
