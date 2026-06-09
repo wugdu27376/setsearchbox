@@ -6730,7 +6730,14 @@ if (manualHttpsInput) {
             if (this.dataset) {
                 this.dataset.manualHttps = 'true';
             } else {
-                this.setAttribute('data-manual-https', 'true');
+                // 【IE8以下修复】setAttribute 兼容
+                if (this.setAttribute) {
+                    this.setAttribute('data-manual-https', 'true');
+                } else if (this.setAttributeNode) {
+                    var attr = document.createAttribute('data-manual-https');
+                    attr.nodeValue = 'true';
+                    this.setAttributeNode(attr);
+                }
             }
         }
     });
@@ -6850,7 +6857,14 @@ if (inputEventElement) {
         if (this.dataset) {
             manualHttpsFlag = this.dataset.manualHttps;
         } else {
-            manualHttpsFlag = this.getAttribute('data-manual-https') || '';
+            // 【IE8以下修复】getAttribute 兼容
+            manualHttpsFlag = '';
+            if (this.getAttribute) {
+                manualHttpsFlag = this.getAttribute('data-manual-https') || '';
+            } else if (this.getAttributeNode) {
+                var attrNode = this.getAttributeNode('data-manual-https');
+                manualHttpsFlag = attrNode ? attrNode.nodeValue : '';
+            }
         }
         
         // 记录用户已经开始输入，禁用自动选择
@@ -7799,7 +7813,13 @@ function showSearchSuggestions(suggestions) {
     var searchSuggestions = document.getElementById('searchSuggestions');
     if (!urlInput || !searchSuggestions) return;
     
-    var inputText = urlInput.value.trim();
+    // 【IE8以下修复】trim 兼容
+    var inputText = urlInput.value;
+    if (inputText && inputText.trim) {
+        inputText = inputText.trim();
+    } else if (inputText) {
+        inputText = inputText.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+    }
     
     // ========== 输入为空时，判断是否需要显示历史记录 ==========
     if (inputText === '') {
