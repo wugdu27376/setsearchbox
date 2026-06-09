@@ -337,80 +337,6 @@
 // ========== 全局 indexOf 兼容结束 ==========
 
 
-// ========== 【IE8以下专属修复】setAttribute/getAttribute 兼容性封装 ==========
-(function() {
-    // 检测是否为 IE8 或更低版本
-    var isIELow = false;
-    try {
-        var ua = navigator.userAgent;
-        var msie = ua.indexOf('MSIE ');
-        if (msie > 0) {
-            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
-            if (version <= 8) isIELow = true;
-        }
-    } catch(e) { isIELow = false; }
-    
-    if (isIELow) {
-        // 安全设置属性函数
-        window.safeSetAttribute = function(elem, name, value) {
-            if (!elem) return;
-            try {
-                if (typeof elem.setAttribute === 'function') {
-                    elem.setAttribute(name, value);
-                } else {
-                    elem[name] = value;
-                }
-            } catch(e) {
-                try { elem[name] = value; } catch(ex) {}
-            }
-        };
-        
-        // 安全获取属性函数
-        window.safeGetAttribute = function(elem, name) {
-            if (!elem) return '';
-            try {
-                if (typeof elem.getAttribute === 'function') {
-                    return elem.getAttribute(name);
-                } else {
-                    return elem[name] || '';
-                }
-            } catch(e) {
-                try { return elem[name] || ''; } catch(ex) { return ''; }
-            }
-        };
-        
-        // 修复原生方法（避免直接调用时报错）
-        if (typeof Element !== 'undefined' && Element.prototype) {
-            if (typeof Element.prototype.setAttribute !== 'function') {
-                Element.prototype.setAttribute = function(name, value) {
-                    try { this[name] = value; } catch(e) {}
-                };
-            }
-            if (typeof Element.prototype.getAttribute !== 'function') {
-                Element.prototype.getAttribute = function(name) {
-                    try { return this[name] || ''; } catch(e) { return ''; }
-                };
-            }
-        }
-        
-        // 修复 HTMLElement（IE7/6）
-        if (typeof HTMLElement !== 'undefined' && HTMLElement.prototype) {
-            if (typeof HTMLElement.prototype.setAttribute !== 'function') {
-                HTMLElement.prototype.setAttribute = function(name, value) {
-                    try { this[name] = value; } catch(e) {}
-                };
-            }
-            if (typeof HTMLElement.prototype.getAttribute !== 'function') {
-                HTMLElement.prototype.getAttribute = function(name) {
-                    try { return this[name] || ''; } catch(e) { return ''; }
-                };
-            }
-        }
-    }
-})();
-// ========== IE8以下专属修复结束 ==========
-
-
 // ========== IE 跳转兼容补丁 ==========
 (function() {
     var isIE = false;
@@ -6730,14 +6656,7 @@ if (manualHttpsInput) {
             if (this.dataset) {
                 this.dataset.manualHttps = 'true';
             } else {
-                // 【IE8以下修复】setAttribute 兼容
-                if (this.setAttribute) {
-                    this.setAttribute('data-manual-https', 'true');
-                } else if (this.setAttributeNode) {
-                    var attr = document.createAttribute('data-manual-https');
-                    attr.nodeValue = 'true';
-                    this.setAttributeNode(attr);
-                }
+                this.setAttribute('data-manual-https', 'true');
             }
         }
     });
@@ -6857,14 +6776,7 @@ if (inputEventElement) {
         if (this.dataset) {
             manualHttpsFlag = this.dataset.manualHttps;
         } else {
-            // 【IE8以下修复】getAttribute 兼容
-            manualHttpsFlag = '';
-            if (this.getAttribute) {
-                manualHttpsFlag = this.getAttribute('data-manual-https') || '';
-            } else if (this.getAttributeNode) {
-                var attrNode = this.getAttributeNode('data-manual-https');
-                manualHttpsFlag = attrNode ? attrNode.nodeValue : '';
-            }
+            manualHttpsFlag = this.getAttribute('data-manual-https') || '';
         }
         
         // 记录用户已经开始输入，禁用自动选择
@@ -7813,13 +7725,7 @@ function showSearchSuggestions(suggestions) {
     var searchSuggestions = document.getElementById('searchSuggestions');
     if (!urlInput || !searchSuggestions) return;
     
-    // 【IE8以下修复】trim 兼容
-    var inputText = urlInput.value;
-    if (inputText && inputText.trim) {
-        inputText = inputText.trim();
-    } else if (inputText) {
-        inputText = inputText.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
-    }
+    var inputText = urlInput.value.trim();
     
     // ========== 输入为空时，判断是否需要显示历史记录 ==========
     if (inputText === '') {
