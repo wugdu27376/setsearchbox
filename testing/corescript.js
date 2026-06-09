@@ -1143,6 +1143,8 @@ onDomReady(function() {
                     // ========== 【修改结束】 ==========
                     
                     if (submitBtn.click) {
+                        if (document.getElementById('autoFillAndJumpCheckbox').checked) {localStorage.removeItem('isSuggestionSelected', 'false');};
+                        if (localStorage.getItem('isSuggestionSelected')) return;
                         submitBtn.click();
                     } else if (submitBtn.fireEvent) {
                         submitBtn.fireEvent('onclick');
@@ -7545,61 +7547,38 @@ document.querySelector('label[for="importSettingsBtn"]').addEventListener('click
     document.getElementById('importSettingsInput').click();
 });
 
-// 兼容 IE 所有版本及旧版浏览器正常导入文件
-var importSettingsInput = document.getElementById('importSettingsInput');
-if (importSettingsInput) {
-    if (importSettingsInput.addEventListener) {
-        importSettingsInput.addEventListener('change', handleImportFile);
-    } else if (importSettingsInput.attachEvent) {
-        importSettingsInput.attachEvent('onchange', handleImportFile);
-    }
+document.getElementById('importSettingsInput').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
     
-    function handleImportFile(e) {
-        e = e || window.event;
-        var target = e.target || e.srcElement;
-        var file = target.files && target.files[0];
-        if (!file) return;
-        
-        var reader = new FileReader();
-        reader.onload = function(event) {
-            try {
-                var content = event.target.result;
-                var settings = JSON.parse(content);
-                
-                // 弹出二次确认对话框
-                showCustomConfirm('确定要导入该配置文件吗？导入后将覆盖当前所有设置并刷新页面。', function(result) {
-                    if (result) {
-                        // 恢复所有设置到localStorage
-                        var settingsKeys = Object.keys(settings);
-                        for (var k = 0; k < settingsKeys.length; k++) {
-                            var key = settingsKeys[k];
-                            if (settings[key] !== null) {
-                                try {
-                                    localStorage.setItem(key, settings[key]);
-                                } catch(e) {}
-                            }
-                        }
-                        // 重新加载页面应用设置
-                        try {
-                            window.location.reload();
-                        } catch(e) {
-                            window.location.href = window.location.href;
+    var reader = new FileReader();
+    reader.onload = function(event) {
+        try {
+            var content = event.target.result;
+            var settings = JSON.parse(content);
+            
+            // 弹出二次确认对话框
+            showCustomConfirm('确定要导入该配置文件吗？导入后将覆盖当前所有设置并刷新页面。', function(result) {
+                if (result) {
+                    // 恢复所有设置到localStorage
+                    var settingsKeys = Object.keys(settings);
+                    for (var k = 0; k < settingsKeys.length; k++) {
+                        var key = settingsKeys[k];
+                        if (settings[key] !== null) {
+                            localStorage.setItem(key, settings[key]);
                         }
                     }
-                });
-            } catch (error) {
-                // JSON解析失败，静默处理
-            }
-            if (target) target.value = '';
-        };
-        reader.onerror = function() {
-            if (target) target.value = '';
-        };
-        try {
-            reader.readAsText(file);
-        } catch(e) {}
-    }
-}
+                    // 重新加载页面应用设置
+                    location.reload();
+                }
+            });
+        } catch (error) {
+            // JSON解析失败，静默处理
+        }
+        e.target.value = '';
+    };
+    reader.readAsText(file);
+});
 
 // 为导入设置按钮添加拖放支持
 var importSettingsLabel = document.querySelector('label[for="importSettingsBtn"]');
@@ -7802,7 +7781,7 @@ function showSearchSuggestions(suggestions) {
         try {
             history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
         } catch(e) {}
-        var displayHistory = history.slice(0, 9);
+        var displayHistory = history.slice(0, 10);
         
         if (displayHistory.length > 0) {
             // ========== 添加清空历史记录列 ==========
@@ -8475,13 +8454,15 @@ document.getElementById('urlInput').addEventListener('blur', function() {
         return;
     }
     // ========== 【修改结束】 ==========
-    
+    setTimeout(function() {
+        localStorage.removeItem('isSuggestionSelected', 'false');
+    }, 0);
     setTimeout(function() {
         searchSuggestions.style.display = 'none';
     }, 100);
     setTimeout(function() {
         searchSuggestions.style.display = 'none';
-    }, 150);
+    }, 120);
 });
 
 // 点击搜索建议时阻止失焦
@@ -10597,11 +10578,12 @@ window.onload = function() {
                 '你可以自定义设置你喜欢的搜索主页',
                 '有些搜索引擎搜索后会记录你的搜索历史记录，如果你不是无痕浏览模式又只是删除浏览器搜索浏览记录或本站历史搜索历史，请检查你使用过的搜索引擎并删除搜索引擎记录的搜索历史记录。如果不想留搜索浏览历史记录建议使用无痕模式搜索(也有部分浏览器写为隐身模式、隐私浏览等)',
                 '有些搜索引擎并不适应手机或电脑，这就是为什么禁用部分搜索引擎的原因了',
-                '部分外国网站在中国大陆可能无法访问，所以需要代理网络'
+                '部分外国网站在中国大陆可能无法访问，所以需要代理网络',
+                '系统版本显示不一定准确，取决于你的浏览器的User-Agent'
              ];
             if (!window._lastTipIndex) window._lastTipIndex = -1;
             var newIndex;
-            do { newIndex = Math.floor(Math.random() * 10); } while (newIndex === window._lastTipIndex && tips.length > 1);
+            do { newIndex = Math.floor(Math.random() * 11); } while (newIndex === window._lastTipIndex && tips.length > 1);
             window._lastTipIndex = newIndex;
             var randomTip = tips[newIndex];
             showCustomAlert('关于', '<div style="font-size: 15px; margin-top: 12px;">搜索Easy<br>' + '<p>网页版本号: v7.3<br></p>' + '<p>浏览器: ' + browserInfo.name + '<br></p>' + '<p>浏览器版本: ' + browserInfo.version + '<br></p>' + '<p>内核: ' + engineType + ' ' + engineVersion + '<br></p>' + '<p>系统版本: ' + browserInfo.deviceVersion + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<p><b>小提示: </b>' + randomTip + '<div>Github源码: <button onclick="window.open(&#39;https://github.com/wugdu27376/setsearchbox/&#39;, &#39;_blank&#39;);" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div><div style="margin-top: 20px;">扩展下载: <div style="display: inline-block; width: 100%; max-width: 150px; float: right;"><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126071_Beta.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Beta</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126069.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">ZIP</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126070.crx&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126072.zip&#39;" style="margin-left: 4px; margin-top: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX-ZIP</button></div><!-- <div style="display: inline-block; margin-top: 20px; width: 100%;">Github源码: <button onclick="window.location.href=&#39;https://github.com/wugdu27376/setsearchbox/&#39;" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div> --></div>' + '</div>');
@@ -10921,8 +10903,10 @@ if (isDesktop()) {
                 selectedText = urlPart;
             }
             document.getElementById('urlInput').value = selectedText;
+            localStorage.setItem('isSuggestionSelected', 'true');
         } else if (index === -1) {
             document.getElementById('urlInput').value = originalInputValue;
+            localStorage.removeItem('isSuggestionSelected', 'false');
         }
     }
     
@@ -10994,6 +10978,13 @@ if (isDesktop()) {
                     }
                 }
             }
+            fetchSearchSuggestions(urlInput.value);
+            setTimeout(function() {
+            localStorage.removeItem('isSuggestionSelected', 'false');
+            }, 10);
+            setTimeout(function() {
+            fetchSearchSuggestions(urlInput.value);
+            }, 150);
             suggestionIndex = -1;
             searchSuggestions.style.display = 'none';
             return false;
@@ -11023,3 +11014,6 @@ if (isDesktop()) {
         }
     });
 }
+setTimeout(function() {
+    localStorage.removeItem('isSuggestionSelected', 'false');
+}, 10);
