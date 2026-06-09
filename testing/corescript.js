@@ -337,6 +337,136 @@
 // ========== 全局 indexOf 兼容结束 ==========
 
 
+// ========== 【IE8以下修复】setAttribute/getAttribute 兼容补丁 ==========
+(function() {
+    var isIELow = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (version <= 8) isIELow = true;
+        }
+    } catch(e) { isIELow = false; }
+    
+    if (isIELow) {
+        // 修复 Element.prototype.setAttribute（IE7及以下不支持）
+        if (window.Element && Element.prototype && !Element.prototype.setAttribute) {
+            Element.prototype.setAttribute = function(name, value) {
+                try {
+                    // IE8 以下使用 setAttributeNode 或直接设置属性
+                    if (this.setAttributeNode) {
+                        var attr = document.createAttribute(name);
+                        attr.value = String(value);
+                        this.setAttributeNode(attr);
+                    } else {
+                        this[name] = value;
+                    }
+                } catch(e) {
+                    this[name] = value;
+                }
+            };
+        }
+        
+        // 修复 Element.prototype.getAttribute（IE7及以下不支持）
+        if (window.Element && Element.prototype && !Element.prototype.getAttribute) {
+            Element.prototype.getAttribute = function(name) {
+                try {
+                    if (this.getAttributeNode) {
+                        var attr = this.getAttributeNode(name);
+                        return attr ? attr.value : null;
+                    }
+                    return this[name] !== undefined ? this[name] : null;
+                } catch(e) {
+                    return this[name] !== undefined ? this[name] : null;
+                }
+            };
+        }
+        
+        // 修复 document.getElementById 返回的元素可能不支持 setAttribute 的问题
+        // 使用包装函数确保所有通过 getElementById 获取的元素都能正常使用 setAttribute
+        var originalGetElementById = document.getElementById;
+        if (originalGetElementById) {
+            document.getElementById = function(id) {
+                var element = originalGetElementById.call(document, id);
+                if (element && !element.setAttribute) {
+                    // 为元素添加缺失的方法
+                    if (!element.setAttribute) {
+                        element.setAttribute = function(name, value) {
+                            try {
+                                if (this.setAttributeNode) {
+                                    var attr = document.createAttribute(name);
+                                    attr.value = String(value);
+                                    this.setAttributeNode(attr);
+                                } else {
+                                    this[name] = value;
+                                }
+                            } catch(e) {
+                                this[name] = value;
+                            }
+                        };
+                    }
+                    if (!element.getAttribute) {
+                        element.getAttribute = function(name) {
+                            try {
+                                if (this.getAttributeNode) {
+                                    var attr = this.getAttributeNode(name);
+                                    return attr ? attr.value : null;
+                                }
+                                return this[name] !== undefined ? this[name] : null;
+                            } catch(e) {
+                                return this[name] !== undefined ? this[name] : null;
+                            }
+                        };
+                    }
+                }
+                return element;
+            };
+        }
+        
+        // 修复 document.createElement 创建的元素可能不支持 setAttribute
+        var originalCreateElement = document.createElement;
+        if (originalCreateElement) {
+            document.createElement = function(tagName) {
+                var element = originalCreateElement.call(document, tagName);
+                if (element && !element.setAttribute) {
+                    if (!element.setAttribute) {
+                        element.setAttribute = function(name, value) {
+                            try {
+                                if (this.setAttributeNode) {
+                                    var attr = document.createAttribute(name);
+                                    attr.value = String(value);
+                                    this.setAttributeNode(attr);
+                                } else {
+                                    this[name] = value;
+                                }
+                            } catch(e) {
+                                this[name] = value;
+                            }
+                        };
+                    }
+                    if (!element.getAttribute) {
+                        element.getAttribute = function(name) {
+                            try {
+                                if (this.getAttributeNode) {
+                                    var attr = this.getAttributeNode(name);
+                                    return attr ? attr.value : null;
+                                }
+                                return this[name] !== undefined ? this[name] : null;
+                            } catch(e) {
+                                return this[name] !== undefined ? this[name] : null;
+                            }
+                        };
+                    }
+                }
+                return element;
+            };
+        }
+    }
+})();
+// ========== 【IE8以下修复】setAttribute/getAttribute 兼容补丁结束 ==========
+
+
 // ========== IE 跳转兼容补丁 ==========
 (function() {
     var isIE = false;
@@ -10733,7 +10863,7 @@ window.onload = function() {
 
 // 添加快捷键切换搜索引擎（仅电脑端）
 if (isDesktop()) {
-    // 获取搜索引擎下拉框的可见选项（兼容所有浏览器）
+    // 获取搜索引擎下拉框的可见选项（兼容IE所有版本）
     function getVisibleEngineOptions() {
         var engineSelect = document.getElementById('engineSelect');
         if (!engineSelect) return [];
@@ -10741,12 +10871,12 @@ if (isDesktop()) {
         var visibleOptions = [];
         for (var i = 0; i < options.length; i++) {
             var opt = options[i];
-            // 检查选项是否可见（非隐藏、非禁用、非空选项）
+            // 检查选项是否可见（非隐藏、非禁用、非空选项）- 兼容IE
             var isHidden = false;
             try {
-                isHidden = (opt.style.display === 'none') || 
-                           (opt.parentNode && opt.parentNode.style.display === 'none') ||
-                           (opt.disabled === true);
+                if (opt.style && opt.style.display === 'none') isHidden = true;
+                if (opt.parentNode && opt.parentNode.style && opt.parentNode.style.display === 'none') isHidden = true;
+                if (opt.disabled === true) isHidden = true;
             } catch(e) {
                 isHidden = opt.disabled === true;
             }
@@ -10757,34 +10887,49 @@ if (isDesktop()) {
         return visibleOptions;
     }
     
-    document.addEventListener('keydown', function(e) {
+    // 兼容IE的事件添加函数
+    function addKeyEvent(element, eventName, handler) {
+        if (element.addEventListener) {
+            element.addEventListener(eventName, handler);
+        } else if (element.attachEvent) {
+            element.attachEvent('on' + eventName, handler);
+        }
+    }
+    
+    // 快捷键处理函数
+    function handleShortcutKey(e) {
         e = e || window.event;
         var keyCode = e.keyCode || e.which;
         
-        // 判断 Alt 键是否按下
-        var altPressed = e.altKey === true;
-        if (!altPressed) return;
+        // 判断 Alt 键是否按下（兼容IE）
+        var altPressed = false;
+        if (e.altKey !== undefined) {
+            altPressed = e.altKey === true;
+        } else if (window.event && window.event.altKey !== undefined) {
+            altPressed = window.event.altKey === true;
+        }
+        if (!altPressed) return true;
         
         // 检查是否有模态框打开
         var modals = document.querySelectorAll('div[style*="position: fixed"][style*="z-index: 10000"]');
         var modalOpen = false;
         for (var i = 0; i < modals.length; i++) {
-            if (modals[i].style.display !== 'none' && modals[i].parentNode) {
+            if (modals[i] && modals[i].style && modals[i].style.display !== 'none' && modals[i].parentNode) {
                 modalOpen = true;
                 break;
             }
         }
-        if (modalOpen) return;
+        if (modalOpen) return true;
         
         // 搜索框隐藏时不处理
         var hideSearchCheckbox = document.getElementById('hideSearchContainerCheckbox');
-        if (hideSearchCheckbox && hideSearchCheckbox.checked) return;
+        if (hideSearchCheckbox && hideSearchCheckbox.checked) return true;
         
         var engineSelect = document.getElementById('engineSelect');
-        if (!engineSelect) return;
+        if (!engineSelect) return true;
         
         var visibleOptions = getVisibleEngineOptions();
-        if (visibleOptions.length === 0) return;
+        if (visibleOptions.length === 0) return true;
         
         var currentValue = engineSelect.value;
         var currentIndex = -1;
@@ -10794,6 +10939,7 @@ if (isDesktop()) {
                 break;
             }
         }
+        if (currentIndex === -1 && visibleOptions.length > 0) currentIndex = 0;
         
         // 执行切换
         function performSwitch(step) {
@@ -10802,7 +10948,7 @@ if (isDesktop()) {
             if (newIndex >= visibleOptions.length) newIndex = 0;
             if (newIndex !== currentIndex && visibleOptions[newIndex]) {
                 engineSelect.selectedIndex = visibleOptions[newIndex].index;
-                // 触发 change 事件（兼容所有浏览器）
+                // 触发 change 事件（兼容IE）
                 if (document.createEvent) {
                     var evt = document.createEvent('HTMLEvents');
                     evt.initEvent('change', true, false);
@@ -10810,25 +10956,32 @@ if (isDesktop()) {
                 } else if (engineSelect.fireEvent) {
                     engineSelect.fireEvent('onchange');
                 }
+                // 更新当前索引
+                currentIndex = newIndex;
             }
         }
         
         // Alt+P (keyCode 80) 或 Alt+↑ (keyCode 38) 切换上一个搜索引擎
         if (keyCode === 80 || keyCode === 38) {
-            e.preventDefault();
+            if (e.preventDefault) e.preventDefault();
+            e.returnValue = false;
             performSwitch(-1);
             return false;
         }
         
         // Alt+N (keyCode 78) 或 Alt+↓ (keyCode 40) 切换下一个搜索引擎
         if (keyCode === 78 || keyCode === 40) {
-            e.preventDefault();
+            if (e.preventDefault) e.preventDefault();
+            e.returnValue = false;
             performSwitch(1);
             return false;
         }
         
         return true;
-    });
+    }
+    
+    // 绑定键盘事件（兼容IE所有版本）
+    addKeyEvent(document, 'keydown', handleShortcutKey);
 }
 
 // 添加localStorage检测函数
