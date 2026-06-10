@@ -1143,7 +1143,7 @@ onDomReady(function() {
                     // ========== 【修改结束】 ==========
                     
                     if (submitBtn.click) {
-                        if (document.getElementById('autoFillAndJumpCheckbox').checked) {localStorage.removeItem('isSuggestionSelected', 'false');};
+                        if (document.getElementById('autoFillAndJumpCheckbox').checked) {localStorage.removeItem('isSuggestionSelected');};
                         if (localStorage.getItem('isSuggestionSelected')) return;
                         submitBtn.click();
                     } else if (submitBtn.fireEvent) {
@@ -8182,11 +8182,11 @@ function fetchSearchSuggestions(query) {
         searchSuggestions.style.display = 'none';
         return;
     }
-    
-    setTimeout(function() {
-        localStorage.removeItem('isSuggestionSelected', 'false');
-    }, 10);
-    
+    if (localStorage.getItem('isSuggestionSelected')) {
+        setTimeout(function() {
+            localStorage.removeItem('isSuggestionSelected');
+        }, 10);
+    }
     // ========== 输入为空时，判断是否需要显示历史记录 ==========
     if (!query || query.trim() === '') {
         // 检查是否启用历史记录在建议中显示
@@ -8459,7 +8459,7 @@ document.getElementById('urlInput').addEventListener('blur', function() {
     }
     // ========== 【修改结束】 ==========
     setTimeout(function() {
-        localStorage.removeItem('isSuggestionSelected', 'false');
+        localStorage.removeItem('isSuggestionSelected');
     }, 0);
     setTimeout(function() {
         searchSuggestions.style.display = 'none';
@@ -10910,7 +10910,7 @@ if (isDesktop()) {
             localStorage.setItem('isSuggestionSelected', 'true');
         } else if (index === -1) {
             document.getElementById('urlInput').value = originalInputValue;
-            localStorage.removeItem('isSuggestionSelected', 'false');
+            localStorage.removeItem('isSuggestionSelected');
         }
     }
     
@@ -10984,7 +10984,7 @@ if (isDesktop()) {
             }
             fetchSearchSuggestions(urlInput.value);
             setTimeout(function() {
-            localStorage.removeItem('isSuggestionSelected', 'false');
+            localStorage.removeItem('isSuggestionSelected');
             }, 10);
             setTimeout(function() {
             fetchSearchSuggestions(urlInput.value);
@@ -11019,5 +11019,5 @@ if (isDesktop()) {
     });
 }
 setTimeout(function() {
-    localStorage.removeItem('isSuggestionSelected', 'false');
+    localStorage.removeItem('isSuggestionSelected');
 }, 10);
