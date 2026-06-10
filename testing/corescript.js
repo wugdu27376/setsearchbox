@@ -669,6 +669,7 @@
         versionTip.style.left = '0';
         versionTip.style.fontSize = '12px';
         versionTip.style.color = '#dddddd';
+        versionTip.style.cursor = 'default';
         versionTip.style.padding = '2px 6px';
         versionTip.style.zIndex = '9999';
         versionTip.style.fontFamily = 'Arial, sans-serif';
