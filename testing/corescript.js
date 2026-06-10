@@ -8183,6 +8183,8 @@ function fetchSearchSuggestions(query) {
         return;
     }
     
+    localStorage.removeItem('isSuggestionSelected', 'false');
+    
     // ========== 输入为空时，判断是否需要显示历史记录 ==========
     if (!query || query.trim() === '') {
         // 检查是否启用历史记录在建议中显示
