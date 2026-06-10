@@ -6400,6 +6400,14 @@ addClass(document.querySelector('.search-container'), 'focused');
                     document.getElementById('iframeContainer').style.display = 'block';
                 }
                 
+                if (document.getElementById('searchSuggestionsCheckbox').checked) {
+                    var searchSuggestions = document.getElementById('searchSuggestions');
+                    searchSuggestions.style.display = 'none';
+                    setTimeout(function() {
+                        searchSuggestions.style.display = 'none';
+                    }, 50);
+                };
+                
                 // 恢复 iFramePlus 相关元素的显示
                 var engineSelect = document.getElementById('engineSelect');
                 if (engineSelect && engineSelect.value === 'iFramePlus') {
