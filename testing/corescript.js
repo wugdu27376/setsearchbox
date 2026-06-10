@@ -1143,12 +1143,12 @@ onDomReady(function() {
                     // ========== 【修改结束】 ==========
                     
                     if (submitBtn.click) {
-                        if (document.getElementById('autoFillAndJumpCheckbox').checked) {localStorage.removeItem('isSuggestionSelected');};
-                        if (localStorage.getItem('isSuggestionSelected')) return;
+                        if (document.getElementById('autoFillAndJumpCheckbox').checked) { if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {} };
+                        if (typeof localStorage !== 'undefined' && localStorage) try { if (localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
                         submitBtn.click();
                     } else if (submitBtn.fireEvent) {
-                        if (document.getElementById('autoFillAndJumpCheckbox').checked) {localStorage.removeItem('isSuggestionSelected');};
-                        if (localStorage.getItem('isSuggestionSelected')) return;
+                        if (document.getElementById('autoFillAndJumpCheckbox').checked) { if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {} };
+                        if (typeof localStorage !== 'undefined' && localStorage) try { if (localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
                         submitBtn.fireEvent('onclick');
                     }
                     
@@ -10767,8 +10767,8 @@ window.onload = function() {
             
             // 可选：失焦（IE 兼容）
             try {
-                if (document.getElementById('autoFillAndJumpCheckbox').checked) {localStorage.removeItem('isSuggestionSelected');};
-                if (localStorage.getItem('isSuggestionSelected')) return;
+                if (document.getElementById('autoFillAndJumpCheckbox').checked) { if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {} };
+                if (typeof localStorage !== 'undefined' && localStorage) try { if (localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
                 if (document.getElementById('searchSuggestionsCheckbox').checked) {
                     var searchSuggestions = document.getElementById('searchSuggestions');
                     searchSuggestions.style.display = 'none';
@@ -11082,7 +11082,7 @@ if (isDesktop()) {
             }
             fetchSearchSuggestions(urlInput.value);
             setTimeout(function() {
-            localStorage.removeItem('isSuggestionSelected');
+            if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {}
             }, 10);
             setTimeout(function() {
             fetchSearchSuggestions(urlInput.value);
@@ -11117,5 +11117,5 @@ if (isDesktop()) {
     });
 }
 setTimeout(function() {
-    localStorage.removeItem('isSuggestionSelected');
+    if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {}
 }, 10);
