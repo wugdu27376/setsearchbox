@@ -1147,6 +1147,8 @@ onDomReady(function() {
                         if (localStorage.getItem('isSuggestionSelected')) return;
                         submitBtn.click();
                     } else if (submitBtn.fireEvent) {
+                        if (document.getElementById('autoFillAndJumpCheckbox').checked) {localStorage.removeItem('isSuggestionSelected');};
+                        if (localStorage.getItem('isSuggestionSelected')) return;
                         submitBtn.fireEvent('onclick');
                     }
                     
@@ -2824,7 +2826,7 @@ function bindSubmitEvent() {
                 var clearOnSearchCheckbox = document.getElementById('clearOnSearchCheckbox');
                 if (clearOnSearchCheckbox && clearOnSearchCheckbox.checked && engine !== 'iFrameFree') {
                     setTimeout(function() {
-                        if (urlInput) urlInput.value = '';
+                        if (urlInput && urlInput.value !== 'https://') urlInput.value = '';
                         var saveInputCheckbox = document.getElementById('saveInputCheckbox');
                         if (saveInputCheckbox && saveInputCheckbox.checked) {
                             try { localStorage.removeItem('savedInputText'); } catch(err) {}
@@ -2867,7 +2869,7 @@ function bindSubmitEvent() {
         var clearOnSearchCheckbox = document.getElementById('clearOnSearchCheckbox');
         if (clearOnSearchCheckbox && clearOnSearchCheckbox.checked && engine !== 'iFrameFree') {
             setTimeout(function() {
-                if (urlInput) urlInput.value = '';
+                if (urlInput && urlInput.value !== 'https://') urlInput.value = '';
                 var saveInputCheckbox = document.getElementById('saveInputCheckbox');
                 if (saveInputCheckbox && saveInputCheckbox.checked) {
                     try { localStorage.removeItem('savedInputText'); } catch(err) {}
@@ -6285,7 +6287,7 @@ function hideSearchEngineOptions() {
         'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'quarkTranslateTools', 'fanyiSo', 'transmartQQTs',
         'taobaoWeb', 'jdWebPage', 'pddWebPage',
         'biliTv', 'dyIsWindows', 'haokanVideo', 'fastHandVideo', 'hongshuVideo', 'soHuVideo', 'tencentTv', 'enUsYoutubeVideo',
-        'githubCode', 'giteeCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
+        'githubCode', 'gitCodeRepo', 'giteeCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
         'kfBaidu', 'weixinSogou', 'baiduTw', 'iFrameFree', 'iFramePlus', 'httpsAutoFill'];
     for (var i = 0; i < engineSelect.options.length; i++) {
         if (optionsToHide.indexOf(engineSelect.options[i].value) !== -1 && engineSelect.options[i].id !== 'nullBaidu') {
@@ -7808,6 +7810,22 @@ function showSearchSuggestions(suggestions) {
                     if (typeof updateSearchHistory === 'function') {
                         updateSearchHistory();
                     }
+                    
+                    // ========== 【修改位置】清空历史记录后重置 quickInputUi 位置 ==========
+                    var searchSuggestionsElem = document.getElementById('searchSuggestions');
+                    if (searchSuggestionsElem) {
+                        searchSuggestionsElem.style.display = 'none';
+                    }
+                    if (typeof resetQuickInputPosition === 'function') {
+                        resetQuickInputPosition();
+                    } else {
+                        var quickInputBtn = document.getElementById('quickInputBtn');
+                        if (quickInputBtn) {
+                            quickInputBtn.style.marginTop = '0px';
+                        }
+                    }
+                    // ========== 【修改结束】 ==========
+                    
                 } catch(e) {}
                 
                 // 刷新建议列表
@@ -7901,6 +7919,17 @@ function showSearchSuggestions(suggestions) {
             searchSuggestions.style.left = (inputRect.left + scrollLeft) + 'px';
             searchSuggestions.style.width = (inputRect.width - 2) + 'px';
             searchSuggestions.style.display = 'block';
+            
+            // ========== 【修改位置】历史记录显示时更新 quickInputUi 避让 ==========
+    if (document.getElementById('quickInputCheckbox') && document.getElementById('quickInputCheckbox').checked) {
+        var quickInputBtn = document.getElementById('quickInputBtn');
+        if (quickInputBtn) {
+            var suggestionsHeight = searchSuggestions.offsetHeight;
+            quickInputBtn.style.marginTop = (suggestionsHeight + 10) + 'px';
+        }
+    }
+    // ========== 【修改结束】 ==========
+            
             return;
         }
     }
@@ -8118,8 +8147,27 @@ function showSearchSuggestions(suggestions) {
         searchSuggestions.style.left = (inputRect.left + scrollLeft) + 'px';
         searchSuggestions.style.width = (inputRect.width - 2) + 'px';
         searchSuggestions.style.display = 'block';
+        
+        // ========== 【修改位置】更新 quickInputUi 避让搜索建议 ==========
+        if (document.getElementById('quickInputCheckbox') && document.getElementById('quickInputCheckbox').checked) {
+            var quickInputBtn = document.getElementById('quickInputBtn');
+            if (quickInputBtn) {
+                var suggestionsHeight = searchSuggestions.offsetHeight;
+                quickInputBtn.style.marginTop = (suggestionsHeight + 10) + 'px';
+            }
+        }
+        // ========== 【修改结束】 ==========
+        
     } else {
         searchSuggestions.style.display = 'none';
+        // ========== 【修改位置】隐藏建议时恢复 quickInputUi 位置 ==========
+        if (document.getElementById('quickInputCheckbox') && document.getElementById('quickInputCheckbox').checked) {
+            var quickInputBtn = document.getElementById('quickInputBtn');
+            if (quickInputBtn) {
+                quickInputBtn.style.marginTop = '0px';
+            }
+        }
+        // ========== 【修改结束】 ==========
     }
 }
 // ========== 显示搜索建议函数结束 ==========
@@ -8531,13 +8579,49 @@ function updateSuggestionsPosition() {
     }
 }
 
-// 恢复quickInputUi位置
+// ========== 【修改位置】修改 resetQuickInputPosition 函数，增加历史记录显示检测 ==========
 function resetQuickInputPosition() {
-    if (document.getElementById('quickInputCheckbox').checked) {
+    if (document.getElementById('quickInputCheckbox') && document.getElementById('quickInputCheckbox').checked) {
+        // 检查是否启用了历史记录在建议中显示且输入框为空
+        var showHistoryInSuggest = false;
+        var searchHistoryChecked = false;
+        var isInputEmpty = false;
+        var isHistoryVisible = false;
+        
+        try {
+            showHistoryInSuggest = localStorage.getItem('searchHistoryInSuggestChecked') === 'true';
+            var historyCheckbox = document.getElementById('searchHistoryCheckbox');
+            searchHistoryChecked = historyCheckbox && historyCheckbox.checked;
+        } catch(e) {}
+        
+        var urlInputElem = document.getElementById('urlInput');
+        if (urlInputElem) {
+            isInputEmpty = urlInputElem.value.trim() === '';
+        }
+        
+        // 检查历史记录建议是否正在显示
+        var searchSuggestionsElem = document.getElementById('searchSuggestions');
+        if (searchSuggestionsElem && searchSuggestionsElem.style.display === 'block') {
+            // 检查是否显示的是历史记录（第一个子元素可能是清空历史记录按钮）
+            var firstChild = searchSuggestionsElem.firstChild;
+            if (firstChild && (firstChild.id === 'suggestion_clear_history' || 
+                (firstChild.id && firstChild.id.indexOf('suggestion_history_') === 0))) {
+                isHistoryVisible = true;
+            }
+        }
+        
+        // 如果满足条件（启用了历史记录建议 + 输入为空 + 历史记录可见），则不重置位置
+        if (showHistoryInSuggest && searchHistoryChecked && isInputEmpty && isHistoryVisible) {
+            return;
+        }
+        
         var quickInputBtn = document.getElementById('quickInputBtn');
-        quickInputBtn.style.marginTop = '0px';
+        if (quickInputBtn) {
+            quickInputBtn.style.marginTop = '0px';
+        }
     }
 }
+// ========== 【修改结束】 ==========
 
 // 监听搜索建议checkbox变化
 document.getElementById('searchSuggestionsCheckbox').addEventListener('change', function() {
@@ -10675,6 +10759,12 @@ window.onload = function() {
             
             // 可选：失焦（IE 兼容）
             try {
+                if (document.getElementById('autoFillAndJumpCheckbox').checked) {localStorage.removeItem('isSuggestionSelected');};
+                if (localStorage.getItem('isSuggestionSelected')) return;
+                if (document.getElementById('searchSuggestionsCheckbox').checked) {
+                    var searchSuggestions = document.getElementById('searchSuggestions');
+                    searchSuggestions.style.display = 'none';
+                };
                 urlInput.blur();
             } catch(err) {}
             
