@@ -8185,7 +8185,7 @@ function fetchSearchSuggestions(query) {
     
     setTimeout(function() {
         localStorage.removeItem('isSuggestionSelected', 'false');
-    }, 0);
+    }, 10);
     
     // ========== 输入为空时，判断是否需要显示历史记录 ==========
     if (!query || query.trim() === '') {
