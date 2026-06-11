@@ -1093,7 +1093,7 @@ onDomReady(function() {
                 if (savedColor) {
                     this.style.color = savedColor;
                 } else {
-                    this.style.color = '#0000ee';
+                    this.style.color = '#0066cc';
                 }
             };
             activeLink.onmouseout = function() {
@@ -1101,7 +1101,7 @@ onDomReady(function() {
                 if (savedColor) {
                     this.style.color = savedColor;
                 } else {
-                    this.style.color = '#0000ee';
+                    this.style.color = '#0066cc';
                 }
             };
         }
