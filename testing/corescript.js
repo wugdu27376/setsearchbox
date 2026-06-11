@@ -1032,7 +1032,7 @@ onDomReady(function() {
         var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
         var hitokotoColorBtn = document.getElementById('hitokotoColorBtn');
         var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
-        var hitokotoSizeLabel = document.querySelector('label[for="hitokotoSizePicker"]');
+        var hitokotoSizeLabel = (typeof document.querySelector === 'function') ? document.querySelector('label[for="hitokotoSizePicker"]') : (function() { var labels = document.getElementsByTagName('label'); for (var i = 0; i < labels.length; i++) { if (labels[i].getAttribute && labels[i].getAttribute('for') === 'hitokotoSizePicker') { return labels[i]; } } return null; })();
         
         if (hitokotoCheckbox) {
             hitokotoCheckbox.disabled = true;
