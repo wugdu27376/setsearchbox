@@ -785,7 +785,7 @@
     if (isIE) {
         // 修复 IE 下 select 元素 value 读取问题
         // 【修复】IE8 兼容：使用 Object.prototype.hasOwnProperty 替代直接调用
-        if (HTMLSelectElement && HTMLSelectElement.prototype) {
+        if (typeof HTMLSelectElement !== 'undefined' && HTMLSelectElement && HTMLSelectElement.prototype) {
             var hasValueProp = false;
             try {
                 hasValueProp = Object.prototype.hasOwnProperty.call(HTMLSelectElement.prototype, 'value');
@@ -793,22 +793,24 @@
                 hasValueProp = false;
             }
             if (!hasValueProp) {
-                Object.defineProperty(HTMLSelectElement.prototype, 'value', {
-                    get: function() {
-                        if (this.selectedIndex >= 0 && this.options[this.selectedIndex]) {
-                            return this.options[this.selectedIndex].value;
-                        }
-                        return '';
-                    },
-                    set: function(val) {
-                        for (var i = 0; i < this.options.length; i++) {
-                            if (this.options[i].value == val) {
-                                this.selectedIndex = i;
-                                break;
+                try {
+                    Object.defineProperty(HTMLSelectElement.prototype, 'value', {
+                        get: function() {
+                            if (this.selectedIndex >= 0 && this.options[this.selectedIndex]) {
+                                return this.options[this.selectedIndex].value;
+                            }
+                            return '';
+                        },
+                        set: function(val) {
+                            for (var i = 0; i < this.options.length; i++) {
+                                if (this.options[i].value == val) {
+                                    this.selectedIndex = i;
+                                    break;
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                } catch(e) {}
             }
         }
         
@@ -8239,11 +8241,13 @@ function fetchSearchSuggestions(query) {
         searchSuggestions.style.display = 'none';
         return;
     }
-    if (localStorage.getItem('isSuggestionSelected')) {
-        setTimeout(function() {
-            localStorage.removeItem('isSuggestionSelected');
-        }, 10);
-    }
+    if (typeof localStorage !== 'undefined' && localStorage) try { 
+        if (localStorage.getItem('isSuggestionSelected')) {
+            setTimeout(function() {
+                if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {}
+            }, 10);
+        }
+    } catch(e) {}
     // ========== 输入为空时，判断是否需要显示历史记录 ==========
     if (!query || query.trim() === '') {
         // 检查是否启用历史记录在建议中显示
