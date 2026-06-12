@@ -6955,56 +6955,64 @@ if (hideSearchContainerCheckbox) {
         if (this.checked) {
             var confirmResult = confirm('提示：你确定要停用搜索框吗？停用后，你仍然可以鼠标右键启用搜索框');
             if (confirmResult) {
-                try { localStorage.setItem('hideSearchContainerChecked', 'true'); } catch(e) {}
+                localStorage.setItem('hideSearchContainerChecked', 'true');
                 var searchContainer = document.getElementById('searchContainer');
-                if (searchContainer) searchContainer.style.display = 'none';
+                if (searchContainer) {
+                    searchContainer.style.display = 'none';
+                }
                 var engineSelect = document.getElementById('engineSelect');
                 if (engineSelect) {
                     engineSelect.value = 'baidu';
-                    try { localStorage.setItem('selectedEngine', 'baidu'); } catch(e) {}
                 }
+                localStorage.setItem('selectedEngine', 'baidu');
                 var showLinkCheckbox = document.getElementById('showLinkCheckbox');
                 if (showLinkCheckbox) {
                     showLinkCheckbox.checked = false;
-                    try { localStorage.setItem('showLinkChecked', 'false'); } catch(e) {}
                 }
-                if (typeof toggleLinkDisplay === 'function') toggleLinkDisplay(false);
+                localStorage.setItem('showLinkChecked', 'false');
+                if (typeof toggleLinkDisplay === 'function') {
+                    toggleLinkDisplay(false);
+                }
                 var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
                 if (hitokotoCheckbox) {
                     hitokotoCheckbox.checked = false;
-                    try { localStorage.setItem('hitokotoChecked', 'false'); } catch(e) {}
                 }
+                localStorage.setItem('hitokotoChecked', 'false');
                 var hitokotoDisplay = document.getElementById('hitokotoDisplay');
-                if (hitokotoDisplay) hitokotoDisplay.style.display = 'none';
+                if (hitokotoDisplay) {
+                    hitokotoDisplay.style.display = 'none';
+                }
                 var autoFocusCheckbox = document.getElementById('autoFocusCheckbox');
                 if (autoFocusCheckbox) {
                     autoFocusCheckbox.checked = false;
-                    try { localStorage.setItem('autoFocusChecked', 'false'); } catch(e) {}
+                    localStorage.setItem('autoFocusChecked', 'false');
                 }
-                try { localStorage.removeItem('searchHistory'); } catch(e) {}
-                var searchHistory = document.getElementById('searchHistory');
-                if (searchHistory) {
-                    searchHistory.innerHTML = '';
-                    searchHistory.style.display = 'none';
+                localStorage.removeItem('searchHistory');
+                var searchHistoryDiv = document.getElementById('searchHistory');
+                if (searchHistoryDiv) {
+                    searchHistoryDiv.innerHTML = '';
+                    searchHistoryDiv.style.display = 'none';
                 }
                 var clearHistoryBtn = document.getElementById('clearHistoryBtn');
-                if (clearHistoryBtn) clearHistoryBtn.style.display = 'none';
+                if (clearHistoryBtn) {
+                    clearHistoryBtn.style.display = 'none';
+                }
                 location.reload();
             } else {
                 this.checked = false;
             }
         } else {
-            try { localStorage.setItem('hideSearchContainerChecked', 'false'); } catch(e) {}
+            localStorage.setItem('hideSearchContainerChecked', 'false');
             var searchContainer = document.getElementById('searchContainer');
-            if (searchContainer) searchContainer.style.display = 'flex';
+            if (searchContainer) {
+                searchContainer.style.display = 'flex';
+            }
         }
     };
     if (hideSearchContainerCheckbox.addEventListener) {
         hideSearchContainerCheckbox.addEventListener('change', changeHandler);
     } else if (hideSearchContainerCheckbox.attachEvent) {
         hideSearchContainerCheckbox.attachEvent('onchange', changeHandler);
-    } else {
-        hideSearchContainerCheckbox.onchange = changeHandler;
     }
 }
 
