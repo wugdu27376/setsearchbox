@@ -1,4 +1,4 @@
-// ========== IE兼容性补丁(第1929行后结束) ==========
+// ========== IE兼容性补丁(第1934行后结束) ==========
 (function() {
     // 检测是否为IE浏览器
     var isIE = /*@cc_on!@*/false || !!document.documentMode;
@@ -6084,58 +6084,50 @@ if (savedHitokotoState === 'true') {
 }
 
 // 添加页面右键/长按恢复搜索框功能
-(function() {
-    var lastContextMenuTime = 0;
-    document.addEventListener('contextmenu', function(e) {
-        var target = e.target || e.srcElement;
-        var isAnchor = false;
-        var checkElem = target;
-        while (checkElem && checkElem !== document.body) {
-            if (checkElem.tagName && checkElem.tagName.toLowerCase() === 'a') {
-                isAnchor = true;
-                break;
-            }
-            checkElem = checkElem.parentNode;
+document.addEventListener('contextmenu', function(e) {
+    var target = e.target || e.srcElement;
+    var isAnchor = false;
+    var checkElem = target;
+    while (checkElem && checkElem !== document.body) {
+        if (checkElem.tagName && checkElem.tagName.toLowerCase() === 'a') {
+            isAnchor = true;
+            break;
+        }
+        checkElem = checkElem.parentNode;
+    }
+    
+    if (document.getElementById('hideSearchContainerCheckbox').checked && !isAnchor) {
+        e = e || window.event;
+        if (e.preventDefault) {
+            e.preventDefault();
+        } else {
+            e.returnValue = false;
         }
         
-        if (document.getElementById('hideSearchContainerCheckbox').checked && !isAnchor) {
+        var confirmResult = confirm('是否恢复搜索框？');
+        if (confirmResult) {
+            document.getElementById('hideSearchContainerCheckbox').checked = false;
+            localStorage.setItem('hideSearchContainerChecked', 'false');
+            document.getElementById('searchContainer').style.display = 'flex';
+            document.getElementById('showLinkCheckbox').checked = true;
+            localStorage.setItem('showLinkChecked', 'true');
+            localStorage.setItem('selectedEngine', 'showCheckbox');
+            location.reload();
+        }
+        return false;
+    } else if (!document.getElementById('hideSearchContainerCheckbox').checked) {
+        var tagName = target.tagName.toLowerCase();
+        if (tagName === 'head' || tagName === 'p' || tagName === 'span' || tagName === 'label' || tagName === 'div' || tagName === 'select' || tagName === 'button' || tagName === 'body' || tagName === 'html' || target.id === 'quickLinks' || target.id === 'autoFillhttps' || target.className === 'search-container') {
             e = e || window.event;
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
                 e.returnValue = false;
             }
-            
-            var now = new Date().getTime();
-            if (now - lastContextMenuTime < 1500) {
-                lastContextMenuTime = 0;
-                var confirmResult = confirm('是否恢复搜索框？');
-                if (confirmResult) {
-                    document.getElementById('hideSearchContainerCheckbox').checked = false;
-                    localStorage.setItem('hideSearchContainerChecked', 'false');
-                    document.getElementById('searchContainer').style.display = 'flex';
-                    document.getElementById('showLinkCheckbox').checked = true;
-                    localStorage.setItem('showLinkChecked', 'true');
-                    location.reload();
-                }
-            } else {
-                lastContextMenuTime = now;
-            }
             return false;
-        } else if (!document.getElementById('hideSearchContainerCheckbox').checked) {
-            var tagName = target.tagName.toLowerCase();
-            if (tagName === 'head' || tagName === 'p' || tagName === 'span' || tagName === 'label' || tagName === 'div' || tagName === 'select' || tagName === 'button' || tagName === 'body' || tagName === 'html' || target.id === 'quickLinks' || target.id === 'autoFillhttps' || target.className === 'search-container') {
-                e = e || window.event;
-                if (e.preventDefault) {
-                    e.preventDefault();
-                } else {
-                    e.returnValue = false;
-                }
-                return false;
-            }
         }
-    });
-})();
+    }
+});
 
 // 添加一言复制功能（支持电脑右键和手机长按）
 document.getElementById('hitokotoDisplay').addEventListener('contextmenu', function(e) {
@@ -6957,44 +6949,64 @@ document.getElementById('showSendCheckbox').addEventListener('change', function(
 });
 
 // 监听hideSearchContainerCheckbox变化
-document.getElementById('hideSearchContainerCheckbox').addEventListener('change', function() {
-    if (this.checked) {
-        var confirmResult = confirm('提示：你确定要停用搜索框吗？停用后，你仍然可以鼠标右键启用搜索框');
+var hideSearchContainerCheckbox = document.getElementById('hideSearchContainerCheckbox');
+if (hideSearchContainerCheckbox) {
+    var changeHandler = function() {
+        if (this.checked) {
+            var confirmResult = confirm('提示：你确定要停用搜索框吗？停用后，你仍然可以鼠标右键启用搜索框');
             if (confirmResult) {
-                localStorage.setItem('hideSearchContainerChecked', 'true');
-                document.getElementById('searchContainer').style.display = 'none';
-                document.getElementById('engineSelect').value = 'baidu';
-                localStorage.setItem('selectedEngine', 'baidu');
-                // 取消勾选showLinkCheckbox
-                document.getElementById('showLinkCheckbox').checked = false;
-                localStorage.setItem('showLinkChecked', 'false');
-                toggleLinkDisplay(false);
-                // 取消勾选hitokotoCheckbox
-                document.getElementById('hitokotoCheckbox').checked = false;
-                localStorage.setItem('hitokotoChecked', 'false');
-                document.getElementById('hitokotoDisplay').style.display = 'none';
-                // 取消勾选autoFocusCheckbox
+                try { localStorage.setItem('hideSearchContainerChecked', 'true'); } catch(e) {}
+                var searchContainer = document.getElementById('searchContainer');
+                if (searchContainer) searchContainer.style.display = 'none';
+                var engineSelect = document.getElementById('engineSelect');
+                if (engineSelect) {
+                    engineSelect.value = 'baidu';
+                    try { localStorage.setItem('selectedEngine', 'baidu'); } catch(e) {}
+                }
+                var showLinkCheckbox = document.getElementById('showLinkCheckbox');
+                if (showLinkCheckbox) {
+                    showLinkCheckbox.checked = false;
+                    try { localStorage.setItem('showLinkChecked', 'false'); } catch(e) {}
+                }
+                if (typeof toggleLinkDisplay === 'function') toggleLinkDisplay(false);
+                var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
+                if (hitokotoCheckbox) {
+                    hitokotoCheckbox.checked = false;
+                    try { localStorage.setItem('hitokotoChecked', 'false'); } catch(e) {}
+                }
+                var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+                if (hitokotoDisplay) hitokotoDisplay.style.display = 'none';
                 var autoFocusCheckbox = document.getElementById('autoFocusCheckbox');
                 if (autoFocusCheckbox) {
                     autoFocusCheckbox.checked = false;
-                    localStorage.setItem('autoFocusChecked', 'false');
+                    try { localStorage.setItem('autoFocusChecked', 'false'); } catch(e) {}
                 }
-                // 清空搜索历史记录
-                localStorage.removeItem('searchHistory');
-                document.getElementById('searchHistory').innerHTML = '';
-                document.getElementById('searchHistory').style.display = 'none';
-                document.getElementById('clearHistoryBtn').style.display = 'none';
-                
+                try { localStorage.removeItem('searchHistory'); } catch(e) {}
+                var searchHistory = document.getElementById('searchHistory');
+                if (searchHistory) {
+                    searchHistory.innerHTML = '';
+                    searchHistory.style.display = 'none';
+                }
+                var clearHistoryBtn = document.getElementById('clearHistoryBtn');
+                if (clearHistoryBtn) clearHistoryBtn.style.display = 'none';
                 location.reload();
             } else {
-                document.getElementById('hideSearchContainerCheckbox').checked = false;
+                this.checked = false;
             }
-        
+        } else {
+            try { localStorage.setItem('hideSearchContainerChecked', 'false'); } catch(e) {}
+            var searchContainer = document.getElementById('searchContainer');
+            if (searchContainer) searchContainer.style.display = 'flex';
+        }
+    };
+    if (hideSearchContainerCheckbox.addEventListener) {
+        hideSearchContainerCheckbox.addEventListener('change', changeHandler);
+    } else if (hideSearchContainerCheckbox.attachEvent) {
+        hideSearchContainerCheckbox.attachEvent('onchange', changeHandler);
     } else {
-        localStorage.setItem('hideSearchContainerChecked', 'false');
-        document.getElementById('searchContainer').style.display = 'flex';
+        hideSearchContainerCheckbox.onchange = changeHandler;
     }
-});
+}
 
 // 加载保存的背景图片（优先检查图片）
 var savedBackgroundImage = localStorage.getItem('backgroundImage');
