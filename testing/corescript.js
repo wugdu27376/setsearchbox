@@ -838,6 +838,42 @@
 // ========== IE 兼容补丁结束 ==========
 
 
+// ========== IE浏览器 attachEvent 兼容性修复 ==========
+(function() {
+    if (typeof window.attachEvent === 'undefined' && typeof window.addEventListener !== 'undefined') {
+        window.attachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.addEventListener(eventName.substring(2), handler, false);
+        };
+        window.detachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.removeEventListener(eventName.substring(2), handler, false);
+        };
+    }
+    if (typeof document.attachEvent === 'undefined' && typeof document.addEventListener !== 'undefined') {
+        document.attachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.addEventListener(eventName.substring(2), handler, false);
+        };
+        document.detachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.removeEventListener(eventName.substring(2), handler, false);
+        };
+    }
+    if (typeof Element !== 'undefined' && Element.prototype && typeof Element.prototype.attachEvent === 'undefined' && typeof Element.prototype.addEventListener !== 'undefined') {
+        Element.prototype.attachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.addEventListener(eventName.substring(2), handler, false);
+        };
+        Element.prototype.detachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.removeEventListener(eventName.substring(2), handler, false);
+        };
+    }
+})();
+// ========== IE浏览器 attachEvent 兼容性修复结束 ==========
+
+
 // ========== 跨浏览器事件绑定辅助函数 ==========
 // 【修复】IE8 兼容：使用 attachEvent 替代 addEventListener
 function addEvent(element, eventName, handler) {
@@ -1533,22 +1569,20 @@ onDomReady(function() {
             }
             
             // 添加 propertychange 事件监听
-            if (urlInput.attachEvent) {
-                urlInput.attachEvent('onpropertychange', function(e) {
-                    e = e || window.event;
-                    if (e.propertyName === 'value') {
-                        // 触发搜索建议更新
-                        if (typeof fetchSearchSuggestions === 'function') {
-                            var query = urlInput.value;
-                            fetchSearchSuggestions(query);
-                        }
-                        // 触发输入框的 oninput 回调（如果有）
-                        if (urlInput.oninput) {
-                            urlInput.oninput({ target: urlInput });
-                        }
+            urlInput.attachEvent('onpropertychange', function(e) {
+                e = e || window.event;
+                if (e.propertyName === 'value') {
+                    // 触发搜索建议更新
+                    if (typeof fetchSearchSuggestions === 'function') {
+                        var query = urlInput.value;
+                        fetchSearchSuggestions(query);
                     }
-                });
-            }
+                    // 触发输入框的 oninput 回调（如果有）
+                    if (urlInput.oninput) {
+                        urlInput.oninput({ target: urlInput });
+                    }
+                }
+            });
             
             // 同时保留 keyup 事件作为备份
             urlInput.attachEvent('onkeyup', function() {
