@@ -1958,7 +1958,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (isMobileAndroidApple()) {
         if (savedEngine === 'baiduTw' ||
-            savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || savedEngine === 'showCheckbox') {
+            savedEngine === 'quarkpcAI' || savedEngine === '360namisoAI' || savedEngine === 'transmartQQTs' || savedEngine === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || savedEngine === 'showCheckbox') {
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('urlInput').disabled = true;
         }
@@ -2615,6 +2615,7 @@ if (isDesktop()) {
 }
 
 if (isMobileAndroidApple()) {
+    document.getElementById('namiAiDisabledOption').disabled = true;
     document.getElementById('quarkaiOption').disabled = true;
     document.getElementById('baidutwOption').disabled = true;
     document.getElementById('douyinpcOption').disabled = true;
@@ -3024,13 +3025,16 @@ function bindSubmitEvent() {
                     searchUrl = 'https://chat.baidu.com/search?word=' + encodeURIComponent(searchUrl);
                     break;
                 case '360namisoAI':
-                    searchUrl = 'https://www.n.cn/?src=360ai_so&s_type=l&q=' + encodeURIComponent(searchUrl);
+                    searchUrl = 'https://www.n.cn/?src=360ai_so&q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'zhihuZhiDaAI':
                     searchUrl = 'https://zhida.zhihu.com/search?q=' + encodeURIComponent(searchUrl);
                     break;
                 case 'quarkpcAI':
                     searchUrl = 'https://ai.quark.cn/s?ch=pcquark%40homepage_quarkweb&q=' + encodeURIComponent(searchUrl) + '&frame_scene=deep_think_light_r1lite&by=deepthink_light';
+                    break;
+                case 'cKnowOfCsdn':
+                    searchUrl = 'https://ai.csdn.net/chat/?utm_source=cknow_pc_ntoolbar&q=' + encodeURIComponent(searchUrl) + '&submit=1';
                     break;
                 case 'googleTranslate':
                     searchUrl = 'https://translate.google.com/?sl=auto&tl=zh-CN&text=' + encodeURIComponent(searchUrl);
@@ -3961,7 +3965,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
     if (isMobileAndroidApple()) {
         if (this.value === 'baiduTw' ||
-            this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || this.value === 'showCheckbox') {
+            this.value === 'quarkpcAI' || this.value === '360namisoAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || this.value === 'showCheckbox') {
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('urlInput').disabled = true;
         } else {
@@ -4045,7 +4049,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                 }
                 if (isMobileAndroidApple()) {
                     if (this.value === 'baiduTw' ||
-                        this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || this.value === 'showCheckbox') {
+                        this.value === 'quarkpcAI' || this.value === '360namisoAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || this.value === 'showCheckbox') {
                         document.getElementById('submitBtn').disabled = true;
                         document.getElementById('urlInput').disabled = true;
                     } else {
@@ -4091,7 +4095,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                 }
                 if (isMobileAndroidApple()) {
                     if (this.value === 'baiduTw' ||
-                        this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || this.value === 'showCheckbox') {
+                        this.value === 'quarkpcAI' || this.value === '360namisoAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || this.value === 'showCheckbox') {
                         document.getElementById('submitBtn').disabled = true;
                         document.getElementById('urlInput').disabled = true;
                     } else {
@@ -6080,39 +6084,58 @@ if (savedHitokotoState === 'true') {
 }
 
 // 添加页面右键/长按恢复搜索框功能
-document.addEventListener('contextmenu', function(e) {
-    if (document.getElementById('hideSearchContainerCheckbox').checked) {
-        e = e || window.event;
-        if (e.preventDefault) {
-            e.preventDefault();
-        } else {
-            e.returnValue = false;
+(function() {
+    var lastContextMenuTime = 0;
+    document.addEventListener('contextmenu', function(e) {
+        var target = e.target || e.srcElement;
+        var isAnchor = false;
+        var checkElem = target;
+        while (checkElem && checkElem !== document.body) {
+            if (checkElem.tagName && checkElem.tagName.toLowerCase() === 'a') {
+                isAnchor = true;
+                break;
+            }
+            checkElem = checkElem.parentNode;
         }
         
-        var confirmResult = confirm('是否恢复搜索框？');
-        if (confirmResult) {
-            document.getElementById('hideSearchContainerCheckbox').checked = false;
-            localStorage.setItem('hideSearchContainerChecked', 'false');
-            document.getElementById('searchContainer').style.display = 'flex';
-            document.getElementById('showLinkCheckbox').checked = true;
-            localStorage.setItem('showLinkChecked', 'true');
-            location.reload();
-        }
-        return false;
-    } else {
-        var target = e.target || e.srcElement;
-        var tagName = target.tagName.toLowerCase();
-        if (tagName === 'head' || tagName === 'p' || tagName === 'span' || tagName === 'label' || tagName === 'div' || tagName === 'select' || tagName === 'button' || tagName === 'body' || tagName === 'html' || target.id === 'quickLinks' || target.id === 'autoFillhttps' || target.className === 'search-container') {
+        if (document.getElementById('hideSearchContainerCheckbox').checked && !isAnchor) {
             e = e || window.event;
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
                 e.returnValue = false;
             }
+            
+            var now = new Date().getTime();
+            if (now - lastContextMenuTime < 1500) {
+                lastContextMenuTime = 0;
+                var confirmResult = confirm('是否恢复搜索框？');
+                if (confirmResult) {
+                    document.getElementById('hideSearchContainerCheckbox').checked = false;
+                    localStorage.setItem('hideSearchContainerChecked', 'false');
+                    document.getElementById('searchContainer').style.display = 'flex';
+                    document.getElementById('showLinkCheckbox').checked = true;
+                    localStorage.setItem('showLinkChecked', 'true');
+                    location.reload();
+                }
+            } else {
+                lastContextMenuTime = now;
+            }
             return false;
+        } else if (!document.getElementById('hideSearchContainerCheckbox').checked) {
+            var tagName = target.tagName.toLowerCase();
+            if (tagName === 'head' || tagName === 'p' || tagName === 'span' || tagName === 'label' || tagName === 'div' || tagName === 'select' || tagName === 'button' || tagName === 'body' || tagName === 'html' || target.id === 'quickLinks' || target.id === 'autoFillhttps' || target.className === 'search-container') {
+                e = e || window.event;
+                if (e.preventDefault) {
+                    e.preventDefault();
+                } else {
+                    e.returnValue = false;
+                }
+                return false;
+            }
         }
-    }
-});
+    });
+})();
 
 // 添加一言复制功能（支持电脑右键和手机长按）
 document.getElementById('hitokotoDisplay').addEventListener('contextmenu', function(e) {
