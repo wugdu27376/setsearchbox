@@ -207,6 +207,48 @@
 // ========== 全局 addEventListener 兼容结束 ==========
 
 
+// ========== 【修复】document.attachEvent 不存在时的兼容处理 ==========
+(function() {
+    if (typeof document !== 'undefined' && document) {
+        if (typeof document.attachEvent !== 'function') {
+            document.attachEvent = function(eventName, handler) {
+                if (typeof document.addEventListener === 'function') {
+                    var type = eventName.replace(/^on/, '');
+                    document.addEventListener(type, handler);
+                }
+            };
+        }
+        if (typeof document.detachEvent !== 'function') {
+            document.detachEvent = function(eventName, handler) {
+                if (typeof document.removeEventListener === 'function') {
+                    var type = eventName.replace(/^on/, '');
+                    document.removeEventListener(type, handler);
+                }
+            };
+        }
+    }
+    if (typeof window !== 'undefined' && window) {
+        if (typeof window.attachEvent !== 'function') {
+            window.attachEvent = function(eventName, handler) {
+                if (typeof window.addEventListener === 'function') {
+                    var type = eventName.replace(/^on/, '');
+                    window.addEventListener(type, handler);
+                }
+            };
+        }
+        if (typeof window.detachEvent !== 'function') {
+            window.detachEvent = function(eventName, handler) {
+                if (typeof window.removeEventListener === 'function') {
+                    var type = eventName.replace(/^on/, '');
+                    window.removeEventListener(type, handler);
+                }
+            };
+        }
+    }
+})();
+// ========== document.attachEvent 兼容处理结束 ==========
+
+
 // ========== 【修复】全局 appendChild 兼容 IE8/IE7 ==========
 (function() {
     // 修复 document.head 为 null 的问题
