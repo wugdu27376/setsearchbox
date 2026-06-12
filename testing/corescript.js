@@ -207,48 +207,6 @@
 // ========== 全局 addEventListener 兼容结束 ==========
 
 
-// ========== 【修复】document.attachEvent 不存在时的兼容处理 ==========
-(function() {
-    if (typeof document !== 'undefined' && document) {
-        if (typeof document.attachEvent !== 'function') {
-            document.attachEvent = function(eventName, handler) {
-                if (typeof document.addEventListener === 'function') {
-                    var type = eventName.replace(/^on/, '');
-                    document.addEventListener(type, handler);
-                }
-            };
-        }
-        if (typeof document.detachEvent !== 'function') {
-            document.detachEvent = function(eventName, handler) {
-                if (typeof document.removeEventListener === 'function') {
-                    var type = eventName.replace(/^on/, '');
-                    document.removeEventListener(type, handler);
-                }
-            };
-        }
-    }
-    if (typeof window !== 'undefined' && window) {
-        if (typeof window.attachEvent !== 'function') {
-            window.attachEvent = function(eventName, handler) {
-                if (typeof window.addEventListener === 'function') {
-                    var type = eventName.replace(/^on/, '');
-                    window.addEventListener(type, handler);
-                }
-            };
-        }
-        if (typeof window.detachEvent !== 'function') {
-            window.detachEvent = function(eventName, handler) {
-                if (typeof window.removeEventListener === 'function') {
-                    var type = eventName.replace(/^on/, '');
-                    window.removeEventListener(type, handler);
-                }
-            };
-        }
-    }
-})();
-// ========== document.attachEvent 兼容处理结束 ==========
-
-
 // ========== 【修复】全局 appendChild 兼容 IE8/IE7 ==========
 (function() {
     // 修复 document.head 为 null 的问题
@@ -1575,20 +1533,22 @@ onDomReady(function() {
             }
             
             // 添加 propertychange 事件监听
-            urlInput.attachEvent('onpropertychange', function(e) {
-                e = e || window.event;
-                if (e.propertyName === 'value') {
-                    // 触发搜索建议更新
-                    if (typeof fetchSearchSuggestions === 'function') {
-                        var query = urlInput.value;
-                        fetchSearchSuggestions(query);
+            if (urlInput.attachEvent) {
+                urlInput.attachEvent('onpropertychange', function(e) {
+                    e = e || window.event;
+                    if (e.propertyName === 'value') {
+                        // 触发搜索建议更新
+                        if (typeof fetchSearchSuggestions === 'function') {
+                            var query = urlInput.value;
+                            fetchSearchSuggestions(query);
+                        }
+                        // 触发输入框的 oninput 回调（如果有）
+                        if (urlInput.oninput) {
+                            urlInput.oninput({ target: urlInput });
+                        }
                     }
-                    // 触发输入框的 oninput 回调（如果有）
-                    if (urlInput.oninput) {
-                        urlInput.oninput({ target: urlInput });
-                    }
-                }
-            });
+                });
+            }
             
             // 同时保留 keyup 事件作为备份
             urlInput.attachEvent('onkeyup', function() {
