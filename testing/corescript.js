@@ -6936,6 +6936,8 @@ if (savedHideSearchContainerState) {
     if (hideSearchCheckboxElem) hideSearchCheckboxElem.checked = true;
     if (searchContainerElem) {
         try { searchContainerElem.style.display = 'none'; } catch(e) {}
+        try { searchContainerElem.style.visibility = 'hidden'; } catch(e) {}
+        try { searchContainerElem.style.position = 'absolute'; } catch(e) {}
     }
     if (document.title) document.title = '导航页';
 } else {
