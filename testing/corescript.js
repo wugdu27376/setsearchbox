@@ -161,6 +161,81 @@
 // ========== IE兼容性补丁结束 ==========
 
 
+// ========== Chrome 5及以下版本兼容性修复 ==========
+(function() {
+    var isOldChrome = false;
+    try {
+        var ua = navigator.userAgent;
+        var chromeMatch = ua.match(/Chrome\/(\d+)/);
+        if (chromeMatch && parseInt(chromeMatch[1], 10) <= 5) {
+            isOldChrome = true;
+        }
+    } catch(e) { isOldChrome = false; }
+    
+    if (isOldChrome) {
+        if (typeof String.prototype.trim !== 'function') {
+            String.prototype.trim = function() {
+                return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+            };
+        }
+        if (typeof Array.prototype.indexOf !== 'function') {
+            Array.prototype.indexOf = function(searchElement, fromIndex) {
+                var k;
+                if (this == null) throw new TypeError('"this" is null or not defined');
+                var O = Object(this);
+                var len = O.length >>> 0;
+                if (len === 0) return -1;
+                var n = fromIndex | 0;
+                if (n >= len) return -1;
+                k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+                while (k < len) {
+                    if (k in O && O[k] === searchElement) return k;
+                    k++;
+                }
+                return -1;
+            };
+        }
+        if (typeof Array.prototype.forEach !== 'function') {
+            Array.prototype.forEach = function(callback, thisArg) {
+                if (this == null) throw new TypeError('this is null or not defined');
+                var O = Object(this);
+                var len = O.length >>> 0;
+                if (typeof callback !== 'function') throw new TypeError(callback + ' is not a function');
+                var T = thisArg || window;
+                var k = 0;
+                while (k < len) {
+                    if (k in O) callback.call(T, O[k], k, O);
+                    k++;
+                }
+            };
+        }
+        if (typeof window.CustomEvent !== 'function') {
+            window.CustomEvent = function(event, params) {
+                params = params || { bubbles: false, cancelable: false, detail: undefined };
+                var evt = document.createEvent('CustomEvent');
+                evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+                return evt;
+            };
+        }
+        var container = document.getElementById('searchContainer');
+        if (container) {
+            container.style.display = 'block';
+            container.style.textAlign = 'center';
+        }
+        var engineSelect = document.getElementById('engineSelect');
+        var urlInput = document.getElementById('urlInput');
+        var submitBtn = document.getElementById('submitBtn');
+        if (engineSelect) engineSelect.style.display = 'inline-block';
+        if (urlInput) {
+            urlInput.style.display = 'inline-block';
+            urlInput.style.width = '60%';
+        }
+        if (submitBtn) submitBtn.style.display = 'inline-block';
+    }
+})();
+// ========== Chrome 5及以下版本兼容性修复结束 ==========
+
+
 // ========== 【修复】全局 addEventListener/removeEventListener 兼容 IE8 ==========
 (function() {
     if (typeof window.Element !== 'undefined') {
@@ -476,6 +551,52 @@
     }
 })();
 // ========== IE8 布局修复函数结束 ==========
+
+
+// ========== IE7及以下版本布局修复 ==========
+(function() {
+    var isIE7 = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (version <= 7) isIE7 = true;
+        }
+    } catch(e) { isIE7 = false; }
+    
+    if (isIE7) {
+        var searchContainer = document.getElementById('searchContainer');
+        var engineSelect = document.getElementById('engineSelect');
+        var urlInput = document.getElementById('urlInput');
+        var submitBtn = document.getElementById('submitBtn');
+        
+        if (searchContainer) {
+            searchContainer.style.display = 'block';
+            searchContainer.style.width = '100%';
+            searchContainer.style.textAlign = 'center';
+            searchContainer.style.zoom = '1';
+        }
+        if (engineSelect) {
+            engineSelect.style.display = 'inline';
+            engineSelect.style.width = '80px';
+            engineSelect.style.height = '22px';
+            engineSelect.style.zoom = '1';
+        }
+        if (urlInput) {
+            urlInput.style.display = 'inline';
+            urlInput.style.width = '55%';
+            urlInput.style.height = '22px';
+            urlInput.style.zoom = '1';
+        }
+        if (submitBtn) {
+            submitBtn.style.display = 'inline';
+            submitBtn.style.height = '22px';
+            submitBtn.style.zoom = '1';
+        }
+    }
+})();
+// ========== IE7及以下版本布局修复结束 ==========
 
 
 // ========== IE8及以下版本专属兼容代码（最低IE6） ==========
@@ -1124,21 +1245,24 @@ onDomReady(function() {
                 this.style.color = '#ff0000';
             };
             activeLink.onmouseup = function() {
-                // 恢复保存的链接颜色
-                var savedColor = localStorage.getItem('linkColor');
-                if (savedColor) {
-                    this.style.color = savedColor;
-                } else {
-                    this.style.color = '#0066cc';
-                }
+                var savedColor = '#0066cc';
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
+                        var color = localStorage.getItem('linkColor');
+                        if (color) savedColor = color;
+                    }
+                } catch(e) {}
+                this.style.color = savedColor;
             };
             activeLink.onmouseout = function() {
-                var savedColor = localStorage.getItem('linkColor');
-                if (savedColor) {
-                    this.style.color = savedColor;
-                } else {
-                    this.style.color = '#0066cc';
-                }
+                var savedColor = '#0066cc';
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
+                        var color = localStorage.getItem('linkColor');
+                        if (color) savedColor = color;
+                    }
+                } catch(e) {}
+                this.style.color = savedColor;
             };
         }
     }
@@ -1183,11 +1307,11 @@ onDomReady(function() {
                     
                     if (submitBtn.click) {
                         if (document.getElementById('autoFillAndJumpCheckbox').checked) { if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {} };
-                        if (typeof localStorage !== 'undefined' && localStorage) try { if (localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
+                        try { if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function' && localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
                         submitBtn.click();
                     } else if (submitBtn.fireEvent) {
                         if (document.getElementById('autoFillAndJumpCheckbox').checked) { if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {} };
-                        if (typeof localStorage !== 'undefined' && localStorage) try { if (localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
+                        try { if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function' && localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
                         submitBtn.fireEvent('onclick');
                     }
                     
@@ -10836,7 +10960,7 @@ window.onload = function() {
             // 可选：失焦（IE 兼容）
             try {
                 if (document.getElementById('autoFillAndJumpCheckbox').checked) { if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {} };
-                if (typeof localStorage !== 'undefined' && localStorage) try { if (localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
+                try { if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function' && localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
                 if (document.getElementById('searchSuggestionsCheckbox').checked) {
                     var searchSuggestions = document.getElementById('searchSuggestions');
                     searchSuggestions.style.display = 'none';
