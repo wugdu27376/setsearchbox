@@ -6337,7 +6337,7 @@ function hideSearchEngineOptions() {
     // 隐藏特定选项值
     var optionsToHide = ['yahooSearch', 'braveSearch',
         'sodouyinM', 'yzmsmM', 'sotoutiaoM', 'qksmSearch', 'baiduMEasy',
-        'metasosuoAI', 'baiduAI', '360namisoAI', 'zhihuZhiDaAI', 'quarkpcAI',
+        'metasosuoAI', 'baiduAI', '360namisoAI', 'zhihuZhiDaAI', 'quarkpcAI', 'cKnowOfCsdn',
         'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'quarkTranslateTools', 'fanyiSo', 'transmartQQTs',
         'taobaoWeb', 'jdWebPage', 'pddWebPage',
         'biliTv', 'dyIsWindows', 'haokanVideo', 'fastHandVideo', 'hongshuVideo', 'soHuVideo', 'tencentTv', 'enUsYoutubeVideo',
@@ -6447,7 +6447,10 @@ addClass(document.querySelector('.search-container'), 'focused');
                 document.body.classList.remove('focused');
                 document.querySelector('.search-container').classList.remove('focused');
                 document.getElementById('quickInputBtn').style.display = 'none';
-                document.getElementById('hitokotoDisplay').style.display = 'block';
+                var savedHitokotoChecking = document.getElementById('hitokotoCheckbox')
+                if (savedHitokotoChecking.checked) {
+                    document.getElementById('hitokotoDisplay').style.display = 'block';
+                }
                 document.getElementById('searchContainer').style.marginTop = savedSearchContainerMargin;
                 
                 if (document.getElementById('engineSelect').value === 'iFrameFree') {
