@@ -5005,6 +5005,7 @@ if (hitokotoSizeLabel) {
                 if (hitokotoDisplay) hitokotoDisplay.style.fontSize = newSize;
                 document.getElementById('hitokotoSizeValue').textContent = newSize;
                 localStorage.setItem('hitokotoFontSize', newSize);
+                truncateText('hitokotoSizeValue', newSize, 80);
             }
         });
     });
@@ -5310,6 +5311,7 @@ document.querySelector('label[for="renameLinkBtn"]').addEventListener('click', f
             linkElement.innerHTML = newName;
             document.getElementById('linkNameValue').innerHTML = newName;
             localStorage.setItem('linkName', newName);
+            truncateText('linkNameValue', newName, 100);
             if (!localStorage.getItem('36156798756549916136')) {
                 localStorage.setItem('36156798756549916136', 'true');
             }
@@ -5367,6 +5369,7 @@ document.querySelector('label[for="searchContainerMarginPicker"]').addEventListe
                 document.getElementById('searchContainer').style.marginTop = newMargin;
                 document.getElementById('searchContainerMarginValue').textContent = newMargin;
                 localStorage.setItem('searchContainerMargin', newMargin);
+                truncateText('searchContainerMarginValue', newMargin, 80);
             }
         });
 });
@@ -5400,6 +5403,7 @@ document.querySelector('label[for="renameSubmitBtn"]').addEventListener('click',
             document.getElementById('submitBtn').innerHTML = newName;
             document.getElementById('submitBtnNameValue').innerHTML = newName;
             localStorage.setItem('submitBtnName', newName);
+            truncateText('submitBtnNameValue', newName, 100);
         }
     });
 });
@@ -5855,39 +5859,128 @@ if (savedPlaceholder) {
 // 对其他需要截断的元素也应用此函数
 // 在页面加载时对已有元素应用截断
 document.addEventListener('DOMContentLoaded', function() {
+    function truncateTextById(elementId, text, maxWidth) {
+        var element = document.getElementById(elementId);
+        if (!element || !text) return;
+        var tempSpan = document.createElement('span');
+        tempSpan.style.visibility = 'hidden';
+        tempSpan.style.position = 'absolute';
+        tempSpan.style.whiteSpace = 'nowrap';
+        tempSpan.style.font = window.getComputedStyle ? window.getComputedStyle(element).font : (element.currentStyle ? element.currentStyle.font : '14px Arial');
+        tempSpan.textContent = text;
+        document.body.appendChild(tempSpan);
+        var displayText = text;
+        if (tempSpan.offsetWidth > maxWidth) {
+            while (tempSpan.offsetWidth > maxWidth && displayText.length > 3) {
+                displayText = displayText.substring(0, displayText.length - 1);
+                tempSpan.textContent = displayText + '...';
+            }
+            displayText = displayText + '...';
+        }
+        document.body.removeChild(tempSpan);
+        element.textContent = displayText;
+        element.title = text;
+    }
     // linkNameValue
     var savedLinkName = localStorage.getItem('linkName');
     if (savedLinkName) {
-        truncateText('linkNameValue', savedLinkName, 100);
+        truncateTextById('linkNameValue', savedLinkName, 100);
     }
     
     // linkColorValue
     var savedLinkColor = localStorage.getItem('linkColor');
     if (savedLinkColor) {
-        truncateText('linkColorValue', savedLinkColor, 80);
+        truncateTextById('linkColorValue', savedLinkColor, 80);
     }
     
     // colorValue
     var savedBgColor = localStorage.getItem('backgroundColor');
     if (savedBgColor) {
-        truncateText('colorValue', savedBgColor, 80);
+        truncateTextById('colorValue', savedBgColor, 80);
     }
     
     // placeholderValue
     var savedPlaceholder = localStorage.getItem('urlInputPlaceholder');
     if (savedPlaceholder) {
-        truncateText('placeholderValue', savedPlaceholder === '{empty}' ? '{empty}' : savedPlaceholder, 100);
+        truncateTextById('placeholderValue', savedPlaceholder === '{empty}' ? '{empty}' : savedPlaceholder, 100);
     }
     
     // fontColorValue
     var savedFontColor = localStorage.getItem('fontColor');
     if (savedFontColor) {
-        truncateText('fontColorValue', savedFontColor, 80);
+        truncateTextById('fontColorValue', savedFontColor, 80);
     }
     
     var savedQuickLinksColor = localStorage.getItem('quickLinksColor');
     if (savedQuickLinksColor) {
-        truncateText('quickLinksColorValue', savedQuickLinksColor, 80);
+        truncateTextById('quickLinksColorValue', savedQuickLinksColor, 80);
+    }
+    
+    var savedWidth = localStorage.getItem('buttonWidth');
+    if (savedWidth && savedWidth !== 'Default') {
+        truncateTextById('widthValue', savedWidth, 80);
+    }
+    
+    var savedHeight = localStorage.getItem('elementHeight');
+    if (savedHeight) {
+        truncateTextById('heightValue', savedHeight, 80);
+    }
+    
+    var savedHistoryLinksColor = localStorage.getItem('historyLinksColor');
+    if (savedHistoryLinksColor) {
+        truncateTextById('historyLinksColorValue', savedHistoryLinksColor, 80);
+    }
+    
+    var savedHitokotoColor = localStorage.getItem('hitokotoColor');
+    if (savedHitokotoColor) {
+        truncateTextById('hitokotoColorValue', savedHitokotoColor, 80);
+    }
+    
+    var savedHitokotoStyle = localStorage.getItem('hitokotoFontStyle');
+    if (savedHitokotoStyle) {
+        truncateTextById('hitokotoStyleValue', savedHitokotoStyle, 80);
+    }
+    
+    var savedSubmitBtnName = localStorage.getItem('submitBtnName');
+    if (savedSubmitBtnName) {
+        truncateTextById('submitBtnNameValue', savedSubmitBtnName, 100);
+    }
+    
+    var savedHeightPercent = localStorage.getItem('heightPercent');
+    if (savedHeightPercent) {
+        truncateTextById('heightPercentValue', savedHeightPercent, 80);
+    }
+    
+    var savedFontSize = localStorage.getItem('urlInputFontSize');
+    if (savedFontSize && savedFontSize !== 'Default') {
+        truncateTextById('fontSizeValue', savedFontSize, 80);
+    }
+    
+    var savedLinkSize = localStorage.getItem('linkSize');
+    if (savedLinkSize) {
+        truncateTextById('linkSizeValue', savedLinkSize, 80);
+    }
+    
+    var savedQuickLinksSize = localStorage.getItem('quickLinksFontSize');
+    if (savedQuickLinksSize && savedQuickLinksSize !== 'Default') {
+        setTimeout(function() {
+            truncateTextById('quickLinksSizeValue', savedQuickLinksSize, 80);
+        }, 50);
+    }
+    
+    var savedHistoryLinksSize = localStorage.getItem('historyLinksFontSize');
+    if (savedHistoryLinksSize && savedHistoryLinksSize !== 'Default') {
+        truncateTextById('historyLinksSizeValue', savedHistoryLinksSize, 80);
+    }
+    
+    var savedHitokotoSize = localStorage.getItem('hitokotoFontSize');
+    if (savedHitokotoSize) {
+        truncateTextById('hitokotoSizeValue', savedHitokotoSize, 80);
+    }
+    
+    var savedSearchContainerMargin = localStorage.getItem('searchContainerMargin');
+    if (savedSearchContainerMargin && savedSearchContainerMargin !== 'Default') {
+        truncateTextById('searchContainerMarginValue', savedSearchContainerMargin, 80);
     }
 });
 
@@ -5923,6 +6016,7 @@ document.querySelector('label[for="linkSizePicker"]').addEventListener('click', 
             }
             document.getElementById('linkSizeValue').textContent = newSize;
             localStorage.setItem('linkSize', newSize);
+            truncateText('linkSizeValue', newSize, 80);
         }
     });
 });
@@ -6080,6 +6174,7 @@ if (historyLinksSizeLabel) {
                     localStorage.setItem('historyLinksFontSize', newSize);
                     document.getElementById('historyLinksSizeValue').textContent = newSize;
                     applyHistoryLinksFontSize();
+                    truncateText('historyLinksSizeValue', newSize, 80);
                 }
             });
     });
@@ -6908,8 +7003,8 @@ document.querySelector('label[for="executeCssBtn"]').addEventListener('click', f
             var existingStyle = document.getElementById('customCssStyle');
             if (existingStyle) {
                 if (existingStyle && existingStyle.parentNode) {
-    existingStyle.parentNode.removeChild(existingStyle);
-}
+                    existingStyle.parentNode.removeChild(existingStyle);
+                }
             }
             localStorage.removeItem('customCss');
         } else {
@@ -6917,8 +7012,8 @@ document.querySelector('label[for="executeCssBtn"]').addEventListener('click', f
             var existingStyle = document.getElementById('customCssStyle');
             if (existingStyle) {
                 if (existingStyle && existingStyle.parentNode) {
-    existingStyle.parentNode.removeChild(existingStyle);
-}
+                    existingStyle.parentNode.removeChild(existingStyle);
+                }
             }
             
             // 创建新的样式元素
@@ -7398,6 +7493,7 @@ document.querySelector('label[for="fontSizePicker"]').addEventListener('click', 
             document.getElementById('submitBtn').style.fontSize = newSize;
             document.getElementById('fontSizeValue').textContent = newSize;
             localStorage.setItem('urlInputFontSize', newSize);
+            truncateText('fontSizeValue', newSize, 80);
         }
     });
 });
@@ -7429,6 +7525,7 @@ document.querySelector('label[for="heightPicker"]').addEventListener('click', fu
             document.getElementById('submitBtn').style.height = newHeight;
             document.getElementById('heightValue').textContent = newHeight;
             localStorage.setItem('elementHeight', newHeight);
+            truncateText('heightValue', newHeight, 80);
         }
     });
 });
@@ -7449,6 +7546,7 @@ document.querySelector('label[for="widthPicker"]').addEventListener('click', fun
             document.getElementById('submitBtn').style.width = newWidth;
             document.getElementById('widthValue').textContent = newWidth;
             localStorage.setItem('buttonWidth', newWidth);
+            truncateText('widthValue', newWidth, 80);
         }
     });
 });
@@ -9030,6 +9128,7 @@ document.querySelector('label[for="quickLinksSizePicker"]').addEventListener('cl
                 }
                 document.getElementById('quickLinksSizeValue').textContent = newSize;
                 localStorage.setItem('quickLinksFontSize', newSize);
+                truncateText('quickLinksSizeValue', newSize, 80);
             }
         });
 });
