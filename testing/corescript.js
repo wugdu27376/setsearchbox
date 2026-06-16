@@ -3906,6 +3906,7 @@ function createIframePlusWindow(url) {
     try { savedHeight = localStorage.getItem('iframePlusHeight'); } catch(e) {}
     var defaultHeight = isMobile ? '500px' : '500px';
     iframe.style.height = savedHeight ? savedHeight : defaultHeight;
+    iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals';
     
     var closeContainer = document.createElement('div');
     closeContainer.style.cssText = 'text-align:right;margin-top:7px;margin-bottom:5px;';
