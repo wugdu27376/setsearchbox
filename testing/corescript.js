@@ -1,4 +1,4 @@
-// ========== IE兼容性补丁(第2335行后结束) ==========
+// ========== IE兼容性补丁(第2163行后结束) ==========
 (function() {
     // 检测是否为IE浏览器
     var isIE = /*@cc_on!@*/false || !!document.documentMode;
@@ -666,178 +666,6 @@
     }
 })();
 // ========== Opera10 Presto及以下版本兼容修复结束 ==========
-
-
-// ========== Opera10 Presto及以下版本跳转修复 ==========
-(function() {
-    var isOldOpera = false;
-    try {
-        var ua = navigator.userAgent;
-        if (ua.indexOf('Opera') !== -1) {
-            var operaMatch = ua.match(/Opera[\/ ]([0-9.]+)/);
-            if (operaMatch && parseFloat(operaMatch[1]) <= 10) {
-                isOldOpera = true;
-            }
-        }
-    } catch(e) { isOldOpera = false; }
-    
-    if (isOldOpera) {
-        var submitBtn = document.getElementById('submitBtn');
-        var urlInput = document.getElementById('urlInput');
-        var engineSelect = document.getElementById('engineSelect');
-        
-        function getSelectedEngine() {
-            if (!engineSelect) return 'baidu';
-            var idx = engineSelect.selectedIndex;
-            if (idx >= 0 && engineSelect.options[idx]) {
-                return engineSelect.options[idx].value;
-            }
-            return 'baidu';
-        }
-        
-        function buildSearchUrl(keyword, engine) {
-            if (!keyword) return '';
-            if (keyword.indexOf('://') !== -1) return keyword;
-            switch (engine) {
-                case 'baidu': return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
-                case 'google': return 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
-                case 'bing': return 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
-                case 'sogou': return 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
-                case 'so': return 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
-                default: return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
-            }
-        }
-        
-        function doSearch() {
-            if (!urlInput) return;
-            var keyword = urlInput.value;
-            if (!keyword || keyword === 'https://') return;
-            var engine = getSelectedEngine();
-            var searchUrl = buildSearchUrl(keyword, engine);
-            if (searchUrl) {
-                window.location.href = searchUrl;
-            }
-        }
-        
-        if (submitBtn) {
-            if (submitBtn.addEventListener) {
-                submitBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    doSearch();
-                });
-            } else if (submitBtn.attachEvent) {
-                submitBtn.attachEvent('onclick', function() {
-                    doSearch();
-                });
-            } else {
-                submitBtn.onclick = function() {
-                    doSearch();
-                    return false;
-                };
-            }
-        }
-        
-        if (urlInput) {
-            function onEnterKey(e) {
-                e = e || window.event;
-                var keyCode = e.keyCode || e.which || e.charCode;
-                if (keyCode === 13) {
-                    if (e.preventDefault) e.preventDefault();
-                    e.returnValue = false;
-                    doSearch();
-                    return false;
-                }
-                return true;
-            }
-            if (urlInput.addEventListener) {
-                urlInput.addEventListener('keypress', onEnterKey);
-            } else if (urlInput.attachEvent) {
-                urlInput.attachEvent('onkeypress', onEnterKey);
-            } else {
-                urlInput.onkeypress = onEnterKey;
-            }
-        }
-    }
-})();
-// ========== Opera10 Presto及以下版本跳转修复结束 ==========
-
-
-// ========== Opera10 Presto及以下版本跳转搜索修复 ==========
-(function() {
-    var isOldOpera = false;
-    try {
-        var ua = navigator.userAgent;
-        if (ua.indexOf('Opera') !== -1) {
-            var operaMatch = ua.match(/Opera[\/ ]([0-9.]+)/);
-            if (operaMatch && parseFloat(operaMatch[1]) <= 10) {
-                isOldOpera = true;
-            }
-        }
-    } catch(e) { isOldOpera = false; }
-    
-    if (isOldOpera) {
-        var submitBtn = document.getElementById('submitBtn');
-        var urlInput = document.getElementById('urlInput');
-        var engineSelect = document.getElementById('engineSelect');
-        
-        function getEngineValue() {
-            if (!engineSelect) return 'baidu';
-            if (engineSelect.selectedIndex >= 0 && engineSelect.options[engineSelect.selectedIndex]) {
-                return engineSelect.options[engineSelect.selectedIndex].value;
-            }
-            return 'baidu';
-        }
-        
-        function buildSearchUrl(keyword, engine) {
-            if (!keyword) return '';
-            if (keyword.indexOf('://') !== -1) return keyword;
-            switch (engine) {
-                case 'baidu': return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
-                case 'google': return 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
-                case 'bing': return 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
-                case 'sogou': return 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
-                case 'so': return 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
-                case 'autofillHttp1': return 'http://' + encodeURIComponent(keyword);
-                case 'autofillHttps': return 'https://' + encodeURIComponent(keyword);
-                case 'yahooSearch': return 'https://sg.search.yahoo.com/search?p=' + encodeURIComponent(keyword);
-                default: return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
-            }
-        }
-        
-        function doJump() {
-            if (!urlInput || !submitBtn) return;
-            var keyword = urlInput.value;
-            if (!keyword || keyword === '' || keyword === 'https://') return;
-            var engine = getEngineValue();
-            var searchUrl = buildSearchUrl(keyword, engine);
-            if (searchUrl) {
-                window.location.href = searchUrl;
-            }
-        }
-        
-        if (submitBtn) {
-            submitBtn.onclick = function(e) {
-                if (e) { if (e.preventDefault) e.preventDefault(); else e.returnValue = false; }
-                doJump();
-                return false;
-            };
-        }
-        
-        if (urlInput) {
-            urlInput.onkeypress = function(e) {
-                e = e || window.event;
-                var keyCode = e.keyCode || e.which || e.charCode;
-                if (keyCode === 13) {
-                    if (e.preventDefault) e.preventDefault();
-                    e.returnValue = false;
-                    doJump();
-                    return false;
-                }
-            };
-        }
-    }
-})();
-// ========== Opera10 Presto及以下版本跳转搜索修复结束 ==========
 
 
 // ========== IE8及以下版本专属兼容代码（最低IE6） ==========
@@ -3889,7 +3717,7 @@ function createIframePlusWindow(url) {
     
     var savedWidth = null;
     try { savedWidth = localStorage.getItem('iframePlusWidth'); } catch(e) {}
-    var defaultWidth = isMobile ? '98%' : '390px';
+    var defaultWidth = isMobile ? '98%' : '750px';
     wrapper.style.width = savedWidth ? savedWidth : defaultWidth;
     wrapper.style.maxWidth = isMobile ? '100%' : '960px';
     wrapper.style.boxSizing = 'border-box';
@@ -11058,7 +10886,7 @@ if (iframePlusSizeBtn) {
         sizeLabel.onclick = function() {
             // 修复窗口检测逻辑，使用 window.iframePlusWindows
             var currentWindows = window.iframePlusWindows || [];
-            var currentWidth = localStorage.getItem('iframePlusWidth') || '390px';
+            var currentWidth = localStorage.getItem('iframePlusWidth') || '98%';
             var currentHeight = localStorage.getItem('iframePlusHeight') || '500px';
             showCustomDoubleInput(
                 '设置所有iFrame窗口尺寸',
@@ -11069,7 +10897,7 @@ if (iframePlusSizeBtn) {
                 function(width, height) {
                     if (width !== null && height !== null) {
                         var isMobile = typeof isMobileAndroidApple === 'function' ? isMobileAndroidApple() : false;
-                        var defaultWidth = isMobile ? '98%' : '390px';
+                        var defaultWidth = isMobile ? '98%' : '750px';
                         var defaultHeight = isMobile ? '500px' : '500px';
                         
                         if (width === '') {
