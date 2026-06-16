@@ -1,4 +1,4 @@
-// ========== IE兼容性补丁(第1934行后结束) ==========
+// ========== IE兼容性补丁(第2335行后结束) ==========
 (function() {
     // 检测是否为IE浏览器
     var isIE = /*@cc_on!@*/false || !!document.documentMode;
@@ -597,6 +597,247 @@
     }
 })();
 // ========== IE7及以下版本布局修复结束 ==========
+
+
+// ========== Opera10 Presto及以下版本兼容修复 ==========
+(function() {
+    var isOldOpera = false;
+    try {
+        var ua = navigator.userAgent;
+        if (ua.indexOf('Opera') !== -1) {
+            var operaMatch = ua.match(/Opera[\/ ]([0-9.]+)/);
+            if (operaMatch && parseFloat(operaMatch[1]) <= 10) {
+                isOldOpera = true;
+            }
+        }
+    } catch(e) { isOldOpera = false; }
+    
+    if (isOldOpera) {
+        if (typeof String.prototype.trim !== 'function') {
+            String.prototype.trim = function() {
+                return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+            };
+        }
+        if (typeof Array.prototype.indexOf !== 'function') {
+            Array.prototype.indexOf = function(searchElement, fromIndex) {
+                var k;
+                if (this == null) throw new TypeError('"this" is null or not defined');
+                var O = Object(this);
+                var len = O.length >>> 0;
+                if (len === 0) return -1;
+                var n = fromIndex | 0;
+                if (n >= len) return -1;
+                k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+                while (k < len) {
+                    if (k in O && O[k] === searchElement) return k;
+                    k++;
+                }
+                return -1;
+            };
+        }
+        var searchContainer = document.getElementById('searchContainer');
+        var engineSelect = document.getElementById('engineSelect');
+        var urlInput = document.getElementById('urlInput');
+        var submitBtn = document.getElementById('submitBtn');
+        if (searchContainer) {
+            searchContainer.style.display = 'block';
+            searchContainer.style.textAlign = 'center';
+        }
+        if (engineSelect) engineSelect.style.display = 'inline-block';
+        if (urlInput) {
+            urlInput.style.display = 'inline-block';
+            urlInput.style.width = '60%';
+        }
+        if (submitBtn) submitBtn.style.display = 'inline-block';
+        try {
+            if (typeof window.localStorage !== 'undefined' && window.localStorage) {
+                var testKey = '__opera_test__';
+                window.localStorage.setItem(testKey, testKey);
+                window.localStorage.removeItem(testKey);
+            }
+        } catch(e) {
+            var memoryStorage = {};
+            window.localStorage = {
+                setItem: function(k, v) { try { memoryStorage[k] = String(v); } catch(e) {} },
+                getItem: function(k) { try { return memoryStorage[k] !== undefined ? memoryStorage[k] : null; } catch(e) { return null; } },
+                removeItem: function(k) { try { delete memoryStorage[k]; } catch(e) {} }
+            };
+        }
+    }
+})();
+// ========== Opera10 Presto及以下版本兼容修复结束 ==========
+
+
+// ========== Opera10 Presto及以下版本跳转修复 ==========
+(function() {
+    var isOldOpera = false;
+    try {
+        var ua = navigator.userAgent;
+        if (ua.indexOf('Opera') !== -1) {
+            var operaMatch = ua.match(/Opera[\/ ]([0-9.]+)/);
+            if (operaMatch && parseFloat(operaMatch[1]) <= 10) {
+                isOldOpera = true;
+            }
+        }
+    } catch(e) { isOldOpera = false; }
+    
+    if (isOldOpera) {
+        var submitBtn = document.getElementById('submitBtn');
+        var urlInput = document.getElementById('urlInput');
+        var engineSelect = document.getElementById('engineSelect');
+        
+        function getSelectedEngine() {
+            if (!engineSelect) return 'baidu';
+            var idx = engineSelect.selectedIndex;
+            if (idx >= 0 && engineSelect.options[idx]) {
+                return engineSelect.options[idx].value;
+            }
+            return 'baidu';
+        }
+        
+        function buildSearchUrl(keyword, engine) {
+            if (!keyword) return '';
+            if (keyword.indexOf('://') !== -1) return keyword;
+            switch (engine) {
+                case 'baidu': return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+                case 'google': return 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
+                case 'bing': return 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
+                case 'sogou': return 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+                case 'so': return 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
+                default: return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+            }
+        }
+        
+        function doSearch() {
+            if (!urlInput) return;
+            var keyword = urlInput.value;
+            if (!keyword || keyword === 'https://') return;
+            var engine = getSelectedEngine();
+            var searchUrl = buildSearchUrl(keyword, engine);
+            if (searchUrl) {
+                window.location.href = searchUrl;
+            }
+        }
+        
+        if (submitBtn) {
+            if (submitBtn.addEventListener) {
+                submitBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    doSearch();
+                });
+            } else if (submitBtn.attachEvent) {
+                submitBtn.attachEvent('onclick', function() {
+                    doSearch();
+                });
+            } else {
+                submitBtn.onclick = function() {
+                    doSearch();
+                    return false;
+                };
+            }
+        }
+        
+        if (urlInput) {
+            function onEnterKey(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which || e.charCode;
+                if (keyCode === 13) {
+                    if (e.preventDefault) e.preventDefault();
+                    e.returnValue = false;
+                    doSearch();
+                    return false;
+                }
+                return true;
+            }
+            if (urlInput.addEventListener) {
+                urlInput.addEventListener('keypress', onEnterKey);
+            } else if (urlInput.attachEvent) {
+                urlInput.attachEvent('onkeypress', onEnterKey);
+            } else {
+                urlInput.onkeypress = onEnterKey;
+            }
+        }
+    }
+})();
+// ========== Opera10 Presto及以下版本跳转修复结束 ==========
+
+
+// ========== Opera10 Presto及以下版本跳转搜索修复 ==========
+(function() {
+    var isOldOpera = false;
+    try {
+        var ua = navigator.userAgent;
+        if (ua.indexOf('Opera') !== -1) {
+            var operaMatch = ua.match(/Opera[\/ ]([0-9.]+)/);
+            if (operaMatch && parseFloat(operaMatch[1]) <= 10) {
+                isOldOpera = true;
+            }
+        }
+    } catch(e) { isOldOpera = false; }
+    
+    if (isOldOpera) {
+        var submitBtn = document.getElementById('submitBtn');
+        var urlInput = document.getElementById('urlInput');
+        var engineSelect = document.getElementById('engineSelect');
+        
+        function getEngineValue() {
+            if (!engineSelect) return 'baidu';
+            if (engineSelect.selectedIndex >= 0 && engineSelect.options[engineSelect.selectedIndex]) {
+                return engineSelect.options[engineSelect.selectedIndex].value;
+            }
+            return 'baidu';
+        }
+        
+        function buildSearchUrl(keyword, engine) {
+            if (!keyword) return '';
+            if (keyword.indexOf('://') !== -1) return keyword;
+            switch (engine) {
+                case 'baidu': return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+                case 'google': return 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
+                case 'bing': return 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
+                case 'sogou': return 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+                case 'so': return 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
+                case 'autofillHttp1': return 'http://' + encodeURIComponent(keyword);
+                case 'autofillHttps': return 'https://' + encodeURIComponent(keyword);
+                case 'yahooSearch': return 'https://sg.search.yahoo.com/search?p=' + encodeURIComponent(keyword);
+                default: return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+            }
+        }
+        
+        function doJump() {
+            if (!urlInput || !submitBtn) return;
+            var keyword = urlInput.value;
+            if (!keyword || keyword === '' || keyword === 'https://') return;
+            var engine = getEngineValue();
+            var searchUrl = buildSearchUrl(keyword, engine);
+            if (searchUrl) {
+                window.location.href = searchUrl;
+            }
+        }
+        
+        if (submitBtn) {
+            submitBtn.onclick = function(e) {
+                if (e) { if (e.preventDefault) e.preventDefault(); else e.returnValue = false; }
+                doJump();
+                return false;
+            };
+        }
+        
+        if (urlInput) {
+            urlInput.onkeypress = function(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which || e.charCode;
+                if (keyCode === 13) {
+                    if (e.preventDefault) e.preventDefault();
+                    e.returnValue = false;
+                    doJump();
+                    return false;
+                }
+            };
+        }
+    }
+})();
+// ========== Opera10 Presto及以下版本跳转搜索修复结束 ==========
 
 
 // ========== IE8及以下版本专属兼容代码（最低IE6） ==========
