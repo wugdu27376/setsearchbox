@@ -5513,8 +5513,8 @@ document.querySelector('label[for="executeJsBtn"]').addEventListener('click', fu
                 }
             } catch (error) {
                 try {
-                    if (typeof console !== 'undefined' && console && typeof console.log === 'function') {
-                        console.log('%cJavaScript执行错误: ' + error.message + '', 'color: red; background-color: rgba(255,0,0,0.10);');
+                    if (typeof console !== 'undefined' && console && typeof console.error === 'function') {
+                        console.error('Error: ' + error.message);
                     } else {
                         alert('Error: ' + error.message);
                     }
