@@ -5512,7 +5512,15 @@ document.querySelector('label[for="executeJsBtn"]').addEventListener('click', fu
                     localStorage.removeItem('customJs');
                 }
             } catch (error) {
-                // 执行出错时不保存
+                try {
+                    if (typeof console !== 'undefined' && console && typeof console.log === 'function') {
+                        console.log('%cJavaScript执行错误: ' + error.message + '', 'color: red; background-color: rgba(255,0,0,0.10);');
+                    } else {
+                        alert('Error: ' + error.message);
+                    }
+                } catch(e) {
+                    try { alert('Error'); } catch(e2) {}
+                }
             }
         }
     }, '输入JavaScript脚本');
