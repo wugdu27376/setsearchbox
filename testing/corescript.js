@@ -449,10 +449,10 @@
                             return false;
                         }
                         try {
-    window.location.href = url;
-} catch(e) {
-    window.location = url;
-}
+                            window.location.href = url;
+                        } catch(e) {
+                            window.location = url;
+                        }
                     } catch(err) {
                         window.location = url;
                     }
@@ -463,6 +463,102 @@
     }
 })();
 // ========== IE 跳转补丁结束 ==========
+
+
+// ========== Opera10以下版本表单提交搜索兼容 ==========
+(function() {
+    var isOldOpera = false;
+    try {
+        var ua = navigator.userAgent;
+        if (ua.indexOf('Opera') !== -1) {
+            var operaMatch = ua.match(/Opera[\/ ]([0-9.]+)/);
+            if (operaMatch && parseFloat(operaMatch[1]) < 10) {
+                isOldOpera = true;
+            }
+        }
+    } catch(e) { isOldOpera = false; }
+    
+    if (isOldOpera) {
+        var originalSubmit = document.getElementById('submitBtn').onclick;
+        document.getElementById('submitBtn').onclick = function(e) {
+            e = e || window.event;
+            var urlInput = document.getElementById('urlInput');
+            var engineSelect = document.getElementById('engineSelect');
+            var keyword = urlInput ? urlInput.value.trim() : '';
+            if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                return false;
+            }
+            var engine = engineSelect ? engineSelect.value : 'baidu';
+            var searchUrl = '';
+            switch (engine) {
+                case 'baidu': searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword); break;
+                case 'google': searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(keyword); break;
+                case 'bing': searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(keyword); break;
+                case 'sogou': searchUrl = 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword); break;
+                case 'so': searchUrl = 'https://www.so.com/s?q=' + encodeURIComponent(keyword); break;
+                case 'autofillHttp1': searchUrl = 'http://' + encodeURIComponent(keyword); break;
+                case 'autofillHttps': searchUrl = 'https://' + encodeURIComponent(keyword); break;
+                default: searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+            }
+            try {
+                var form = document.createElement('form');
+                form.method = 'GET';
+                form.action = searchUrl;
+                form.style.display = 'none';
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.name = 'wd';
+                input.value = keyword;
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            } catch(err) {
+                window.location.href = searchUrl;
+            }
+            return false;
+        };
+    }
+})();
+// ========== Opera10以下版本表单提交搜索兼容结束 ==========
+
+
+// ========== Opera10以下版本Enter键提交兼容 ==========
+(function() {
+    var isOldOpera = false;
+    try {
+        var ua = navigator.userAgent;
+        if (ua.indexOf('Opera') !== -1) {
+            var operaMatch = ua.match(/Opera[\/ ]([0-9.]+)/);
+            if (operaMatch && parseFloat(operaMatch[1]) < 10) {
+                isOldOpera = true;
+            }
+        }
+    } catch(e) { isOldOpera = false; }
+    
+    if (isOldOpera) {
+        var urlInput = document.getElementById('urlInput');
+        var submitBtn = document.getElementById('submitBtn');
+        if (urlInput && submitBtn) {
+            urlInput.onkeydown = function(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which;
+                if (keyCode === 13) {
+                    if (e.preventDefault) e.preventDefault();
+                    e.returnValue = false;
+                    if (submitBtn.click) {
+                        submitBtn.click();
+                    } else if (submitBtn.onclick) {
+                        submitBtn.onclick(e);
+                    }
+                    return false;
+                }
+                return true;
+            };
+        }
+    }
+})();
+// ========== Opera10以下版本Enter键提交兼容结束 ==========
 
 
 // ========== IE8 布局修复函数 ==========
@@ -3432,7 +3528,7 @@ function bindSubmitEvent() {
                         var iframeContainer = document.getElementById('iframeContainer');
                         if (iframeContainer) iframeContainer.style.display = 'block';
                         var sizeBtn = document.getElementById('iframePlusSizeBtn');
-                        if (sizeBtn) sizeBtn.style.display = 'block';
+                        if (sizeBtn) sizeBtn.style.display = 'none';
                     }
                     return;
                 case 'iFramePlus':
@@ -11051,7 +11147,45 @@ window.onload = function() {
             do { newIndex = Math.floor(Math.random() * 11); } while (newIndex === window._lastTipIndex && tips.length > 1);
             window._lastTipIndex = newIndex;
             var randomTip = tips[newIndex];
-            showCustomAlert('关于', '<div style="font-size: 15px; margin-top: 12px;">搜索Easy<br>' + '<p>网页版本号: v7.3<br></p>' + '<p>浏览器: ' + browserInfo.name + '<br></p>' + '<p>浏览器版本: ' + browserInfo.version + '<br></p>' + '<p>内核: ' + engineType + ' ' + engineVersion + '<br></p>' + '<p>系统版本: ' + browserInfo.deviceVersion + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<p><b>小提示: </b>' + randomTip + '<div>Github源码: <button onclick="window.open(&#39;https://github.com/wugdu27376/setsearchbox/&#39;, &#39;_blank&#39;);" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div><div style="margin-top: 20px;">扩展下载: <div style="display: inline-block; width: 100%; max-width: 150px; float: right;"><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126071_Beta.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Beta</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126069.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">ZIP</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126070.crx&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126072.zip&#39;" style="margin-left: 4px; margin-top: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX-ZIP</button></div><!-- <div style="display: inline-block; margin-top: 20px; width: 100%;">Github源码: <button onclick="window.location.href=&#39;https://github.com/wugdu27376/setsearchbox/&#39;" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div> --></div>' + '</div>');
+                        var deviceVersionDisplay = browserInfo.deviceVersion;
+            if (ua.indexOf('Windows') !== -1) {
+                try {
+                    var winVer = 'Unknown';
+                    if (typeof navigator !== 'undefined' && navigator && typeof navigator.userAgent === 'string') {
+                        var winMatch = navigator.userAgent.match(/Windows\s+NT\s+([0-9.]+)/);
+                        if (winMatch && winMatch[1]) {
+                            var ntVersion = parseFloat(winMatch[1]);
+                            if (ntVersion >= 10.0) winVer = '10/11';
+                            else if (ntVersion >= 6.3) winVer = '8.1';
+                            else if (ntVersion >= 6.2) winVer = '8';
+                            else if (ntVersion >= 6.1) winVer = '7';
+                            else if (ntVersion >= 6.0) winVer = 'Vista';
+                            else if (ntVersion >= 5.2) winVer = 'XP x64/Server 2003';
+                            else if (ntVersion >= 5.1) winVer = 'XP';
+                            else if (ntVersion >= 5.0) winVer = '2000';
+                            else winVer = 'NT ' + winMatch[1];
+                        } else {
+                            var winMatch2 = navigator.userAgent.match(/Windows\s+(?:NT\s+)?([0-9.]+)/);
+                            if (winMatch2 && winMatch2[1]) {
+                                var ntVer2 = parseFloat(winMatch2[1]);
+                                if (ntVer2 >= 10.0) winVer = '10/11';
+                                else if (ntVer2 >= 6.3) winVer = '8.1';
+                                else if (ntVer2 >= 6.2) winVer = '8';
+                                else if (ntVer2 >= 6.1) winVer = '7';
+                                else if (ntVer2 >= 6.0) winVer = 'Vista';
+                                else if (ntVer2 >= 5.2) winVer = 'XP x64/Server 2003';
+                                else if (ntVer2 >= 5.1) winVer = 'XP';
+                                else if (ntVer2 >= 5.0) winVer = '2000';
+                                else winVer = 'NT ' + winMatch2[1];
+                            }
+                        }
+                    }
+                    deviceVersionDisplay = 'Windows ' + winVer;
+                } catch(e) {
+                    deviceVersionDisplay = browserInfo.deviceVersion;
+                }
+            }
+            showCustomAlert('关于', '<div style="font-size: 15px; margin-top: 12px;">搜索Easy<br>' + '<p>网页版本号: v7.3<br></p>' + '<p>浏览器: ' + browserInfo.name + '<br></p>' + '<p>浏览器版本: ' + browserInfo.version + '<br></p>' + '<p>内核: ' + engineType + ' ' + engineVersion + '<br></p>' + '<p>系统版本: ' + deviceVersionDisplay + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<p><b>小提示: </b>' + randomTip + '<div>Github源码: <button onclick="window.open(&#39;https://github.com/wugdu27376/setsearchbox/&#39;, &#39;_blank&#39;);" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div><div style="margin-top: 20px;">扩展下载: <div style="display: inline-block; width: 100%; max-width: 150px; float: right;"><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126071_Beta.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Beta</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126069.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">ZIP</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126070.crx&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126072.zip&#39;" style="margin-left: 4px; margin-top: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX-ZIP</button></div></div>' + '</div>');
         };
         
         // 判断是否为移动端
