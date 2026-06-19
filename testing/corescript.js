@@ -1686,7 +1686,7 @@ onDomReady(function() {
         };
     }
     
-    // 14. 为 IE9/10 修复 querySelectorAll 返回的 NodeList 不支持 forEach
+    // 14. 为 IE9/10 修复 querySelectorAll 返回的 Node< 不支持 forEach
     if (isIE9 || isIE10) {
         if (window.NodeList && !NodeList.prototype.forEach) {
             NodeList.prototype.forEach = Array.prototype.forEach;
@@ -9988,7 +9988,7 @@ document.querySelector('label[for="customSearchListBtn"]').addEventListener('cli
             var url = item.url;
             
             html += '<div style="display: table; width: 100%; padding: 8px 0; border-bottom: 1px solid #eee;">';
-            html += '<span style="display: table-cell; vertical-align: middle; text-align: left;"><strong>' + order + '.</strong> ' + name + '</span>';
+            html += '<span style="display: table-cell; vertical-align: middle; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; max-width: 100px;"><strong>' + order + '.</strong> ' + name + '</span>';
             html += '<span style="display: table-cell; vertical-align: middle; text-align: right; white-space: nowrap;">';
 
             // 修改order按钮
