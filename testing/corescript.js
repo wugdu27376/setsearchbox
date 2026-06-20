@@ -465,7 +465,7 @@
 // ========== IE 跳转补丁结束 ==========
 
 
-// ========== Opera10以下版本表单提交搜索兼容 ==========
+// ========== Opera10以下版本搜索兼容 ==========
 (function() {
     var isOldOpera = false;
     try {
@@ -490,37 +490,29 @@
             }
             var engine = engineSelect ? engineSelect.value : 'baidu';
             var searchUrl = '';
-            switch (engine) {
-                case 'baidu': searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword); break;
-                case 'google': searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(keyword); break;
-                case 'bing': searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(keyword); break;
-                case 'sogou': searchUrl = 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword); break;
-                case 'so': searchUrl = 'https://www.so.com/s?q=' + encodeURIComponent(keyword); break;
-                case 'autofillHttp1': searchUrl = 'http://' + encodeURIComponent(keyword); break;
-                case 'autofillHttps': searchUrl = 'https://' + encodeURIComponent(keyword); break;
-                default: searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+            if (engine === 'baidu') {
+                searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+            } else if (engine === 'google') {
+                searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'bing') {
+                searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'sogou') {
+                searchUrl = 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+            } else if (engine === 'so') {
+                searchUrl = 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'autofillHttp1') {
+                searchUrl = 'http://' + encodeURIComponent(keyword);
+            } else if (engine === 'autofillHttps') {
+                searchUrl = 'https://' + encodeURIComponent(keyword);
+            } else {
+                searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
             }
-            try {
-                var form = document.createElement('form');
-                form.method = 'GET';
-                form.action = searchUrl;
-                form.style.display = 'none';
-                var input = document.createElement('input');
-                input.type = 'text';
-                input.name = 'wd';
-                input.value = keyword;
-                form.appendChild(input);
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
-            } catch(err) {
-                window.location.href = searchUrl;
-            }
+            window.location.href = searchUrl;
             return false;
         };
     }
 })();
-// ========== Opera10以下版本表单提交搜索兼容结束 ==========
+// ========== Opera10以下版本搜索兼容结束 ==========
 
 
 // ========== Opera10以下版本Enter键提交兼容 ==========
@@ -559,6 +551,79 @@
     }
 })();
 // ========== Opera10以下版本Enter键提交兼容结束 ==========
+
+
+// ========== Firefox5以下版本专属兼容传统跳转搜索结束 ==========
+(function() {
+    var isOldFirefox = false;
+    var ua = navigator.userAgent;
+    var firefoxMatch = ua.match(/Firefox\/([0-9.]+)/);
+    if (firefoxMatch && parseFloat(firefoxMatch[1]) <= 5) {
+        isOldFirefox = true;
+    }
+    
+    if (isOldFirefox) {
+        var submitBtn = document.getElementById('submitBtn');
+        var urlInput = document.getElementById('urlInput');
+        var engineSelect = document.getElementById('engineSelect');
+        
+        function getSearchUrl(keyword, engine) {
+            if (!keyword) return '';
+            if (keyword.indexOf('://') !== -1) return keyword;
+            if (engine === 'baidu') {
+                return 'http://www.baidu.com/baidu?wd=' + encodeURIComponent(keyword);
+            } else if (engine === 'google') {
+                return 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'bing') {
+                return 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'sogou') {
+                return 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+            } else if (engine === 'so') {
+                return 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'autofillHttp1') {
+                return 'http://' + encodeURIComponent(keyword);
+            } else if (engine === 'autofillHttps') {
+                return 'https://' + encodeURIComponent(keyword);
+            } else {
+                return 'http://www.baidu.com/baidu?wd=' + encodeURIComponent(keyword);
+            }
+        }
+        
+        if (submitBtn && urlInput) {
+            submitBtn.onclick = function(e) {
+                e = e || window.event;
+                var keyword = urlInput.value;
+                if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                    return false;
+                }
+                var engine = engineSelect ? engineSelect.value : 'baidu';
+                var searchUrl = getSearchUrl(keyword, engine);
+                window.location.href = searchUrl;
+                return false;
+            };
+        }
+        
+        if (urlInput) {
+            urlInput.onkeydown = function(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which;
+                if (keyCode === 13) {
+                    e.returnValue = false;
+                    var keyword = urlInput.value;
+                    if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                        return false;
+                    }
+                    var engine = engineSelect ? engineSelect.value : 'baidu';
+                    var searchUrl = getSearchUrl(keyword, engine);
+                    window.location.href = searchUrl;
+                    return false;
+                }
+                return true;
+            };
+        }
+    }
+})();
+// ========== Firefox5以下版本专属兼容传统跳转搜索 ==========
 
 
 // ========== IE8 布局修复函数 ==========
