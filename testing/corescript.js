@@ -990,56 +990,6 @@
 // ========== IE8及以下版本专属兼容代码结束 ==========
 
 
-// ========== IE8及以下版本显示浏览器版本过低提示 ==========
-(function() {
-    // 检测 IE 浏览器版本（支持 IE6+）
-    var ieVersion = 0;
-    var isIELowVersion = false;
-    try {
-        var ua = navigator.userAgent;
-        var msie = ua.indexOf('MSIE ');
-        if (msie > 0) {
-            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
-            if (ieVersion <= 8) {
-                isIELowVersion = true;
-            }
-        }
-    } catch(e) {
-        isIELowVersion = false;
-    }
-    
-    if (isIELowVersion) {
-        // 创建提示元素
-        var versionTip = document.createElement('div');
-        versionTip.id = 'ieVersionTip';
-        versionTip.innerHTML = '你的浏览器版本过低，升级浏览器后可体验完整功能';
-        
-        // 设置样式（兼容 IE6+）
-        versionTip.style.position = 'absolute';
-        versionTip.style.top = '0';
-        versionTip.style.left = '0';
-        versionTip.style.fontSize = '12px';
-        versionTip.style.color = '#dddddd';
-        versionTip.style.cursor = 'default';
-        versionTip.style.padding = '2px 6px';
-        versionTip.style.zIndex = '9999';
-        versionTip.style.fontFamily = 'Arial, sans-serif';
-        
-        // 添加到页面（IE6+ 兼容）
-        if (document.body) {
-            document.body.appendChild(versionTip);
-        } else {
-            document.addEventListener('DOMContentLoaded', function() {
-                if (document.body) {
-                    document.body.appendChild(versionTip);
-                }
-            });
-        }
-    }
-})();
-// ========== 【添加结束】 ==========
-
-
 // ========== 【修复】IE8及以下浏览器搜索引擎保存与加载兼容性补丁 ==========
 (function() {
     // 检测 IE 浏览器版本（支持 IE6+）

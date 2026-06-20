@@ -949,6 +949,60 @@
             }
         }
     })();
+    (function() {
+        var isOldIE = false;
+        var ua = navigator.userAgent;
+        var msiePos = -1;
+        var msieSearch = 'MSIE ';
+        for (var i = 0; i < ua.length - msieSearch.length + 1; i++) {
+            var match = true;
+            for (var j = 0; j < msieSearch.length; j++) {
+                if (ua.charAt(i + j) !== msieSearch.charAt(j)) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                msiePos = i;
+                break;
+            }
+        }
+        if (msiePos !== -1) {
+            var versionStart = msiePos + msieSearch.length;
+            var versionEnd = versionStart;
+            while (versionEnd < ua.length && ua.charAt(versionEnd) >= '0' && ua.charAt(versionEnd) <= '9') { // 注释 >
+                versionEnd++;
+            }
+            if (versionEnd > versionStart) {
+                var versionStr = '';
+                for (var k = versionStart; k < versionEnd; k++) {
+                    versionStr += ua.charAt(k);
+                }
+                var version = parseInt(versionStr, 10);
+                if (version <= 8) isOldIE = true; // 注释 >
+            }
+        }
+        
+        if (isOldIE) {
+            var tipDiv = document.createElement('div');
+            tipDiv.id = 'ieVersionTip';
+            tipDiv.innerHTML = '你的浏览器版本过低，升级浏览器后可体验完整功能';
+            tipDiv.style.position = 'absolute';
+            tipDiv.style.top = '0';
+            tipDiv.style.left = '0';
+            tipDiv.style.fontSize = '12px';
+            tipDiv.style.color = '#dddddd';
+            tipDiv.style.cursor = 'default';
+            tipDiv.style.padding = '2px 6px';
+            tipDiv.style.zIndex = '9999';
+            tipDiv.style.fontFamily = 'Arial, sans-serif';
+            if (document.body) {
+                document.body.appendChild(tipDiv);
+            } else {
+                document.write('<div id="ieVersionTip" style="position:absolute;top:0;left:0;font-size:12px;color:#dddddd;cursor:default;padding:2px 6px;z-index:9999;font-family:Arial, sans-serif;">你的浏览器版本过低，升级浏览器后可体验完整功能</div>');
+            }
+        }
+    })();
     </script>
 </body>
 </html>
