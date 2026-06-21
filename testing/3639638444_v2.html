@@ -780,10 +780,11 @@
     
     <script src="corescript.js" type="text/javascript"></script>
     
-    <!-- ========== IE4-IE6专属兼容传统跳转搜索 ========== -->
+    <!-- ========== IE4-IE7专属兼容传统跳转搜索 (注意: 在IE7以下浏览器要将corescript.js删除或重命名新名称保证此不会加载此脚本，若你已升级IE浏览器可再将此脚本重命名为corescript.js） ========== -->
     <script type="text/javascript">
     (function() {
         var isIE4or5or6 = false;
+        var isIE4 = false;
         var ua = navigator.userAgent;
         var msiePos = -1;
         var msieSearch = 'MSIE ';
@@ -804,7 +805,7 @@
             var versionStart = msiePos + msieSearch.length;
             var versionEnd = versionStart;
             while (versionEnd < ua.length && ua.charAt(versionEnd) >= '0' && ua.charAt(versionEnd) <= '9') {
-                versionEnd++; // 注释 >
+                versionEnd++;
             }
             if (versionEnd > versionStart) {
                 var versionStr = '';
@@ -812,7 +813,33 @@
                     versionStr += ua.charAt(k);
                 }
                 var version = parseInt(versionStr, 10);
-                if (version <= 6) isIE4or5or6 = true; // 注释 >
+                if (version <= 7) { // 注释 >
+                    isIE4or5or6 = true;
+                    if (version == 4) {
+                        isIE4 = true;
+                    }
+                }
+            }
+        }
+        
+        // 【修改】根据IE版本选择编码函数
+        function encodeUrl(str) {
+            if (isIE4) {
+                // IE4浏览器：使用escape编码
+                if (typeof escape === 'function') {
+                    return escape(str);
+                }
+                return str;
+            } else {
+                // IE5及以上浏览器：使用encodeURIComponent编码
+                if (typeof encodeURIComponent === 'function') {
+                    return encodeURIComponent(str);
+                }
+                // 如果encodeURIComponent不可用，回退到escape
+                if (typeof escape === 'function') {
+                    return escape(str);
+                }
+                return str;
             }
         }
         
@@ -836,13 +863,6 @@
             var urlInput = getElem('urlInput');
             var engineSelect = getElem('engineSelect');
             
-            function encodeUrl(str) {
-                if (typeof escape === 'function') {
-                    return escape(str);
-                } else {
-                    return str;
-                }
-            }
             function hasProtocol(str) {
                 var protocols = ['://'];
                 for (var i = 0; i < protocols.length; i++) {
