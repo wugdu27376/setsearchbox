@@ -492,6 +492,8 @@
             var searchUrl = '';
             if (engine === 'baidu') {
                 searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+            } else if (engine === 'baidu_0') {
+                searchUrl = 'https://www.baidu.com/s?word=' + encodeURIComponent(keyword);
             } else if (engine === 'google') {
                 searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
             } else if (engine === 'bing') {
@@ -505,7 +507,6 @@
             } else if (engine === 'autofillHttps') {
                 searchUrl = 'https://' + encodeURIComponent(keyword);
             } else {
-                searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
             }
             window.location.href = searchUrl;
             return false;
@@ -3178,9 +3179,14 @@ function bindSubmitEvent() {
                     }, 0);
                 }
                 
+                if (engine === 'newtabpageHttp1' || engine === 'newtabpageHttps') {
+                    window.open(finalUrl, '_blank');
+                    return;
+                }
+                
                 var autoNewTabCheckbox = document.getElementById('autoNewTabCheckbox');
                 var isAutoNewTabChecked = autoNewTabCheckbox ? autoNewTabCheckbox.checked : false;
-                var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
+                var excludedEngines = ['autofillHttp1', 'autofillHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
                 var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
                 
                 if (shouldOpenNewTab) {
@@ -8185,7 +8191,7 @@ function showSearchSuggestions(suggestions) {
     var engineSelect = document.getElementById('engineSelect');
     
     if (!searchSuggestionsCheckbox || !engineSelect) return;
-    if (!searchSuggestionsCheckbox.checked || engineSelect.value === 'httpsAutoFill') return;
+    if (!searchSuggestionsCheckbox.checked || engineSelect.value === 'httpsAutoFill' || engineSelect.value === 'newtabpageHttp1' || engineSelect.value === 'newtabpageHttps' || engineSelect.value === 'autofillHttp1' || engineSelect.value === 'autofillHttps') return;
     
     var urlInput = document.getElementById('urlInput');
     var searchSuggestions = document.getElementById('searchSuggestions');
@@ -8683,9 +8689,13 @@ document.getElementById('urlInput').addEventListener('keydown', function(e) {
                 // 获取当前输入框的值
                 var inputText = this.value.trim();
                 if (inputText) {
+                    localStorage.setItem('isSuggestionSelected', 'true');
                     // 模拟点击访问建议
                     firstSuggestion.click();
                     e.preventDefault();
+                    setTimeout(function() {
+                    localStorage.removeItem('isSuggestionSelected');
+                    }, 100);
                     return false;
                 }
             }
