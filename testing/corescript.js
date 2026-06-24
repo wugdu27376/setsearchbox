@@ -1,4 +1,4 @@
-// ========== IE兼容性补丁(第2163行后结束) ==========
+// ========== IE兼容性补丁(第2330行后结束) ==========
 (function() {
     // 检测是否为IE浏览器
     var isIE = /*@cc_on!@*/false || !!document.documentMode;
@@ -507,6 +507,7 @@
             } else if (engine === 'autofillHttps') {
                 searchUrl = 'https://' + encodeURIComponent(keyword);
             } else {
+                return false;
             }
             window.location.href = searchUrl;
             return false;
@@ -1567,6 +1568,60 @@ onDomReady(function() {
         if (rv > 0) {
             var version = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
             if (version <= 11) isIE = true;
+        }
+    }
+    
+    bindSubmitEvent();
+    
+    // IE9/10 专属：submitBtn 点击事件兼容修复
+    if (isIE9 || isIE10) {
+        var submitBtnFix = document.getElementById('submitBtn');
+        var urlInputFix = document.getElementById('urlInput');
+        if (submitBtnFix && urlInputFix) {
+            if (submitBtnFix.addEventListener) {
+                submitBtnFix.addEventListener('click', function(e) {
+                    if (typeof bindSubmitEvent === 'function') {
+                        bindSubmitEvent();
+                    }
+                });
+            } else if (submitBtnFix.attachEvent) {
+                submitBtnFix.attachEvent('onclick', function(e) {
+                    if (typeof bindSubmitEvent === 'function') {
+                        bindSubmitEvent();
+                    }
+                });
+            }
+        }
+    }
+    
+    // IE9/10 专属：Enter键事件兼容修复
+    if (isIE9 || isIE10) {
+        var urlInputFix = document.getElementById('urlInput');
+        if (urlInputFix) {
+            var enterHandler = function(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which;
+                if (keyCode === 13) {
+                    if (e.preventDefault) e.preventDefault();
+                    e.returnValue = false;
+                    if (typeof bindSubmitEvent === 'function') {
+                        bindSubmitEvent();
+                    }
+                    var submitBtn = document.getElementById('submitBtn');
+                    if (submitBtn && submitBtn.click) {
+                        submitBtn.click();
+                    } else if (submitBtn && submitBtn.fireEvent) {
+                        submitBtn.fireEvent('onclick');
+                    }
+                    return false;
+                }
+                return true;
+            };
+            if (urlInputFix.addEventListener) {
+                urlInputFix.addEventListener('keydown', enterHandler);
+            } else if (urlInputFix.attachEvent) {
+                urlInputFix.attachEvent('onkeydown', enterHandler);
+            }
         }
     }
     
@@ -8710,6 +8765,9 @@ function fetchSearchSuggestions(query) {
     
     if (!searchSuggestionsCheckbox || !engineSelect) return;
     if (!searchSuggestionsCheckbox.checked || engineSelect.value === 'iFrameFree' || engineSelect.value === 'iFramePlus') return;
+    setTimeout(function() {
+        if (engineSelect.value === 'showCheckbox') { searchSuggestions.style.display = 'none'; };
+    }, 10);
     
     var searchSuggestions = document.getElementById('searchSuggestions');
     if (!searchSuggestions) return;
