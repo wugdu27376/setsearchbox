@@ -491,17 +491,17 @@
             var engine = engineSelect ? engineSelect.value : 'baidu';
             var searchUrl = '';
             if (engine === 'baidu') {
-                searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+                searchUrl = 'http://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
             } else if (engine === 'baidu_0') {
-                searchUrl = 'https://www.baidu.com/s?word=' + encodeURIComponent(keyword);
+                searchUrl = 'http://www.baidu.com/s?word=' + encodeURIComponent(keyword);
             } else if (engine === 'google') {
-                searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
+                searchUrl = 'http://www.google.com/search?q=' + encodeURIComponent(keyword);
             } else if (engine === 'bing') {
-                searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
+                searchUrl = 'http://www.bing.com/search?q=' + encodeURIComponent(keyword);
             } else if (engine === 'sogou') {
-                searchUrl = 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+                searchUrl = 'http://www.sogou.com/web?query=' + encodeURIComponent(keyword);
             } else if (engine === 'so') {
-                searchUrl = 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
+                searchUrl = 'http://www.so.com/s?q=' + encodeURIComponent(keyword);
             } else if (engine === 'autofillHttp1') {
                 searchUrl = 'http://' + encodeURIComponent(keyword);
             } else if (engine === 'autofillHttps') {
@@ -575,13 +575,13 @@
             if (engine === 'baidu') {
                 return 'http://www.baidu.com/baidu?wd=' + encodeURIComponent(keyword);
             } else if (engine === 'google') {
-                return 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
+                return 'http://www.google.com/search?q=' + encodeURIComponent(keyword);
             } else if (engine === 'bing') {
-                return 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
+                return 'http://www.bing.com/search?q=' + encodeURIComponent(keyword);
             } else if (engine === 'sogou') {
-                return 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+                return 'http://www.sogou.com/web?query=' + encodeURIComponent(keyword);
             } else if (engine === 'so') {
-                return 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
+                return 'http://www.so.com/s?q=' + encodeURIComponent(keyword);
             } else if (engine === 'autofillHttp1') {
                 return 'http://' + encodeURIComponent(keyword);
             } else if (engine === 'autofillHttps') {
@@ -1467,6 +1467,7 @@ onDomReady(function() {
         if (target && (target.id === 'urlInput' || target === document.getElementById('urlInput'))) {
             var submitBtn = document.getElementById('submitBtn');
             var urlInput = document.getElementById('urlInput');
+            var engineSelect = document.getElementById('engineSelect');
             
             if (submitBtn && urlInput) {
                 var inputValue = urlInput.value;
@@ -1486,6 +1487,27 @@ onDomReady(function() {
                         window._isNavigating = false;
                     }, 3000);
                     // ========== 【修改结束】 ==========
+                    
+                    // ========== 【修复】iFramePlus 选项下按 Enter 键直接处理，避免触发 submitBtn 导致双窗口 ==========
+                    var engine = engineSelect ? engineSelect.value : 'baidu';
+                    if (engine === 'iFramePlus') {
+                        if (inputValue && (inputValue.indexOf('http://') === 0 || inputValue.indexOf('https://') === 0)) {
+                            if (typeof createIframePlusWindow === 'function') {
+                                createIframePlusWindow(inputValue);
+                            }
+                        } else if (inputValue && inputValue.indexOf('://') === -1) {
+                            var finalUrl = 'https://' + inputValue;
+                            if (typeof createIframePlusWindow === 'function') {
+                                createIframePlusWindow(finalUrl);
+                            }
+                        } else if (inputValue) {
+                            if (typeof createIframePlusWindow === 'function') {
+                                createIframePlusWindow(inputValue);
+                            }
+                        }
+                        return false;
+                    }
+                    // ========== 【修复结束】 ==========
                     
                     if (submitBtn.click) {
                         if (document.getElementById('autoFillAndJumpCheckbox').checked) { if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {} };
@@ -1571,7 +1593,9 @@ onDomReady(function() {
         }
     }
     
-    bindSubmitEvent();
+    if (isIE9 || isIE10) {
+        bindSubmitEvent();
+    }
     
     // IE9/10 专属：submitBtn 点击事件兼容修复
     if (isIE9 || isIE10) {
@@ -7223,6 +7247,22 @@ if (savedAutoFocusState === 'true') {
     setTimeout(function() {
         document.getElementById('urlInput').focus();
     }, 100);
+    document.getElementById('urlInput').addEventListener('focus', function() {
+        setTimeout(function() {
+            var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
+            var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+            var historyInSuggestChecked = document.getElementById('searchHistoryInSuggestCheckbox').checked;
+            var engine = document.getElementById('engineSelect');
+            var searchSuggestionsElem = document.getElementById('searchSuggestions');
+            if (historyChecked && suggestionsChecked && historyInSuggestChecked) {
+                if (engine.value !== 'iFrameFree' && engine.value !== 'iFramePlus' && engine.value !== 'showCheckbox') {
+                    showSearchSuggestions([]);
+                } else {
+                    searchSuggestionsElem.style.display = 'none';
+                }
+            }
+        }, 100);
+    });
 }
 
 // 监听自动聚焦checkbox变化

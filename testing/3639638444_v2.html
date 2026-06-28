@@ -780,7 +780,8 @@
     
     <script src="corescript.js" type="text/javascript"></script>
     
-    <!-- ========== IE4-IE7专属兼容传统跳转搜索 (注意: 在IE7以下浏览器要将corescript.js删除或重命名新名称保证此不会加载此脚本，若你已升级IE浏览器可再将此脚本重命名为corescript.js） ========== -->
+    <!-- ========== IE4-IE7专属兼容传统跳转搜索 ========== -->
+    <!-- 注意: 在IE7以下浏览器要将corescript.js删除或重命名新名称或移动到其他文件夹保证此不会加载此脚本，若你已升级IE浏览器可再将此脚本重命名为corescript.js，若你已移动此JS文件可将它移动回原文件夹 -->
     <script type="text/javascript">
     (function() {
         var isIE4or5or6 = false;
@@ -891,21 +892,21 @@
                 if (!keyword) return '';
                 if (hasProtocol(keyword)) return keyword;
                 if (engine === 'baidu') {
-                    return 'https://www.baidu.com/s?wd=' + encodeUrl(keyword);
+                    return 'http://www.baidu.com/s?wd=' + encodeUrl(keyword);
                 } else if (engine === 'google') {
-                    return 'https://www.google.com/search?q=' + encodeUrl(keyword);
+                    return 'http://www.google.com/search?q=' + encodeUrl(keyword);
                 } else if (engine === 'bing') {
-                    return 'https://www.bing.com/search?q=' + encodeUrl(keyword);
+                    return 'http://www.bing.com/search?q=' + encodeUrl(keyword);
                 } else if (engine === 'sogou') {
-                    return 'https://www.sogou.com/web?query=' + encodeUrl(keyword);
+                    return 'http://www.sogou.com/web?query=' + encodeUrl(keyword);
                 } else if (engine === 'so') {
-                    return 'https://www.so.com/s?ie=utf-8&src=doodle&q=' + encodeUrl(keyword);
+                    return 'http://www.so.com/s?ie=utf-8&src=doodle&q=' + encodeUrl(keyword);
                 } else if (engine === 'autofillHttp1') {
                     return 'http://' + encodeUrl(keyword);
                 } else if (engine === 'autofillHttps') {
                     return 'https://' + encodeUrl(keyword);
                 } else {
-                    return 'https://www.baidu.com/s?wd=' + encodeUrl(keyword);
+                    return 'http://www.baidu.com/s?wd=' + encodeUrl(keyword);
                 }
             }
             
