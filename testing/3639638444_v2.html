@@ -210,12 +210,12 @@
             }
         }
         
-        #autoFillhttps input[type="checkbox"] {
+        #showToolPanel input[type="checkbox"] {
             margin: 0; /* 移除默认外边距 */
             vertical-align: middle; /* 垂直对齐 */
         }
 
-        #autoFillhttps label {
+        #showToolPanel label {
             margin: 0;
             vertical-align: middle;
             margin-right: 7px;
@@ -223,7 +223,7 @@
             display: inline-block;
         }
         
-        #autoFillhttps {
+        #showToolPanel {
             display: none;
             text-align: center;
             margin-top: 10px;
@@ -234,8 +234,8 @@
             justify-content: center;
         }
         
-        /* 限制在 #autoFillhttps 和 #iframeContainer 区域内，排除与checkbox关联的label和指定ID */
-        #autoFillhttps label:active:not([for*="Checkbox"]):not(#noActiveLab),
+        /* 限制在 #showToolPanel 和 #iframeContainer 区域内，排除与checkbox关联的label和指定ID */
+        #showToolPanel label:active:not([for*="Checkbox"]):not(#noActiveLab),
         #iframeContainer label:active:not([for*="Checkbox"]):not(#noActiveLab),
         #iframePlusSizeBtn label:active:not([for*="Checkbox"]):not(#noActiveLab),
         #clearHistoryBtn label:active {
@@ -254,7 +254,7 @@
             color: inherit !important;
         }
         
-        #autoFillhttps label, #iframeContainer label, #hitokotoDisplay, #searchSuggestions, #quickInputBtn1Head, #quickInputBtn2, #quickInputBtn3, #browserInfo, #engineSelect, #submitBtn, #userSelectModalDisabled {
+        #showToolPanel label, #iframeContainer label, #hitokotoDisplay, #searchSuggestions, #quickInputBtn1Head, #quickInputBtn2, #quickInputBtn3, #browserInfo, #engineSelect, #submitBtn, #userSelectModalDisabled {
             user-select: none;
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -304,6 +304,10 @@
             cursor: not-allowed;
         }
         
+        #submitBtn:disabled {
+            cursor: not-allowed !important;
+        }
+        
         /* 【新增】修复 text-select-wrapper 禁用状态下的点击样式 */
         .text-select-wrapper select:disabled {
             cursor: not-allowed;
@@ -338,9 +342,9 @@
         }
         
         /* 更多设置项默认隐藏 */
-        #autoFillhttps [id="showMoreCheckboxBlock"],
+        #showToolPanel [id="showMoreCheckboxBlock"],
         #autoFillhas [id="showMoreLabelBtns"],
-        #autoFillhttps .text-select-wrapper {
+        #showToolPanel .text-select-wrapper {
             display: none;
         }
         
@@ -513,7 +517,7 @@
         <label id="closeAllIframePlusBtn" style="display: inline-block; vertical-align: middle; cursor: pointer; user-select: none;">关闭窗口</label>
     </div>
     
-    <div id="autoFillhttps" style="display: none; text-align: center; margin-top: 10px;" aria-hidden="true">
+    <div id="showToolPanel" style="display: none; text-align: center; margin-top: 10px;" aria-hidden="true">
         <div style="display: inline-block;">
             <input type="checkbox" id="customCheckbox">
                 <label for="customCheckbox">自动填充Https</label>
@@ -686,13 +690,18 @@
             <input type="text" id="hitokotoSizePicker" style="display: none;">
             <label id="showMoreLabelBtns" for="historyLinksSizePicker" style="vertical-align: middle; cursor: pointer;">历史链接大小: <span id="historyLinksSizeValue">Default</span></label>
             <input type="text" id="historyLinksSizePicker" style="display: none;">
-            <!-- 新版历史记录开关 -->
             <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="searchHistoryInSuggestCheckbox" disabled>
                 <label for="searchHistoryInSuggestCheckbox">新版历史记录</label>
             </div>
             <label id="showMoreLabelBtns" for="historyLinksColorPicker" style="vertical-align: middle; cursor: pointer;">历史链颜色: <span id="historyLinksColorValue">#0000ee</span></label>
             <input type="text" id="historyLinksColorPicker" style="display: none;">
+            <label id="showMoreLabelBtns" for="quickInputRowSelectBtn" style="vertical-align: middle; cursor: pointer;">快捷输入行显示</label>
+            <input type="submit" id="quickInputRowSelectBtn" style="display: none;">
+            <div id="showMoreCheckboxBlock">
+                <input type="checkbox" id="wheelScrollCheckbox">
+                <label for="wheelScrollCheckbox">滚轮支持光标移动</label>
+            </div>
             <label id="showMoreSettingsBtn" style="vertical-align: middle; cursor: pointer;">展开更多设置</label>
             <label for="clearAllSettingsBtn" style="vertical-align: middle; cursor: pointer;">重置所有设置</label>
             <br/>
@@ -747,7 +756,6 @@
         <button><span>.cn</span></button>
         <button><span>.net</span></button>
         </div>
-        <br/>
         <div id="quickInputBtn2">
             <button id="pos_minusInf"><span>-Inf</span></button>
             <button id="pos_minus10"><span>-10</span></button>
@@ -756,7 +764,6 @@
             <button id="pos_plus10"><span>+10</span></button>
             <button id="pos_plusInf"><span>+Inf</span></button>
         </div>
-        <br/>
         <div id="quickInputBtn3">
             <button><span>/</span></button>
             <button><span>\</span></button>

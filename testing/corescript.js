@@ -692,7 +692,7 @@
         }
         
         // 修复 autoFillhttps 容器布局
-        var autoFillhttps = document.getElementById('autoFillhttps');
+        var autoFillhttps = document.getElementById('showToolPanel');
         if (autoFillhttps) {
             autoFillhttps.style.textAlign = 'center';
             autoFillhttps.style.marginTop = '10px';
@@ -2777,9 +2777,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     })();
-    // 如果保存的选择是showCheckbox，则显示autoFillhttps div
+    // 如果保存的选择是showCheckbox，则显示showToolPanel div
     if (savedEngine === 'showCheckbox') {
-        document.getElementById('autoFillhttps').style.display = 'block';
+        document.getElementById('showToolPanel').style.display = 'block';
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('urlInput').disabled = true;
         
@@ -4202,6 +4202,511 @@ document.getElementById('urlInput').addEventListener('blur', function(e) {
     }
 });
 
+// 修改位置：在 quickInputCheckbox 事件监听后添加
+// 修改位置：在 quickInputCheckbox 事件监听后添加
+// 快捷输入行选择功能（单个label按钮，选择即自动保存）
+(function() {
+    var rowSelectBtn = document.querySelector('label[for="quickInputRowSelectBtn"]');
+    var quickInputCheckbox = document.getElementById('quickInputCheckbox');
+    var focusCheckbox = document.getElementById('focusCheckbox');  // 【新增】获取 focusCheckbox 元素
+    
+    if (!rowSelectBtn || !quickInputCheckbox) return;
+    
+    // 【新增】根据 focusCheckbox 和 quickInputCheckbox 状态设置 rowSelectBtn 的禁用样式
+    function setRowSelectBtnDisabled() {
+        var isFocusChecked = focusCheckbox ? focusCheckbox.checked : false;
+        var isQuickChecked = quickInputCheckbox.checked;
+        var disabled = !isFocusChecked || !isQuickChecked;
+        
+        if (disabled) {
+            rowSelectBtn.style.opacity = '0.7';
+            rowSelectBtn.style.cursor = 'not-allowed';
+            rowSelectBtn.style.pointerEvents = 'none';
+            rowSelectBtn.setAttribute('data-disabled', 'true');
+        } else {
+            rowSelectBtn.style.opacity = '1';
+            rowSelectBtn.style.cursor = 'pointer';
+            rowSelectBtn.style.pointerEvents = 'auto';
+            rowSelectBtn.removeAttribute('data-disabled');
+        }
+    }
+    
+    // 【新增】初始设置禁用状态
+    setRowSelectBtnDisabled();
+    
+    // 【新增】监听 focusCheckbox 变化
+    if (focusCheckbox) {
+        if (focusCheckbox.addEventListener) {
+            focusCheckbox.addEventListener('change', setRowSelectBtnDisabled);
+        } else if (focusCheckbox.attachEvent) {
+            focusCheckbox.attachEvent('onchange', setRowSelectBtnDisabled);
+        }
+    }
+    
+    // 加载保存的显示行选择
+    var savedRowSelection = 'all';
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var val = localStorage.getItem('quickInputRowSelection');
+            if (val) savedRowSelection = val;
+        }
+    } catch(e) {}
+    
+    // 应用行显示状态
+    function applyRowSelection(selection) {
+        var row1 = document.getElementById('quickInputBtn1Head');
+        var row2 = document.getElementById('quickInputBtn2');
+        var row3 = document.getElementById('quickInputBtn3');
+        var rowContainers = [row1, row2, row3];
+        
+        var isChecked = quickInputCheckbox.checked;
+        
+        for (var i = 0; i < rowContainers.length; i++) {
+            if (!rowContainers[i]) continue;
+            if (!isChecked) {
+                rowContainers[i].style.display = 'none';
+                continue;
+            }
+            if (selection === 'all') {
+                rowContainers[i].style.display = '';
+            } else if (selection === 'row1') {
+                rowContainers[i].style.display = (i === 0) ? '' : 'none';
+            } else if (selection === 'row2') {
+                rowContainers[i].style.display = (i === 1) ? '' : 'none';
+            } else if (selection === 'row3') {
+                rowContainers[i].style.display = (i === 2) ? '' : 'none';
+            } else if (selection === 'row12') {
+                rowContainers[i].style.display = (i === 0 || i === 1) ? '' : 'none';
+            } else if (selection === 'row13') {
+                rowContainers[i].style.display = (i === 0 || i === 2) ? '' : 'none';
+            } else if (selection === 'row23') {
+                rowContainers[i].style.display = (i === 1 || i === 2) ? '' : 'none';
+            }
+        }
+    }
+    
+    // 点击选择行按钮
+    rowSelectBtn.onclick = function() {
+        // 【修改】使用 data-disabled 属性检查禁用状态
+        if (this.getAttribute('data-disabled') === 'true') {
+            return;
+        }
+        if (rowSelectBtn.style.pointerEvents === 'none' || rowSelectBtn.style.opacity === '0.7') {
+            return;
+        }
+        if (!quickInputCheckbox.checked) {
+            return;
+        }
+        var currentSelection = 'all';
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var val = localStorage.getItem('quickInputRowSelection');
+                if (val) currentSelection = val;
+            }
+        } catch(e) {}
+        
+        var html = '<div style="text-align: left; font-size: 15px; -webkit-tap-highlight-color: transparent;">' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="all" id="qir_all"' + (currentSelection === 'all' ? ' checked' : '') + '><label for="qir_all" style="margin-left: 5px; cursor: pointer;">全部显示</label></div>' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="row1" id="qir_row1"' + (currentSelection === 'row1' ? ' checked' : '') + '><label for="qir_row1" style="margin-left: 5px; cursor: pointer;">显示第1行</label></div>' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="row2" id="qir_row2"' + (currentSelection === 'row2' ? ' checked' : '') + '><label for="qir_row2" style="margin-left: 5px; cursor: pointer;">显示第2行</label></div>' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="row3" id="qir_row3"' + (currentSelection === 'row3' ? ' checked' : '') + '><label for="qir_row3" style="margin-left: 5px; cursor: pointer;">显示第3行</label></div>' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="row12" id="qir_row12"' + (currentSelection === 'row12' ? ' checked' : '') + '><label for="qir_row12" style="margin-left: 5px; cursor: pointer;">显示1 2行</label></div>' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="row13" id="qir_row13"' + (currentSelection === 'row13' ? ' checked' : '') + '><label for="qir_row13" style="margin-left: 5px; cursor: pointer;">显示1 3行</label></div>' +
+            '<div><input type="radio" name="quickInputRow" value="row23" id="qir_row23"' + (currentSelection === 'row23' ? ' checked' : '') + '><label for="qir_row23" style="margin-left: 5px; cursor: pointer;">显示2 3行</label></div>' +
+            '</div>';
+        
+        var callbackName = 'rowSelectCallback_' + Date.now();
+        window[callbackName] = function() {
+            delete window[callbackName];
+        };
+        
+        // 为所有radio添加change事件，选择即自动保存并关闭弹窗
+        var radioChangeHandler = function(e) {
+            var target = e.target || e.srcElement;
+            if (target && target.type === 'radio') {
+                var selected = target.value;
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage) {
+                        localStorage.setItem('quickInputRowSelection', selected);
+                    }
+                } catch(e) {}
+                applyRowSelection(selected);
+                // 关闭弹窗
+                if (typeof window[callbackName] === 'function') {
+                    window[callbackName]();
+                }
+            }
+        };
+        
+        // 保存原始showCustomAlert函数引用
+        var originalShowCustomAlert = window.showCustomAlert;
+        window.showCustomAlert = function(title, content) {
+            originalShowCustomAlert(title, content);
+            // 延迟绑定radio事件，确保DOM已渲染
+            setTimeout(function() {
+                var radios = document.querySelectorAll('input[name="quickInputRow"]');
+                for (var i = 0; i < radios.length; i++) {
+                    if (radios[i].addEventListener) {
+                        radios[i].addEventListener('change', radioChangeHandler);
+                    } else if (radios[i].attachEvent) {
+                        radios[i].attachEvent('onchange', radioChangeHandler);
+                    }
+                }
+            }, 50);
+        };
+        
+        // 调用showCustomAlert，不包含确定按钮
+        showCustomAlert('选择快捷输入行', html);
+        
+        // 恢复原始showCustomAlert（延迟执行，确保弹窗已创建）
+        setTimeout(function() {
+            window.showCustomAlert = originalShowCustomAlert;
+        }, 100);
+    };
+    
+    // 监听 quickInputCheckbox 变化，重新应用行显示状态
+    function onQuickInputChange() {
+        setRowSelectBtnDisabled();  // 【新增】调用禁用状态更新函数
+        
+        if (quickInputCheckbox.checked) {
+            var savedSelection = 'all';
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    var val = localStorage.getItem('quickInputRowSelection');
+                    if (val) savedSelection = val;
+                }
+            } catch(e) {}
+            applyRowSelection(savedSelection);
+        } else {
+            var row1 = document.getElementById('quickInputBtn1Head');
+            var row2 = document.getElementById('quickInputBtn2');
+            var row3 = document.getElementById('quickInputBtn3');
+            if (row1) row1.style.display = 'none';
+            if (row2) row2.style.display = 'none';
+            if (row3) row3.style.display = 'none';
+        }
+    }
+    
+    if (quickInputCheckbox.addEventListener) {
+        quickInputCheckbox.addEventListener('change', onQuickInputChange);
+    } else if (quickInputCheckbox.attachEvent) {
+        quickInputCheckbox.attachEvent('onchange', onQuickInputChange);
+    }
+    
+    // 监听输入框聚焦事件，重新应用行显示状态
+    var urlInput = document.getElementById('urlInput');
+    if (urlInput) {
+        function onUrlInputFocus() {
+            setTimeout(function() {
+                if (quickInputCheckbox.checked) {
+                    var savedSelection = 'all';
+                    try {
+                        if (typeof localStorage !== 'undefined' && localStorage) {
+                            var val = localStorage.getItem('quickInputRowSelection');
+                            if (val) savedSelection = val;
+                        }
+                    } catch(e) {}
+                    applyRowSelection(savedSelection);
+                }
+            }, 50);
+        }
+        if (urlInput.addEventListener) {
+            urlInput.addEventListener('focus', onUrlInputFocus);
+        } else if (urlInput.attachEvent) {
+            urlInput.attachEvent('onfocus', onUrlInputFocus);
+        }
+    }
+    
+    // 页面加载完成后应用行显示状态
+    function applyOnLoad() {
+        setRowSelectBtnDisabled();  // 【新增】页面加载时更新禁用状态
+        if (quickInputCheckbox.checked) {
+            var savedSelection = 'all';
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    var val = localStorage.getItem('quickInputRowSelection');
+                    if (val) savedSelection = val;
+                }
+            } catch(e) {}
+            applyRowSelection(savedSelection);
+        }
+    }
+    
+    if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', applyOnLoad);
+    } else if (document.attachEvent) {
+        document.attachEvent('onreadystatechange', function() {
+            if (document.readyState === 'complete') {
+                applyOnLoad();
+            }
+        });
+    } else {
+        window.onload = applyOnLoad;
+    }
+    
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        applyOnLoad();
+    }
+})();
+
+// 滚轮支持光标移动功能
+(function() {
+    var wheelCheckbox = document.getElementById('wheelScrollCheckbox');
+    var urlInput = document.getElementById('urlInput');
+    
+    if (!wheelCheckbox || !urlInput) return;
+    
+    // 检测是否为移动端
+    var isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // 移动端禁用此开关
+    if (isMobile) {
+        wheelCheckbox.disabled = true;
+        wheelCheckbox.checked = false;
+        var wheelLabel = document.querySelector('label[for="wheelScrollCheckbox"]');
+        if (wheelLabel) {
+            wheelLabel.style.opacity = '0.7';
+            wheelLabel.style.cursor = 'not-allowed';
+        }
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                localStorage.setItem('wheelScrollChecked', 'false');
+            }
+        } catch(e) {}
+        return;
+    }
+    
+    // 加载保存的状态
+    var savedState = false;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            savedState = localStorage.getItem('wheelScrollChecked') === 'true';
+        }
+    } catch(e) {}
+    wheelCheckbox.checked = savedState;
+    
+    // 滚轮事件处理函数
+    var wheelHandler = function(e) {
+        if (!wheelCheckbox.checked) return;
+        
+        e = e || window.event;
+        var target = e.target || e.srcElement;
+        
+        // 检查目标是否为输入框或其子元素
+        var isHoveringInput = false;
+        var checkElem = target;
+        while (checkElem && checkElem !== document.body) {
+            if (checkElem === urlInput) {
+                isHoveringInput = true;
+                break;
+            }
+            checkElem = checkElem.parentNode;
+        }
+        
+        // 如果鼠标不在输入框上，允许页面滚动
+        if (!isHoveringInput) {
+            return true;
+        }
+        
+        // 检查输入框是否获得焦点
+        var isFocused = (document.activeElement === urlInput);
+        
+        // 如果输入框未获得焦点，允许页面滚动
+        if (!isFocused) {
+            return true;
+        }
+        
+        // 获取输入框当前值
+        var value = urlInput.value;
+        if (!value || value === '') return true;
+        
+        // 获取当前光标位置
+        var cursorPos = urlInput.selectionStart || 0;
+        var selectionEnd = urlInput.selectionEnd || cursorPos;
+        
+        // 检查是否按下了Shift键
+        var shiftPressed = e.shiftKey || false;
+        
+        // 获取滚动方向
+        var delta = 0;
+        if (e.wheelDelta) {
+            delta = e.wheelDelta;
+        } else if (e.detail) {
+            delta = -e.detail;
+        }
+        
+        // 阻止页面滚动
+        if (e.preventDefault) {
+            e.preventDefault();
+        } else {
+            e.returnValue = false;
+        }
+        
+        var newPos = cursorPos;
+        if (delta > 0) {
+            // 向上滚动：光标向左移动一格
+            newPos = Math.max(0, cursorPos - 1);
+        } else if (delta < 0) {
+            // 向下滚动：光标向右移动一格
+            newPos = Math.min(value.length, cursorPos + 1);
+        }
+        // 当按Shift键时，从原点到滚动移动位置连删文本
+        if (shiftPressed && newPos !== cursorPos) {
+            // 确定删除范围（从光标位置到新位置）
+            var start = Math.min(cursorPos, newPos);
+            var end = Math.max(cursorPos, newPos);
+            
+            // 删除范围内的文本
+            var before = value.substring(0, start);
+            var after = value.substring(end);
+            urlInput.value = before + after;
+            
+            // 将光标移动到删除起始位置
+            var finalPos = start;
+            if (urlInput.setSelectionRange) {
+                urlInput.setSelectionRange(finalPos, finalPos);
+            } else if (urlInput.createTextRange) {
+                var range = urlInput.createTextRange();
+                range.collapse(true);
+                range.moveStart('character', finalPos);
+                range.moveEnd('character', 0);
+                range.select();
+            }
+            
+            // 修改位置：删除文本后更新搜索建议（仅在searchSuggestionsCheckbox被勾选时）
+            var suggestionsCheckbox = document.getElementById('searchSuggestionsCheckbox');
+            if (suggestionsCheckbox && suggestionsCheckbox.checked) {
+                var currentValue = urlInput.value;
+                var searchSuggestionsElem = document.getElementById('searchSuggestions');
+                
+                if (currentValue && currentValue.trim() !== '') {
+                    if (typeof fetchSearchSuggestions === 'function') {
+                        fetchSearchSuggestions(currentValue);
+                    }
+                } else {
+                    // 修改位置：文本被清空时，搜索建议未显示时重置快捷输入按钮原来位置
+                    if (searchSuggestionsElem) {
+                        searchSuggestionsElem.style.display = 'none';
+                    }
+                    // 重置快捷输入按钮位置
+                    if (typeof resetQuickInputPosition === 'function') {
+                        resetQuickInputPosition();
+                    } else {
+                        var quickInputBtn = document.getElementById('quickInputBtn');
+                        if (quickInputBtn) {
+                            quickInputBtn.style.marginTop = '0px';
+                        }
+                    }
+                }
+                
+                // 修改位置：当搜索建议显示类型记录时继续调整快捷输入按钮位置
+                if (searchSuggestionsElem && searchSuggestionsElem.style.display === 'block') {
+                    var quickInputCheckbox = document.getElementById('quickInputCheckbox');
+                    if (quickInputCheckbox && quickInputCheckbox.checked) {
+                        var quickInputBtn = document.getElementById('quickInputBtn');
+                        if (quickInputBtn) {
+                            var suggestionsHeight = searchSuggestionsElem.offsetHeight;
+                            if (suggestionsHeight > 0) {
+                                quickInputBtn.style.marginTop = (suggestionsHeight + 10) + 'px';
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (newPos !== cursorPos) {
+            // 未按Shift键时，正常移动光标
+            if (urlInput.setSelectionRange) {
+                urlInput.setSelectionRange(newPos, newPos);
+            } else if (urlInput.createTextRange) {
+                var range = urlInput.createTextRange();
+                range.collapse(true);
+                range.moveStart('character', newPos);
+                range.moveEnd('character', 0);
+                range.select();
+            }
+        }
+        
+        return false;
+    };
+    
+    // 绑定滚轮事件（兼容所有浏览器）
+    if (urlInput.addEventListener) {
+        urlInput.addEventListener('wheel', wheelHandler);
+        urlInput.addEventListener('mousewheel', wheelHandler);
+        urlInput.addEventListener('DOMMouseScroll', wheelHandler);
+    } else if (urlInput.attachEvent) {
+        urlInput.attachEvent('onmousewheel', wheelHandler);
+    }
+    
+    // 监听 checkbox 变化保存状态
+    if (wheelCheckbox.addEventListener) {
+        wheelCheckbox.addEventListener('change', function(e) {
+            e = e || window.event;
+            var isChecked = this.checked;
+            
+            // 修改位置：勾选时弹出确认框
+            if (isChecked) {
+                showCustomConfirm('启用后，你可以将鼠标移动到搜索输入框并滚动鼠标滚轮移动光标，支持以下操作: <br><b>向上滚动: </b>光标向左移动<br><b>向下滚动: </b>光标向右移动<br><b>Shift + 鼠标滚轮: </b>按滚动方向连续删除文字', function(result) {
+                    if (result) {
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('wheelScrollChecked', 'true');
+                            }
+                        } catch(e) {}
+                        // 保持勾选状态
+                    } else {
+                        // 取消时恢复未勾选状态
+                        wheelCheckbox.checked = false;
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('wheelScrollChecked', 'false');
+                            }
+                        } catch(e) {}
+                    }
+                });
+            } else {
+                // 取消勾选时直接保存
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage) {
+                        localStorage.setItem('wheelScrollChecked', 'false');
+                    }
+                } catch(e) {}
+            }
+        });
+    } else if (wheelCheckbox.attachEvent) {
+        wheelCheckbox.attachEvent('onchange', function(e) {
+            e = e || window.event;
+            var isChecked = this.checked;
+            
+            // 修改位置：勾选时弹出确认框
+            if (isChecked) {
+                showCustomConfirm('确定要启用鼠标滚轮支持光标移动功能吗？', function(result) {
+                    if (result) {
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('wheelScrollChecked', 'true');
+                            }
+                        } catch(e) {}
+                    } else {
+                        wheelCheckbox.checked = false;
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('wheelScrollChecked', 'false');
+                            }
+                        } catch(e) {}
+                    }
+                });
+            } else {
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage) {
+                        localStorage.setItem('wheelScrollChecked', 'false');
+                    }
+                } catch(e) {}
+            }
+        });
+    }
+})();
+
 // 更新自定义搜索选项
 function updateCustomSearchOptions() {
     var customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]');
@@ -4295,11 +4800,11 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
     // 根据选择显示或隐藏 checkbox
     if (this.value === 'showCheckbox') {
-        document.getElementById('autoFillhttps').style.display = 'block';
+        document.getElementById('showToolPanel').style.display = 'block';
         submitBtn.disabled = true;
         urlInput.disabled = true;
     } else {
-        document.getElementById('autoFillhttps').style.display = 'none';
+        document.getElementById('showToolPanel').style.display = 'none';
         submitBtn.disabled = false;
         urlInput.disabled = false;
     }
@@ -4377,13 +4882,13 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
     // 根据选择显示或隐藏 checkbox
     if (this.value === 'showCheckbox') {
-        document.getElementById('autoFillhttps').style.display = 'block';
+        document.getElementById('showToolPanel').style.display = 'block';
         var savedLayoutState = localStorage.getItem('layoutChecked');
         if (savedLayoutState === 'true') {
             applyLayoutStyle(true);
         }
     } else {
-        document.getElementById('autoFillhttps').style.display = 'none';
+        document.getElementById('showToolPanel').style.display = 'none';
         var savedLayoutState = localStorage.getItem('layoutChecked');
         if (savedLayoutState !== 'true') {
             applyLayoutStyle(false);
@@ -4414,10 +4919,10 @@ document.getElementById('engineSelect').addEventListener('change', function() {
         // 如果有之前保存的窗口，可以在这里恢复（可选）
     }
     if (this.value === 'showCheckbox') {
-        document.getElementById('autoFillhttps').style.display = 'block';
+        document.getElementById('showToolPanel').style.display = 'block';
         linkCreatorBtn.style.display = 'inline-block';
     } else {
-        document.getElementById('autoFillhttps').style.display = 'none';
+        document.getElementById('showToolPanel').style.display = 'none';
         linkCreatorBtn.style.display = 'none';
         document.getElementById('linkCreatorPanel').style.display = 'none';
     }
@@ -4452,7 +4957,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                 if (document.getElementById('engineSelect').value === 'showCheckbox') {
                     linkCreatorBtn.style.display = 'inline-block';
                     updateQuickLinks();
-                    document.getElementById('autoFillhttps').style.display = 'block';
+                    document.getElementById('showToolPanel').style.display = 'block';
                     submitBtn.disabled = true;
                     urlInput.disabled = true;
                 }
@@ -4512,7 +5017,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                 if (document.getElementById('engineSelect').value === 'showCheckbox') {
                     linkCreatorBtn.style.display = 'inline-block';
                     updateQuickLinks();
-                    document.getElementById('autoFillhttps').style.display = 'block';
+                    document.getElementById('showToolPanel').style.display = 'block';
                     submitBtn.disabled = true;
                     urlInput.disabled = true;
                 }
@@ -5296,56 +5801,10 @@ if (savedFocusCheckboxState === 'true') {
     document.getElementById('focusCheckbox').checked = true;
     document.getElementById('quickInputCheckbox').disabled = false;
     document.getElementById('clearOnBlurCheckbox').disabled = false;
-    // 监听输入框聚焦时的高度变化，调整quickInputUi位置
     document.getElementById('urlInput').addEventListener('focus', function() {
-        document.body.classList.add('focused');
-        document.querySelector('.search-container').classList.add('focused');
-        document.getElementById('quickInputBtn').style.display = 'block';
-        document.getElementById('iframeContainer').style.display = 'none';
-        document.getElementById('centerBoxDisplay').style.display = 'none';
-        document.getElementById('searchContainer').style.marginTop = '0';
-        
-        // 添加classList兼容性修复函数
-function addClass(element, className) {
-    if (element.classList) {
-        element.classList.add(className);
-    } else {
-        element.className += ' ' + className;
-    }
-}
-
-function removeClass(element, className) {
-    if (element.classList) {
-        element.classList.remove(className);
-    } else {
-        element.className = element.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
-    }
-}
-
-// 使用示例
-addClass(document.body, 'focused');
-addClass(document.querySelector('.search-container'), 'focused');
-        
-        // 添加高度检测和间距调整
-        var inputHeight = parseInt(getComputedStyle(this).height);
-        var submitBtnHeight = parseInt(getComputedStyle(document.getElementById('submitBtn')).height);
-        var maxHeight = Math.max(inputHeight, submitBtnHeight);
-        
-        if (maxHeight > 24) {
-            var extraSpace = maxHeight - 24;
-            document.getElementById('quickInputBtn').style.marginTop = (0 + extraSpace) + 'px';
-        } else {
-            document.getElementById('quickInputBtn').style.marginTop = '0px';
-        }
-        
-        // 检查是否启用了自动选择https文本功能
-        var isSelectHttpsTextChecked = localStorage.getItem('selectHttpsTextChecked') === 'true';
-        var isAutoFillHttpsChecked = localStorage.getItem('autoFillHttpsChecked') === 'true';
-        
-        // 只有当所有条件满足且用户没有手动输入时才自动选择
-        if (isSelectHttpsTextChecked && isAutoFillHttpsChecked &&
-            this.value === 'https://' && !this.dataset.userInput) {
-            this.select(); // 自动选择所有文本
+        var urlInput = document.getElementById('urlInput');
+        if (urlInput.value === '') {
+            resetQuickInputPosition();
         }
     });
 }
@@ -6646,7 +7105,7 @@ document.addEventListener('contextmenu', function(e) {
         return false;
     } else if (!document.getElementById('hideSearchContainerCheckbox').checked) {
         var tagName = target.tagName.toLowerCase();
-        if (tagName === 'head' || tagName === 'p' || tagName === 'span' || tagName === 'label' || tagName === 'div' || tagName === 'select' || tagName === 'button' || tagName === 'body' || tagName === 'html' || target.id === 'quickLinks' || target.id === 'autoFillhttps' || target.className === 'search-container') {
+        if (tagName === 'head' || tagName === 'p' || tagName === 'span' || tagName === 'label' || tagName === 'div' || tagName === 'select' || tagName === 'button' || tagName === 'body' || tagName === 'html' || target.id === 'quickLinks' || target.id === 'showToolPanel' || target.className === 'search-container') {
             e = e || window.event;
             if (e.preventDefault) {
                 e.preventDefault();
@@ -6991,7 +7450,7 @@ style.textContent = [
     '    background: white;',
     '}',
     '',
-    'body.focused #autoFillhttps,',
+    'body.focused #showToolPanel,',
     'body.focused a {',
     '    display: none !important;',
     '}',
@@ -7247,22 +7706,35 @@ if (savedAutoFocusState === 'true') {
     setTimeout(function() {
         document.getElementById('urlInput').focus();
     }, 100);
-    document.getElementById('urlInput').addEventListener('focus', function() {
-        setTimeout(function() {
-            var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
-            var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
-            var historyInSuggestChecked = document.getElementById('searchHistoryInSuggestCheckbox').checked;
-            var engine = document.getElementById('engineSelect');
-            var searchSuggestionsElem = document.getElementById('searchSuggestions');
-            if (historyChecked && suggestionsChecked && historyInSuggestChecked) {
-                if (engine.value !== 'iFrameFree' && engine.value !== 'iFramePlus' && engine.value !== 'showCheckbox') {
-                    showSearchSuggestions([]);
-                } else {
-                    searchSuggestionsElem.style.display = 'none';
-                }
+    // 修改位置：使用 document.activeElement 检查输入框是否获得焦点
+    var urlInputElement = document.getElementById('urlInput');
+    if (urlInputElement) {
+        var focusHandler = function() {
+            // 检查当前获得焦点的元素是否为 urlInput
+            if (document.activeElement === urlInputElement) {
+                setTimeout(function() {
+                    var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
+                    var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+                    var historyInSuggestChecked = document.getElementById('searchHistoryInSuggestCheckbox').checked;
+                    var engine = document.getElementById('engineSelect');
+                    var searchSuggestionsElem = document.getElementById('searchSuggestions');
+                    if (historyChecked && suggestionsChecked && historyInSuggestChecked) {
+                        if (engine.value !== 'iFrameFree' && engine.value !== 'iFramePlus' && engine.value !== 'showCheckbox') {
+                            showSearchSuggestions([]);
+                        } else {
+                            searchSuggestionsElem.style.display = 'none';
+                        }
+                    }
+                }, 0);
             }
-        }, 100);
-    });
+        };
+        // 兼容所有浏览器版本的事件绑定
+        if (urlInputElement.addEventListener) {
+            urlInputElement.addEventListener('focus', focusHandler);
+        } else if (urlInputElement.attachEvent) {
+            urlInputElement.attachEvent('onfocus', focusHandler);
+        }
+    }
 }
 
 // 监听自动聚焦checkbox变化
@@ -7683,14 +8155,14 @@ document.querySelector('label[for="fontColorPicker"]').addEventListener('click',
         if (newColor === '') {
             // 输入为空时恢复默认颜色
             var defaultColor = '#000000';
-            document.getElementById('autoFillhttps').style.color = defaultColor;
+            document.getElementById('showToolPanel').style.color = defaultColor;
             document.getElementById('iframeContainer').style.color = defaultColor;
             document.getElementById('iframePlusSizeBtn').style.color = defaultColor;
             document.getElementById('clearHistoryBtn').style.color = defaultColor;
             document.getElementById('fontColorValue').textContent = defaultColor;
             localStorage.setItem('fontColor', defaultColor);
         } else if (/^#([0-9A-F]{3,6})$/i.test(newColor) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newColor) || /^[a-z]+$/i.test(newColor) || /^hsla?\(\s*\d+\s*,\s*\d+%?\s*,\s*\d+%?\s*(,\s*[\d.]+\s*)?\)$/i.test(newColor)) {
-            document.getElementById('autoFillhttps').style.color = newColor;
+            document.getElementById('showToolPanel').style.color = newColor;
             document.getElementById('iframeContainer').style.color = newColor;
             document.getElementById('iframePlusSizeBtn').style.color = newColor;
             document.getElementById('clearHistoryBtn').style.color = newColor;
@@ -7704,7 +8176,7 @@ document.querySelector('label[for="fontColorPicker"]').addEventListener('click',
 // 加载保存的字体颜色
 var savedFontColor = localStorage.getItem('fontColor');
 if (savedFontColor) {
-    document.getElementById('autoFillhttps').style.color = savedFontColor;
+    document.getElementById('showToolPanel').style.color = savedFontColor;
     document.getElementById('iframeContainer').style.color = savedFontColor;
     document.getElementById('iframePlusSizeBtn').style.color = savedFontColor;
     document.getElementById('clearHistoryBtn').style.color = savedFontColor;
@@ -7962,7 +8434,9 @@ function exportSettingsData() {
         hitokotoColor: localStorage.getItem('hitokotoColor') || '#000000',
         hitokotoFontStyle: localStorage.getItem('hitokotoFontStyle') || 'italic',
         hitokotoFontSize: localStorage.getItem('hitokotoFontSize') || '14px',
-        moreSettingsExpanded: localStorage.getItem('moreSettingsExpanded') || 'false'
+        moreSettingsExpanded: localStorage.getItem('moreSettingsExpanded') || 'false',
+        quickInputRowSelection: localStorage.getItem('quickInputRowSelection') || 'all',
+        wheelScrollChecked: localStorage.getItem('wheelScrollChecked') || 'false'
     };
     
     // ========== 新增：动态遍历 localStorage 捕获遗漏项 ==========
@@ -10234,7 +10708,7 @@ document.querySelector('label[for="customSearchListBtn"]').addEventListener('cli
 // 更多设置折叠/展开功能（兼容所有浏览器）
 (function() {
     // 获取需要控制的元素集合
-    var container = document.getElementById('autoFillhttps');
+    var container = document.getElementById('showToolPanel');
     if (!container) return;
     
     // 收集所有需要隐藏/显示的元素
