@@ -9545,6 +9545,13 @@ document.getElementById('urlInput').addEventListener('focus', function() {
 
 // 输入框输入事件
 document.getElementById('urlInput').addEventListener('input', function() {
+    // 修改位置：当选择搜索建议后再输入文字时，重置选择搜索建议初始位置
+    if (suggestionIndex !== -1 && typeof suggestionIndex !== 'undefined') {
+        suggestionIndex = -1;
+        // 恢复输入框当前输入文字（保持当前输入不变）
+        // 不需要额外操作，因为 input 事件已经更新了输入框的值
+    }
+    
     if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
     
     var query = this.value.trim();
