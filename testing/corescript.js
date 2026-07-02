@@ -7210,9 +7210,62 @@ document.getElementById('hitokotoCheckbox').addEventListener('change', function(
 });
 
 // 获取一言数据
+// 修改位置：在 fetchHitokoto 函数中修改
 function fetchHitokoto() {
     var hitokotoDisplay = document.getElementById('hitokotoDisplay');
     if (!hitokotoDisplay) return;
+    
+    // 获取纯文本格式开关状态
+    var isPlainText = false;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            isPlainText = localStorage.getItem('hitokotoPlainTextChecked') === 'true';
+        }
+    } catch(e) {}
+    
+    var url = '';
+    var useDefault = true;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var val = localStorage.getItem('hitokotoUseDefault');
+            if (val !== null && val !== undefined) {
+                useDefault = val === 'true';
+            }
+        }
+    } catch(e) {}
+    
+    if (useDefault) {
+        url = 'https://v1.hitokoto.cn/';
+    } else {
+        var selectedTypes = [];
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var types = localStorage.getItem('hitokotoSelectedTypes');
+                if (types) {
+                    selectedTypes = JSON.parse(types);
+                }
+            }
+        } catch(e) {}
+        
+        if (selectedTypes.length === 0) {
+            url = 'https://v1.hitokoto.cn/';
+        } else {
+            var params = [];
+            for (var i = 0; i < selectedTypes.length; i++) {
+                params.push('c=' + selectedTypes[i]);
+            }
+            url = 'https://v1.hitokoto.cn/?' + params.join('&');
+        }
+    }
+    
+    // 修改位置：如果纯文本格式开关已勾选，添加 encode=text 参数
+    if (isPlainText) {
+        if (url.indexOf('?') !== -1) {
+            url += '&encode=text';
+        } else {
+            url += '?encode=text';
+        }
+    }
     
     var xhr = null;
     try {
@@ -7222,15 +7275,24 @@ function fetchHitokoto() {
         return;
     }
     
-    xhr.open('GET', 'https://v1.hitokoto.cn/', true);
+    xhr.open('GET', url, true);
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
             if (xhr.status === 200) {
                 try {
-                    var data = JSON.parse(xhr.responseText);
-                    var hitokotoText = '「' + data.hitokoto + '」—— ' + data.from;
-                    hitokotoDisplay.textContent = hitokotoText;
-                    hitokotoDisplay.setAttribute('data-hitokoto', hitokotoText);
+                    var responseText = xhr.responseText;
+                    // 修改位置：根据纯文本格式开关状态决定显示方式
+                    if (isPlainText) {
+                        // 纯文本格式：直接显示返回的文本
+                        hitokotoDisplay.textContent = responseText;
+                        hitokotoDisplay.setAttribute('data-hitokoto', responseText);
+                    } else {
+                        // JSON格式：解析后显示
+                        var data = JSON.parse(responseText);
+                        var hitokotoText = '「' + data.hitokoto + '」—— ' + data.from;
+                        hitokotoDisplay.textContent = hitokotoText;
+                        hitokotoDisplay.setAttribute('data-hitokoto', hitokotoText);
+                    }
                 } catch (e) {
                     hitokotoDisplay.textContent = 'Network Error';
                 }
@@ -7251,6 +7313,482 @@ function fetchHitokoto() {
         hitokotoDisplay.textContent = 'Network Error';
     }
 }
+
+// 修改位置：在 fetchHitokoto 函数之前或之后添加
+// 一言类型选择功能
+(function() {
+    var typeBtn = document.querySelector('label[for="hitokotoTypeBtn"]');
+    var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    
+    if (!typeBtn) return;
+    
+    // 类型列表（按字母排列）
+    var typeList = [
+        { id: 'a', label: '动画' },
+        { id: 'b', label: '漫画' },
+        { id: 'c', label: '游戏' },
+        { id: 'd', label: '文学' },
+        { id: 'e', label: '原创' },
+        { id: 'f', label: '来自网络' },
+        { id: 'g', label: '其他' },
+        { id: 'h', label: '影视' },
+        { id: 'i', label: '诗词' },
+        { id: 'j', label: '网易云' },
+        { id: 'k', label: '哲学' },
+        { id: 'l', label: '抖机灵' }
+    ];
+    
+    // 默认勾选类型
+    var defaultCheckedTypes = ['d', 'i', 'k'];
+    
+    // 加载保存的类型选择
+    var savedUseDefault = true;
+    var savedSelectedTypes = [];
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var useDefault = localStorage.getItem('hitokotoUseDefault');
+            if (useDefault !== null && useDefault !== undefined) {
+                savedUseDefault = useDefault === 'true';
+            }
+            var types = localStorage.getItem('hitokotoSelectedTypes');
+            if (types) {
+                savedSelectedTypes = JSON.parse(types);
+            }
+        }
+    } catch(e) {}
+    
+    // 获取当前选中的类型
+    function getSelectedTypes() {
+        if (savedUseDefault) {
+            return defaultCheckedTypes.slice();
+        }
+        return savedSelectedTypes.length > 0 ? savedSelectedTypes.slice() : defaultCheckedTypes.slice();
+    }
+    
+    // 构建一言API URL
+    function buildHitokotoUrl() {
+        var types = getSelectedTypes();
+        if (types.length === 0) {
+            return 'https://v1.hitokoto.cn/';
+        }
+        var params = types.map(function(t) { return 'c=' + t; });
+        return 'https://v1.hitokoto.cn/?' + params.join('&');
+    }
+    
+    // 修改位置：设置禁用状态函数
+    function setTypeBtnDisabled(disabled) {
+        if (disabled) {
+            typeBtn.style.opacity = '0.7';
+            typeBtn.style.cursor = 'not-allowed';
+            typeBtn.style.pointerEvents = 'none';
+            typeBtn.setAttribute('data-disabled', 'true');
+        } else {
+            typeBtn.style.opacity = '1';
+            typeBtn.style.cursor = 'pointer';
+            typeBtn.style.pointerEvents = 'auto';
+            typeBtn.removeAttribute('data-disabled');
+        }
+    }
+    
+    // 修改位置：初始禁用状态（未勾选hitokotoCheckbox时禁用）
+    if (hitokotoCheckbox) {
+        setTypeBtnDisabled(!hitokotoCheckbox.checked);
+    } else {
+        setTypeBtnDisabled(true);
+    }
+    
+    // 修改位置：监听 hitokotoCheckbox 变化
+    if (hitokotoCheckbox) {
+        if (hitokotoCheckbox.addEventListener) {
+            hitokotoCheckbox.addEventListener('change', function() {
+                setTypeBtnDisabled(!this.checked);
+            });
+        } else if (hitokotoCheckbox.attachEvent) {
+            hitokotoCheckbox.attachEvent('onchange', function() {
+                setTypeBtnDisabled(!this.checked);
+            });
+        }
+    }
+
+    // 点击类型按钮
+    typeBtn.onclick = function() {
+        // 修改位置：如果按钮被禁用，不执行任何操作
+        if (this.getAttribute('data-disabled') === 'true') {
+            return;
+        }
+        // 检查一言是否启用
+        if (!hitokotoCheckbox || !hitokotoCheckbox.checked) {
+            return;
+        }
+        
+        // 获取当前纯文本格式开关状态
+        var plainTextChecked = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                plainTextChecked = localStorage.getItem('hitokotoPlainTextChecked') === 'true';
+            }
+        } catch(e) {}
+        
+        var html = '<div style="text-align: left; font-size: 14px;">';
+        
+        // 第一行：默认类型单选项
+        html += '<div style="margin-bottom: 10px;">' +
+            '<input type="radio" name="hitokotoTypeMode" value="default" id="ht_default"' + (savedUseDefault ? ' checked' : '') + '>' +
+            '<label for="ht_default" style="margin-left: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent;">默认类型</label>' +
+            '</div>';
+        
+        // 第二行：可选类型单选项
+        html += '<div style="margin-bottom: 8px;">' +
+            '<input type="radio" name="hitokotoTypeMode" value="custom" id="ht_custom"' + (!savedUseDefault ? ' checked' : '') + '>' +
+            '<label for="ht_custom" style="margin-left: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent;">可选类型</label>' +
+            '</div>';
+        
+        // checkbox列表
+        var isCustomMode = !savedUseDefault;
+        html += '<div id="hitokotoTypeList" style="margin-left: 20px; margin-bottom: 5px;">';
+        for (var i = 0; i < typeList.length; i++) {
+            var t = typeList[i];
+            var isChecked = false;
+            if (savedUseDefault) {
+                isChecked = defaultCheckedTypes.indexOf(t.id) !== -1;
+            } else {
+                isChecked = savedSelectedTypes.indexOf(t.id) !== -1;
+            }
+            var disabled = !isCustomMode ? 'disabled' : '';
+            var checkedAttr = isChecked ? 'checked' : '';
+            html += '<div style="display: inline-block; margin-right: 8px; margin-bottom: 4px; -webkit-tap-highlight-color: transparent;">' +
+                '<input type="checkbox" name="hitokotoType" value="' + t.id + '" id="ht_' + t.id + '" ' + checkedAttr + ' ' + disabled + '>' +
+                '<label for="ht_' + t.id + '" style="margin-left: 2px; cursor: ' + (isCustomMode ? 'pointer' : 'default') + ';">' + (i + 1) + '.' + t.label + '</label>' +
+                '</div>';
+        }
+        html += '</div>';
+        
+        // 修改位置：添加纯文本格式开关
+        html += '<div style="margin-top: 10px; margin-left: 5px; -webkit-tap-highlight-color: transparent;">' +
+            '<input type="checkbox" id="ht_plainText" ' + (plainTextChecked ? 'checked' : '') + '>' +
+            '<label for="ht_plainText" style="margin-left: 5px; cursor: pointer;">纯文本格式</label>' +
+            '</div>';
+        
+        html += '</div>';
+        
+        // 修改位置：在 autoSaveHandler 中添加纯文本格式保存逻辑
+        var autoSaveHandler = function(e) {
+            var target = e.target || e.srcElement;
+            if (!target) return;
+            
+            // 获取选择的模式
+            var modeRadios = document.querySelectorAll('input[name="hitokotoTypeMode"]');
+            var useDefault = true;
+            for (var i = 0; i < modeRadios.length; i++) {
+                if (modeRadios[i].checked && modeRadios[i].value === 'custom') {
+                    useDefault = false;
+                    break;
+                }
+            }
+            
+            // 获取选中的类型
+            var selectedTypes = [];
+            if (!useDefault) {
+                var typeCheckboxes = document.querySelectorAll('input[name="hitokotoType"]');
+                for (var i = 0; i < typeCheckboxes.length; i++) {
+                    if (typeCheckboxes[i].checked) {
+                        selectedTypes.push(typeCheckboxes[i].value);
+                    }
+                }
+            }
+            
+            // 修改位置：当选回默认模式时，重置checkbox为默认勾选
+            if (useDefault) {
+                selectedTypes = defaultCheckedTypes.slice();
+                var typeCheckboxes = document.querySelectorAll('input[name="hitokotoType"]');
+                for (var i = 0; i < typeCheckboxes.length; i++) {
+                    var checkbox = typeCheckboxes[i];
+                    var isDefaultChecked = defaultCheckedTypes.indexOf(checkbox.value) !== -1;
+                    checkbox.checked = isDefaultChecked;
+                    checkbox.disabled = true;
+                    var label = document.querySelector('label[for="' + checkbox.id + '"]');
+                    if (label) {
+                        label.style.cursor = 'default';
+                        label.style.opacity = '0.6';
+                    }
+                }
+                savedUseDefault = true;
+                savedSelectedTypes = selectedTypes;
+            } else {
+                if (selectedTypes.length === 0) {
+                    useDefault = true;
+                    selectedTypes = defaultCheckedTypes.slice();
+                    var defaultRadio = document.getElementById('ht_default');
+                    var customRadio = document.getElementById('ht_custom');
+                    if (defaultRadio) {
+                        defaultRadio.checked = true;
+                    }
+                    if (customRadio) {
+                        customRadio.checked = false;
+                    }
+                    var typeCheckboxes2 = document.querySelectorAll('input[name="hitokotoType"]');
+                    for (var i = 0; i < typeCheckboxes2.length; i++) {
+                        var checkbox = typeCheckboxes2[i];
+                        var isDefaultChecked = defaultCheckedTypes.indexOf(checkbox.value) !== -1;
+                        checkbox.checked = isDefaultChecked;
+                        checkbox.disabled = true;
+                        var label = document.querySelector('label[for="' + checkbox.id + '"]');
+                        if (label) {
+                            label.style.cursor = 'default';
+                            label.style.opacity = '0.6';
+                        }
+                    }
+                    savedUseDefault = true;
+                    savedSelectedTypes = selectedTypes;
+                } else {
+                    savedUseDefault = false;
+                    savedSelectedTypes = selectedTypes;
+                }
+            }
+            
+            // 修改位置：获取纯文本格式开关状态并保存
+            var plainTextCheckbox = document.getElementById('ht_plainText');
+            var plainTextChecked = plainTextCheckbox ? plainTextCheckbox.checked : false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoUseDefault', savedUseDefault ? 'true' : 'false');
+                    localStorage.setItem('hitokotoSelectedTypes', JSON.stringify(savedSelectedTypes));
+                    localStorage.setItem('hitokotoPlainTextChecked', plainTextChecked ? 'true' : 'false');
+                }
+            } catch(e) {}
+            
+            // 更新页面上的纯文本格式开关状态
+            var mainPlainTextCheckbox = document.getElementById('hitokotoPlainTextCheckbox');
+            if (mainPlainTextCheckbox) {
+                mainPlainTextCheckbox.checked = plainTextChecked;
+            }
+            
+            // 重新获取一言
+            if (hitokotoCheckbox && hitokotoCheckbox.checked && hitokotoDisplay) {
+                if (typeof window.fetchHitokoto === 'function') {
+                    window.fetchHitokoto();
+                }
+            }
+        };
+        
+        // 保存原始showCustomAlert函数引用
+        var originalShowCustomAlert = window.showCustomAlert;
+        window.showCustomAlert = function(title, content) {
+            originalShowCustomAlert(title, content);
+            setTimeout(function() {
+                var radios = document.querySelectorAll('input[name="hitokotoTypeMode"]');
+                for (var i = 0; i < radios.length; i++) {
+                    if (radios[i].addEventListener) {
+                        radios[i].addEventListener('change', autoSaveHandler);
+                    } else if (radios[i].attachEvent) {
+                        radios[i].attachEvent('onchange', autoSaveHandler);
+                    }
+                }
+                var checkboxes = document.querySelectorAll('input[name="hitokotoType"]');
+                for (var i = 0; i < checkboxes.length; i++) {
+                    if (checkboxes[i].addEventListener) {
+                        checkboxes[i].addEventListener('change', autoSaveHandler);
+                    } else if (checkboxes[i].attachEvent) {
+                        checkboxes[i].attachEvent('onchange', autoSaveHandler);
+                    }
+                }
+                // 修改位置：为纯文本格式开关绑定change事件
+                var plainTextCheckbox = document.getElementById('ht_plainText');
+                if (plainTextCheckbox) {
+                    if (plainTextCheckbox.addEventListener) {
+                        plainTextCheckbox.addEventListener('change', autoSaveHandler);
+                    } else if (plainTextCheckbox.attachEvent) {
+                        plainTextCheckbox.attachEvent('onchange', autoSaveHandler);
+                    }
+                }
+                
+                var defaultRadio = document.getElementById('ht_default');
+                var customRadio = document.getElementById('ht_custom');
+                var typeCheckboxes = document.querySelectorAll('input[name="hitokotoType"]');
+                
+                function updateCheckboxState() {
+                    var isCustom = customRadio && customRadio.checked;
+                    for (var i = 0; i < typeCheckboxes.length; i++) {
+                        typeCheckboxes[i].disabled = !isCustom;
+                        var label = document.querySelector('label[for="' + typeCheckboxes[i].id + '"]');
+                        if (label) {
+                            label.style.cursor = isCustom ? 'pointer' : 'default';
+                            label.style.opacity = isCustom ? '1' : '0.6';
+                        }
+                    }
+                }
+                
+                if (defaultRadio && customRadio) {
+                    if (defaultRadio.addEventListener) {
+                        defaultRadio.addEventListener('change', updateCheckboxState);
+                        customRadio.addEventListener('change', updateCheckboxState);
+                    } else if (defaultRadio.attachEvent) {
+                        defaultRadio.attachEvent('onchange', updateCheckboxState);
+                        customRadio.attachEvent('onchange', updateCheckboxState);
+                    }
+                }
+                updateCheckboxState();
+            }, 50);
+        };
+        
+        showCustomAlert('一言类型设置', html);
+        
+        setTimeout(function() {
+            window.showCustomAlert = originalShowCustomAlert;
+        }, 100);
+    };
+})();
+
+// 修改位置：在 一言类型选择功能 代码中添加纯文本格式功能
+(function() {
+    var plainTextCheckbox = document.getElementById('hitokotoPlainTextCheckbox');
+    var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    
+    if (!plainTextCheckbox) return;
+    
+    // 加载保存的纯文本格式状态
+    var savedPlainText = false;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            savedPlainText = localStorage.getItem('hitokotoPlainTextChecked') === 'true';
+        }
+    } catch(e) {}
+    plainTextCheckbox.checked = savedPlainText;
+    
+    // 修改 fetchHitokoto 函数以支持纯文本格式
+    var originalFetchHitokoto = window.fetchHitokoto;
+    window.fetchHitokoto = function() {
+        if (!hitokotoDisplay) return;
+        
+        var url = '';
+        var useDefault = true;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var val = localStorage.getItem('hitokotoUseDefault');
+                if (val !== null && val !== undefined) {
+                    useDefault = val === 'true';
+                }
+            }
+        } catch(e) {}
+        
+        if (useDefault) {
+            url = 'https://v1.hitokoto.cn/';
+        } else {
+            var selectedTypes = [];
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    var types = localStorage.getItem('hitokotoSelectedTypes');
+                    if (types) {
+                        selectedTypes = JSON.parse(types);
+                    }
+                }
+            } catch(e) {}
+            
+            if (selectedTypes.length === 0) {
+                url = 'https://v1.hitokoto.cn/';
+            } else {
+                var params = [];
+                for (var i = 0; i < selectedTypes.length; i++) {
+                    params.push('c=' + selectedTypes[i]);
+                }
+                url = 'https://v1.hitokoto.cn/?' + params.join('&');
+            }
+        }
+        
+        // 修改位置：如果纯文本格式开关已勾选，添加 encode=text 参数
+        var isPlainText = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                isPlainText = localStorage.getItem('hitokotoPlainTextChecked') === 'true';
+            }
+        } catch(e) {}
+        
+        if (isPlainText) {
+            if (url.indexOf('?') !== -1) {
+                url += '&encode=text';
+            } else {
+                url += '?encode=text';
+            }
+        }
+        
+        var xhr = null;
+        try {
+            xhr = new XMLHttpRequest();
+        } catch(e) {
+            hitokotoDisplay.textContent = 'Network Error';
+            return;
+        }
+        
+        xhr.open('GET', url, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        var responseText = xhr.responseText;
+                        if (isPlainText) {
+                            // 纯文本格式：直接显示返回的文本
+                            hitokotoDisplay.textContent = responseText;
+                            hitokotoDisplay.setAttribute('data-hitokoto', responseText);
+                        } else {
+                            // JSON格式：解析后显示
+                            var data = JSON.parse(responseText);
+                            var hitokotoText = '「' + data.hitokoto + '」—— ' + data.from;
+                            hitokotoDisplay.textContent = hitokotoText;
+                            hitokotoDisplay.setAttribute('data-hitokoto', hitokotoText);
+                        }
+                    } catch (e) {
+                        hitokotoDisplay.textContent = 'Network Error';
+                    }
+                } else {
+                    hitokotoDisplay.textContent = 'Network Error';
+                }
+            }
+        };
+        xhr.onerror = function() {
+            hitokotoDisplay.textContent = 'Network Error';
+        };
+        xhr.ontimeout = function() {
+            hitokotoDisplay.textContent = 'Network Error';
+        };
+        try {
+            xhr.send();
+        } catch(e) {
+            hitokotoDisplay.textContent = 'Network Error';
+        }
+    };
+    
+    // 监听纯文本格式开关变化
+    if (plainTextCheckbox.addEventListener) {
+        plainTextCheckbox.addEventListener('change', function() {
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoPlainTextChecked', this.checked ? 'true' : 'false');
+                }
+            } catch(e) {}
+            // 重新获取一言
+            if (hitokotoCheckbox && hitokotoCheckbox.checked && hitokotoDisplay) {
+                if (typeof window.fetchHitokoto === 'function') {
+                    window.fetchHitokoto();
+                }
+            }
+        });
+    } else if (plainTextCheckbox.attachEvent) {
+        plainTextCheckbox.attachEvent('onchange', function() {
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoPlainTextChecked', this.checked ? 'true' : 'false');
+                }
+            } catch(e) {}
+            if (hitokotoCheckbox && hitokotoCheckbox.checked && hitokotoDisplay) {
+                if (typeof window.fetchHitokoto === 'function') {
+                    window.fetchHitokoto();
+                }
+            }
+        });
+    }
+})();
 
 // 保存和加载搜索引擎显示checkbox状态
 var savedSearchEngineDisplayState = localStorage.getItem('searchEngineDisplayChecked');
