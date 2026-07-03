@@ -5667,7 +5667,7 @@ var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
 if (hitokotoStyleBtn) {
     hitokotoStyleBtn.addEventListener('click', function() {
         var currentStyle = localStorage.getItem('hitokotoFontStyle') || 'italic';
-        showCustomModal('请输入一言字体样式：', currentStyle, function(newStyle) {
+        showCustomModal('请输入一言字体样式 (normal/italic/oblique)：', currentStyle, function(newStyle) {
             if (newStyle === null) {
                 return;
             }
@@ -7164,7 +7164,6 @@ document.getElementById('hitokotoCheckbox').addEventListener('change', function(
 });
 
 // 获取一言数据
-// 修改位置：在 fetchHitokoto 函数中修改
 function fetchHitokoto() {
     var hitokotoDisplay = document.getElementById('hitokotoDisplay');
     if (!hitokotoDisplay) return;
@@ -7268,7 +7267,6 @@ function fetchHitokoto() {
     }
 }
 
-// 修改位置：在 fetchHitokoto 函数之前或之后添加
 // 一言类型选择功能
 (function() {
     var typeBtn = document.querySelector('label[for="hitokotoTypeBtn"]');
@@ -7586,7 +7584,7 @@ function fetchHitokoto() {
             }, 50);
         };
         
-        showCustomAlert('一言类型设置', html);
+        showCustomAlert('一言类型个性化设置', html);
         
         setTimeout(function() {
             window.showCustomAlert = originalShowCustomAlert;
@@ -8928,7 +8926,10 @@ function exportSettingsData() {
         hitokotoFontSize: localStorage.getItem('hitokotoFontSize') || '14px',
         moreSettingsExpanded: localStorage.getItem('moreSettingsExpanded') || 'false',
         quickInputRowSelection: localStorage.getItem('quickInputRowSelection') || 'all',
-        wheelScrollChecked: localStorage.getItem('wheelScrollChecked') || 'false'
+        wheelScrollChecked: localStorage.getItem('wheelScrollChecked') || 'false',
+        hitokotoSelectedTypes: localStorage.getItem('hitokotoSelectedTypes') || '[\"d\",\"i\",\"k\"]',
+        hitokotoPlainTextChecked: localStorage.getItem('hitokotoPlainTextChecked') || 'false',
+        hitokotoUseDefault: localStorage.getItem('hitokotoUseDefault') || 'true'
     };
     
     // ========== 新增：动态遍历 localStorage 捕获遗漏项 ==========
