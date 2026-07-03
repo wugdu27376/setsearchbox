@@ -787,7 +787,6 @@
     
     <div id="hitokotoDisplay" style="display: none; left: 0; right: 0; margin: 0 auto; margin-top: 10px; text-align: center; font-size: 14px; font-style: italic; top: 85%;"></div>
     
-    <script src="corescript.js" type="text/javascript"></script>
     
     <!-- ========== IE4-IE7专属兼容传统跳转搜索 ========== -->
     <!-- 注意: 在IE7以下浏览器要将corescript.js删除或重命名新名称或移动到其他文件夹保证此不会加载此脚本，若你已升级IE浏览器可再将此脚本重命名为corescript.js，若你已移动此JS文件可将它移动回原文件夹 -->
@@ -825,7 +824,7 @@
                 var version = parseInt(versionStr, 10);
                 if (version <= 7) { // 注释 >
                     isIE4or5or6 = true;
-                    if (version == 4) {
+                    if (version <= 4) { // 注释 >
                         isIE4 = true;
                     }
                 }
@@ -977,6 +976,37 @@
                     return true;
                 };
             }
+            var searchContainer = document.getElementById('searchContainer');
+            var engineSelect = document.getElementById('engineSelect');
+            var urlInput = document.getElementById('urlInput');
+            var submitBtn = document.getElementById('submitBtn');
+            
+            if (searchContainer) {
+                searchContainer.style.display = 'block';
+                searchContainer.style.width = '100%';
+                searchContainer.style.textAlign = 'center';
+                searchContainer.style.zoom = '1';
+            }
+            if (engineSelect) {
+                engineSelect.style.display = 'inline';
+                engineSelect.style.width = '80px';
+                engineSelect.style.height = '22px';
+                engineSelect.style.zoom = '1';
+            }
+            if (urlInput) {
+                urlInput.style.display = 'inline';
+                urlInput.style.width = '55%';
+                urlInput.style.height = '22px';
+                urlInput.style.zoom = '1';
+            }
+            if (submitBtn) {
+                submitBtn.style.display = 'inline';
+                submitBtn.style.height = '22px';
+                submitBtn.style.zoom = '1';
+            }
+        } else {
+            // 创建script元素
+            document.write('<script src="corescript.js" type="text/javascript"><\/script>');
         }
     })();
     (function() {

@@ -716,52 +716,6 @@
 // ========== IE8 布局修复函数结束 ==========
 
 
-// ========== IE7及以下版本布局修复 ==========
-(function() {
-    var isIE7 = false;
-    try {
-        var ua = navigator.userAgent;
-        var msie = ua.indexOf('MSIE ');
-        if (msie > 0) {
-            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
-            if (version <= 7) isIE7 = true;
-        }
-    } catch(e) { isIE7 = false; }
-    
-    if (isIE7) {
-        var searchContainer = document.getElementById('searchContainer');
-        var engineSelect = document.getElementById('engineSelect');
-        var urlInput = document.getElementById('urlInput');
-        var submitBtn = document.getElementById('submitBtn');
-        
-        if (searchContainer) {
-            searchContainer.style.display = 'block';
-            searchContainer.style.width = '100%';
-            searchContainer.style.textAlign = 'center';
-            searchContainer.style.zoom = '1';
-        }
-        if (engineSelect) {
-            engineSelect.style.display = 'inline';
-            engineSelect.style.width = '80px';
-            engineSelect.style.height = '22px';
-            engineSelect.style.zoom = '1';
-        }
-        if (urlInput) {
-            urlInput.style.display = 'inline';
-            urlInput.style.width = '55%';
-            urlInput.style.height = '22px';
-            urlInput.style.zoom = '1';
-        }
-        if (submitBtn) {
-            submitBtn.style.display = 'inline';
-            submitBtn.style.height = '22px';
-            submitBtn.style.zoom = '1';
-        }
-    }
-})();
-// ========== IE7及以下版本布局修复结束 ==========
-
-
 // ========== Opera10 Presto及以下版本兼容修复 ==========
 (function() {
     var isOldOpera = false;
@@ -908,11 +862,11 @@
                 if (keyword.indexOf('://') !== -1) return keyword;
                 
                 switch (engine) {
-                    case 'baidu': return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
-                    case 'google': return 'https://www.google.com/search?q=' + encodeURIComponent(keyword);
-                    case 'bing': return 'https://www.bing.com/search?q=' + encodeURIComponent(keyword);
-                    case 'sogou': return 'https://www.sogou.com/web?query=' + encodeURIComponent(keyword);
-                    case 'so': return 'https://www.so.com/s?q=' + encodeURIComponent(keyword);
+                    case 'baidu': return 'http://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+                    case 'google': return 'http://www.google.com/search?q=' + encodeURIComponent(keyword);
+                    case 'bing': return 'http://www.bing.com/search?q=' + encodeURIComponent(keyword);
+                    case 'sogou': return 'http://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+                    case 'so': return 'http://www.so.com/s?q=' + encodeURIComponent(keyword);
                     case 'autofillHttp1': return 'http://' + encodeURIComponent(keyword);
                     case 'autofillHttps': return 'https://' + encodeURIComponent(keyword);
                     default: return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
