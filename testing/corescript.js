@@ -506,6 +506,8 @@
                 searchUrl = 'http://' + encodeURIComponent(keyword);
             } else if (engine === 'autofillHttps') {
                 searchUrl = 'https://' + encodeURIComponent(keyword);
+            } else if (engine === 'baiduTw') {
+                searchUrl = 'http://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(keyword);
             } else {
                 return false;
             }
@@ -586,6 +588,8 @@
                 return 'http://' + encodeURIComponent(keyword);
             } else if (engine === 'autofillHttps') {
                 return 'https://' + encodeURIComponent(keyword);
+            } else if (engine === 'baiduTw') {
+                return 'http://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(keyword);
             } else {
                 return 'http://www.baidu.com/baidu?wd=' + encodeURIComponent(keyword);
             }
@@ -869,6 +873,7 @@
                     case 'so': return 'http://www.so.com/s?q=' + encodeURIComponent(keyword);
                     case 'autofillHttp1': return 'http://' + encodeURIComponent(keyword);
                     case 'autofillHttps': return 'https://' + encodeURIComponent(keyword);
+                    case 'baiduTw': return 'http://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(keyword);
                     default: return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
                 }
             }
@@ -1290,79 +1295,6 @@ function bindSubmitButtonEvent() {
 onDomReady(function() {
     bindSubmitButtonEvent();
 });
-
-
-// ========== 【修复】IE9及以下浏览器禁用一言复选框 ==========
-(function() {
-    // 检测 IE 浏览器版本（支持 IE6+）
-    var ieVersion = 0;
-    var isIELowVersion = false;
-    try {
-        var ua = navigator.userAgent;
-        var msie = ua.indexOf('MSIE ');
-        if (msie > 0) {
-            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
-            if (ieVersion <= 9) {
-                isIELowVersion = true;
-            }
-        }
-        // 检测 Trident 内核（IE11 兼容模式）
-        var trident = ua.indexOf('Trident/');
-        if (trident > 0) {
-            var rv = ua.indexOf('rv:');
-            if (rv > 0) {
-                var rvVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
-                if (rvVersion <= 9) {
-                    isIELowVersion = true;
-                }
-            }
-        }
-    } catch(e) {
-        isIELowVersion = false;
-    }
-    
-    if (isIELowVersion) {
-        var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
-        var hitokotoColorBtn = document.getElementById('hitokotoColorBtn');
-        var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
-        var hitokotoSizeLabel = (typeof document.querySelector === 'function') ? document.querySelector('label[for="hitokotoSizePicker"]') : (function() { var labels = document.getElementsByTagName('label'); for (var i = 0; i < labels.length; i++) { if (labels[i].getAttribute && labels[i].getAttribute('for') === 'hitokotoSizePicker') { return labels[i]; } } return null; })();
-        
-        if (hitokotoCheckbox) {
-            hitokotoCheckbox.disabled = true;
-            hitokotoCheckbox.checked = false;
-            // 清除保存的一言启用状态
-            try {
-                if (typeof localStorage !== 'undefined' && localStorage !== null) {
-                    localStorage.setItem('hitokotoChecked', 'false');
-                }
-            } catch(e) {}
-        }
-        
-        // 禁用相关的颜色、样式、大小按钮
-        if (hitokotoColorBtn) {
-            hitokotoColorBtn.style.opacity = '0.7';
-            hitokotoColorBtn.style.cursor = 'not-allowed';
-            hitokotoColorBtn.style.pointerEvents = 'none';
-        }
-        if (hitokotoStyleBtn) {
-            hitokotoStyleBtn.style.opacity = '0.7';
-            hitokotoStyleBtn.style.cursor = 'not-allowed';
-            hitokotoStyleBtn.style.pointerEvents = 'none';
-        }
-        if (hitokotoSizeLabel) {
-            hitokotoSizeLabel.style.opacity = '0.7';
-            hitokotoSizeLabel.style.cursor = 'not-allowed';
-            hitokotoSizeLabel.style.pointerEvents = 'none';
-        }
-        
-        // 隐藏一言显示区域
-        var hitokotoDisplay = document.getElementById('hitokotoDisplay');
-        if (hitokotoDisplay) {
-            hitokotoDisplay.style.display = 'none';
-        }
-    }
-})();
-// ========== 【修复结束】 ==========
 
 
 // IE 浏览器点击链接时激活为红色状态
@@ -5149,7 +5081,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
         if (!target) return false;
         var tagName = target.tagName ? target.tagName.toLowerCase() : '';
         // 检查当前元素是否为超链接
-        if (tagName === 'a') return true;
+        if (tagName === 'a' || tagName === 'input' || tagName === 'textarea' || tagName === 'button' || tagName === 'select') return true;
         // 检查父元素是否为超链接（兼容点击子元素的情况）
         var parent = target.parentNode;
         while (parent && parent !== document.body) {
@@ -5818,13 +5750,19 @@ for (var i = 0; i < buttons.length; i++) {
         }
         urlInput.focus();
         // 更新搜索建议
-        fetchSearchSuggestions(urlInput.value);
-        setTimeout(function() {
-            if (document.getElementById('searchSuggestionsCheckbox').checked) {
-                searchSuggestions.style.display = 'block';
-                fetchSearchSuggestions(urlInput.value);
-            }
-        }, 100);
+        var engine = document.getElementById('engineSelect');
+        if (engine.value !== 'iFrameFree' && engine.value !== 'iFramePlus'
+         && engine.value !== 'showCheckbox' && engine.value !== 'autofillHttp1'
+          && engine.value !== 'autofillHttps' && engine.value !== 'newtabpageHttp1'
+           && engine.value !== 'newtabpageHttps' && engine.value !== 'httpsAutoFill') {
+            fetchSearchSuggestions(urlInput.value);
+            setTimeout(function() {
+                if (document.getElementById('searchSuggestionsCheckbox').checked) {
+                    searchSuggestions.style.display = 'block';
+                    fetchSearchSuggestions(urlInput.value);
+                }
+            }, 100);
+        }
         // 如果保存输入文本复选框被勾选，保存当前输入
         if (document.getElementById('saveInputCheckbox').checked) {
             localStorage.setItem('savedInputText', urlInput.value);
@@ -7022,7 +6960,9 @@ var savedHitokotoState = localStorage.getItem('hitokotoChecked');
 if (savedHitokotoState === 'true') {
     document.getElementById('hitokotoCheckbox').checked = true;
     document.getElementById('hitokotoDisplay').style.display = 'block';
-    fetchHitokoto();
+    setTimeout(function() {
+        fetchHitokoto();
+    }, 0);
 }
 
 // 添加页面右键/长按恢复搜索框功能
@@ -7080,7 +7020,8 @@ document.getElementById('hitokotoDisplay').addEventListener('contextmenu', funct
         e.returnValue = false;
     }
     
-    var hitokotoText = this.getAttribute('data-hitokoto') || this.textContent;
+    // ========== 【修改位置】优先使用 data-fulltext 获取完整内容 ==========
+    var hitokotoText = this.getAttribute('data-fulltext') || this.textContent;
     if (hitokotoText && hitokotoText !== 'Network Error') {
         var confirmResult = confirm('是否复制此一言？');
         if (confirmResult) {
@@ -7111,6 +7052,11 @@ document.getElementById('hitokotoDisplay').addEventListener('contextmenu', funct
 // 监听一言显示checkbox变化
 document.getElementById('hitokotoCheckbox').addEventListener('change', function() {
     var hitokotoSizeLabel = document.querySelector('label[for="hitokotoSizePicker"]');
+    var hitokotoColorBtn = document.getElementById('hitokotoColorBtn');
+    var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
+    var typeBtn = document.querySelector('label[for="hitokotoTypeBtn"]');
+    var apiSelect = document.getElementById('hitokotoApiSelect');
+    
     if (this.checked) {
         showCustomConfirm('启用后，会加载一个额外接口，在下方显示随机生成一条一言，生成的一言内容与本网站无关', function(result) {
             if (result) {
@@ -7118,8 +7064,6 @@ document.getElementById('hitokotoCheckbox').addEventListener('change', function(
                 document.getElementById('hitokotoDisplay').style.display = 'block';
                 fetchHitokoto();
                 // 启用一言相关按钮
-                var hitokotoColorBtn = document.getElementById('hitokotoColorBtn');
-                var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
                 if (hitokotoColorBtn) {
                     hitokotoColorBtn.style.opacity = '1';
                     hitokotoColorBtn.style.cursor = 'pointer';
@@ -7135,16 +7079,69 @@ document.getElementById('hitokotoCheckbox').addEventListener('change', function(
                     hitokotoSizeLabel.style.cursor = 'pointer';
                     hitokotoSizeLabel.style.pointerEvents = 'auto';
                 }
+                // 修改位置：启用 typeBtn 和 apiSelect
+                if (typeBtn) {
+                    typeBtn.style.opacity = '1';
+                    typeBtn.style.cursor = 'pointer';
+                    typeBtn.style.pointerEvents = 'auto';
+                    typeBtn.removeAttribute('data-disabled');
+                    // 根据API选择状态更新
+                    var apiSelectElem = document.getElementById('hitokotoApiSelect');
+                    if (apiSelectElem && apiSelectElem.value === 'hitokApi_v1') {
+                        // V1时启用typeBtn
+                    } else if (apiSelectElem && apiSelectElem.value !== 'hitokApi_v1') {
+                        typeBtn.style.opacity = '0.7';
+                        typeBtn.style.cursor = 'not-allowed';
+                        typeBtn.style.pointerEvents = 'none';
+                        typeBtn.setAttribute('data-disabled', 'true');
+                    }
+                }
+                if (apiSelect) {
+                    apiSelect.disabled = false;
+                    apiSelect.style.opacity = '1';
+                    apiSelect.style.cursor = 'pointer';
+                }
+                // 更新下拉框禁用状态
+                updateTypeBtnState();
             } else {
+                // 修改位置：用户取消时，恢复复选框为未勾选状态并禁用相关按钮
                 document.getElementById('hitokotoCheckbox').checked = false;
+                localStorage.setItem('hitokotoChecked', 'false');
+                document.getElementById('hitokotoDisplay').style.display = 'none';
+                // 禁用一言相关按钮
+                if (hitokotoColorBtn) {
+                    hitokotoColorBtn.style.opacity = '0.7';
+                    hitokotoColorBtn.style.cursor = 'not-allowed';
+                    hitokotoColorBtn.style.pointerEvents = 'none';
+                }
+                if (hitokotoStyleBtn) {
+                    hitokotoStyleBtn.style.opacity = '0.7';
+                    hitokotoStyleBtn.style.cursor = 'not-allowed';
+                    hitokotoStyleBtn.style.pointerEvents = 'none';
+                }
+                if (hitokotoSizeLabel) {
+                    hitokotoSizeLabel.style.opacity = '0.7';
+                    hitokotoSizeLabel.style.cursor = 'not-allowed';
+                    hitokotoSizeLabel.style.pointerEvents = 'none';
+                }
+                // 修改位置：禁用 typeBtn 和 apiSelect
+                if (typeBtn) {
+                    typeBtn.style.opacity = '0.7';
+                    typeBtn.style.cursor = 'not-allowed';
+                    typeBtn.style.pointerEvents = 'none';
+                    typeBtn.setAttribute('data-disabled', 'true');
+                }
+                if (apiSelect) {
+                    apiSelect.disabled = true;
+                    apiSelect.style.opacity = '0.7';
+                    apiSelect.style.cursor = 'not-allowed';
+                }
             }
         });
     } else {
         localStorage.setItem('hitokotoChecked', 'false');
         document.getElementById('hitokotoDisplay').style.display = 'none';
         // 禁用一言相关按钮
-        var hitokotoColorBtn = document.getElementById('hitokotoColorBtn');
-        var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
         if (hitokotoColorBtn) {
             hitokotoColorBtn.style.opacity = '0.7';
             hitokotoColorBtn.style.cursor = 'not-allowed';
@@ -7160,13 +7157,29 @@ document.getElementById('hitokotoCheckbox').addEventListener('change', function(
             hitokotoSizeLabel.style.cursor = 'not-allowed';
             hitokotoSizeLabel.style.pointerEvents = 'none';
         }
+        // 修改位置：禁用 typeBtn 和 apiSelect
+        if (typeBtn) {
+            typeBtn.style.opacity = '0.7';
+            typeBtn.style.cursor = 'not-allowed';
+            typeBtn.style.pointerEvents = 'none';
+            typeBtn.setAttribute('data-disabled', 'true');
+        }
+        if (apiSelect) {
+            apiSelect.disabled = true;
+            apiSelect.style.opacity = '0.7';
+            apiSelect.style.cursor = 'not-allowed';
+        }
     }
 });
 
-// 获取一言数据
+// 修改位置：在 fetchHitokoto 函数中修改加载链接部分
 function fetchHitokoto() {
     var hitokotoDisplay = document.getElementById('hitokotoDisplay');
     if (!hitokotoDisplay) return;
+    
+    // 获取选中的API
+    var apiSelect = document.getElementById('hitokotoApiSelect');
+    var selectedApi = apiSelect ? apiSelect.value : 'hitokApi_v1';
     
     // 获取纯文本格式开关状态
     var isPlainText = false;
@@ -7176,47 +7189,76 @@ function fetchHitokoto() {
         }
     } catch(e) {}
     
-    var url = '';
-    var useDefault = true;
+    // ========== 【修改位置】获取隐藏来源开关状态 ==========
+    var hideSource = false;
     try {
         if (typeof localStorage !== 'undefined' && localStorage) {
-            var val = localStorage.getItem('hitokotoUseDefault');
-            if (val !== null && val !== undefined) {
-                useDefault = val === 'true';
-            }
+            hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
         }
     } catch(e) {}
     
-    if (useDefault) {
-        url = 'https://v1.hitokoto.cn/';
-    } else {
-        var selectedTypes = [];
+    var url = '';
+    
+    // 修改位置：根据选择的API构建URL
+    if (selectedApi === 'hitokApi_v2') {
+        url = 'https://api.4qb.cn/api/yiyan?type=text';
+    } else if (selectedApi === 'hitokApi_v3') {
+        url = 'https://apis.jxcxin.cn/api/yiyan?type=json';
+    } else if (selectedApi === 'hitokApi_v4') {
+        url = 'https://api.vsuy.cn/ylapi/yulu/index.php';
+    } else if (selectedApi === 'hitokApi_v5') {
+        url = 'https://api.qemao.com/api/Verse/';
+    } else if (selectedApi === 'hitokApi_v6') {
+        url = 'https://api.kuleu.com/api/yiyan';
+    } else if (selectedApi === 'hitokApi_v7') {
+        url = 'http://api.xcvts.cn/api/yiyan?type=json';
+    } else if (selectedApi === 'hitokApi_v8') {
+        url = 'https://api.suyanw.cn/api/yiyan.php?type=json';
+    } else if (selectedApi === 'hitokApi_v9') {
+        url = 'https://v.api.aa1.cn/api/yiyan/index.php?type=json';
+    } else if (selectedApi === 'hitokApi_v1') {
+        // V1 API：默认类型
+        var useDefault = true;
         try {
             if (typeof localStorage !== 'undefined' && localStorage) {
-                var types = localStorage.getItem('hitokotoSelectedTypes');
-                if (types) {
-                    selectedTypes = JSON.parse(types);
+                var val = localStorage.getItem('hitokotoUseDefault');
+                if (val !== null && val !== undefined) {
+                    useDefault = val === 'true';
                 }
             }
         } catch(e) {}
         
-        if (selectedTypes.length === 0) {
+        if (useDefault) {
             url = 'https://v1.hitokoto.cn/';
         } else {
-            var params = [];
-            for (var i = 0; i < selectedTypes.length; i++) {
-                params.push('c=' + selectedTypes[i]);
+            var selectedTypes = [];
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    var types = localStorage.getItem('hitokotoSelectedTypes');
+                    if (types) {
+                        selectedTypes = JSON.parse(types);
+                    }
+                }
+            } catch(e) {}
+            
+            if (selectedTypes.length === 0) {
+                url = 'https://v1.hitokoto.cn/';
+            } else {
+                var params = [];
+                for (var i = 0; i < selectedTypes.length; i++) {
+                    params.push('c=' + selectedTypes[i]);
+                }
+                url = 'https://v1.hitokoto.cn/?' + params.join('&');
             }
-            url = 'https://v1.hitokoto.cn/?' + params.join('&');
         }
-    }
-    
-    // 修改位置：如果纯文本格式开关已勾选，添加 encode=text 参数
-    if (isPlainText) {
-        if (url.indexOf('?') !== -1) {
-            url += '&encode=text';
-        } else {
-            url += '?encode=text';
+        
+        // 如果纯文本格式开关已勾选，添加 encode=text 参数
+        if (isPlainText) {
+            if (url.indexOf('?') !== -1) {
+                url += '&encode=text';
+            } else {
+                url += '?encode=text';
+            }
         }
     }
     
@@ -7234,17 +7276,77 @@ function fetchHitokoto() {
             if (xhr.status === 200) {
                 try {
                     var responseText = xhr.responseText;
-                    // 修改位置：根据纯文本格式开关状态决定显示方式
-                    if (isPlainText) {
-                        // 纯文本格式：直接显示返回的文本
+                    if (selectedApi === 'hitokApi_v2' || selectedApi === 'hitokApi_v4' || selectedApi === 'hitokApi_v5'
+                     || selectedApi === 'hitokApi_v6') {
                         hitokotoDisplay.textContent = responseText;
                         hitokotoDisplay.setAttribute('data-hitokoto', responseText);
-                    } else {
-                        // JSON格式：解析后显示
+                        // ========== 【修改位置】存储完整内容供复制 ==========
+                        hitokotoDisplay.setAttribute('data-fulltext', responseText);
+                    } else if (selectedApi === 'hitokApi_v3') {
                         var data = JSON.parse(responseText);
-                        var hitokotoText = '「' + data.hitokoto + '」—— ' + data.from;
-                        hitokotoDisplay.textContent = hitokotoText;
-                        hitokotoDisplay.setAttribute('data-hitokoto', hitokotoText);
+                        if (data && data.code === 200 && data.msg) {
+                            hitokotoDisplay.textContent = data.msg;
+                            hitokotoDisplay.setAttribute('data-hitokoto', data.msg);
+                            hitokotoDisplay.setAttribute('data-fulltext', data.msg);
+                        } else {
+                            hitokotoDisplay.textContent = 'Network Error';
+                        }
+                    } else if (selectedApi === 'hitokApi_v7') {
+                        var data = JSON.parse(responseText);
+                        if (data && data.code === 200 && data.line) {
+                            hitokotoDisplay.textContent = data.line;
+                            hitokotoDisplay.setAttribute('data-hitokoto', data.line);
+                            hitokotoDisplay.setAttribute('data-fulltext', data.line);
+                        } else {
+                            hitokotoDisplay.textContent = 'Network Error';
+                        }
+                    } else if (selectedApi === 'hitokApi_v8') {
+                        var data = JSON.parse(responseText);
+                        if (data && data.text) {
+                            hitokotoDisplay.textContent = data.text;
+                            hitokotoDisplay.setAttribute('data-hitokoto', data.text);
+                            hitokotoDisplay.setAttribute('data-fulltext', data.text);
+                        } else {
+                            hitokotoDisplay.textContent = 'Network Error';
+                        }
+                    } else if (selectedApi === 'hitokApi_v9') {
+                        var data = JSON.parse(responseText);
+                        if (data && data.yiyan) {
+                            hitokotoDisplay.textContent = data.yiyan;
+                            hitokotoDisplay.setAttribute('data-hitokoto', data.yiyan);
+                            hitokotoDisplay.setAttribute('data-fulltext', data.yiyan);
+                        } else {
+                            hitokotoDisplay.textContent = 'Network Error';
+                        }
+                    } else if (isPlainText) {
+                        hitokotoDisplay.textContent = responseText;
+                        hitokotoDisplay.setAttribute('data-hitokoto', responseText);
+                        hitokotoDisplay.setAttribute('data-fulltext', responseText);
+                    } else {
+                        var data = JSON.parse(responseText);
+                        // ========== 【修改位置】V1 API 显示逻辑 ==========
+                        var fullText = '「' + data.hitokoto + '」—— ' + data.from;
+                        var displayText = '';
+                        if (hideSource) {
+                            // 隐藏来源：仅显示「内容」
+                            displayText = '「' + data.hitokoto + '」';
+                            // 存储完整数据供悬停显示、点击切换和复制使用
+                            hitokotoDisplay.setAttribute('data-fulltext', fullText);
+                            hitokotoDisplay.setAttribute('data-source', data.from);
+                            hitokotoDisplay.setAttribute('data-hitokoto', data.hitokoto);
+                            hitokotoDisplay.setAttribute('data-displaytext', displayText);
+                            // ========== 【新增】存储 active 状态，用于点击切换 ==========
+                            hitokotoDisplay.setAttribute('data-active', 'false');
+                        } else {
+                            // 默认显示完整
+                            displayText = fullText;
+                            hitokotoDisplay.setAttribute('data-hitokoto', fullText);
+                            hitokotoDisplay.setAttribute('data-fulltext', fullText);
+                            hitokotoDisplay.setAttribute('data-displaytext', fullText);
+                            hitokotoDisplay.setAttribute('data-active', 'false');
+                        }
+                        hitokotoDisplay.textContent = displayText;
+                        // ========== 【修改结束】 ==========
                     }
                 } catch (e) {
                     hitokotoDisplay.textContent = 'Network Error';
@@ -7318,16 +7420,6 @@ function fetchHitokoto() {
         return savedSelectedTypes.length > 0 ? savedSelectedTypes.slice() : defaultCheckedTypes.slice();
     }
     
-    // 构建一言API URL
-    function buildHitokotoUrl() {
-        var types = getSelectedTypes();
-        if (types.length === 0) {
-            return 'https://v1.hitokoto.cn/';
-        }
-        var params = types.map(function(t) { return 'c=' + t; });
-        return 'https://v1.hitokoto.cn/?' + params.join('&');
-    }
-    
     // 修改位置：设置禁用状态函数
     function setTypeBtnDisabled(disabled) {
         if (disabled) {
@@ -7363,7 +7455,7 @@ function fetchHitokoto() {
         }
     }
 
-    // 点击类型按钮
+    // ========== 【修改位置】点击类型按钮 ==========
     typeBtn.onclick = function() {
         // 修改位置：如果按钮被禁用，不执行任何操作
         if (this.getAttribute('data-disabled') === 'true') {
@@ -7382,18 +7474,28 @@ function fetchHitokoto() {
             }
         } catch(e) {}
         
+        // ========== 【新增】获取悬停显示来源开关状态 ==========
+        var hideSourceChecked = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                hideSourceChecked = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+            }
+        } catch(e) {}
+        
         var html = '<div style="text-align: left; font-size: 14px;">';
+        
+        html += '<div style="margin-top: 5px; margin-bottom: 5px;"><b style="font-size: 15px;">语句类型: </b></div>';
         
         // 第一行：默认类型单选项
         html += '<div style="margin-bottom: 10px;">' +
             '<input type="radio" name="hitokotoTypeMode" value="default" id="ht_default"' + (savedUseDefault ? ' checked' : '') + '>' +
-            '<label for="ht_default" style="margin-left: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent;">默认类型</label>' +
+            '<label for="ht_default" style="margin-left: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent;">默认句子类型 (综合)</label>' +
             '</div>';
         
         // 第二行：可选类型单选项
         html += '<div style="margin-bottom: 8px;">' +
             '<input type="radio" name="hitokotoTypeMode" value="custom" id="ht_custom"' + (!savedUseDefault ? ' checked' : '') + '>' +
-            '<label for="ht_custom" style="margin-left: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent;">可选类型</label>' +
+            '<label for="ht_custom" style="margin-left: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent;">可选句子类型</label>' +
             '</div>';
         
         // checkbox列表
@@ -7416,15 +7518,24 @@ function fetchHitokoto() {
         }
         html += '</div>';
         
-        // 修改位置：添加纯文本格式开关
-        html += '<div style="margin-top: 10px; margin-left: 5px; -webkit-tap-highlight-color: transparent;">' +
+        html += '<div><b style="font-size: 15px;">显示设置: </b></div>';
+        
+        // 纯文本格式开关
+        html += '<div style="margin-top: 5px; margin-left: 10px; display: inline-block; -webkit-tap-highlight-color: transparent;">' +
             '<input type="checkbox" id="ht_plainText" ' + (plainTextChecked ? 'checked' : '') + '>' +
-            '<label for="ht_plainText" style="margin-left: 5px; cursor: pointer;">纯文本格式</label>' +
+            '<label for="ht_plainText" style="margin-left: 5px; cursor: pointer;">纯文本显示</label>' +
             '</div>';
+        
+        // ========== 【新增】悬停显示来源开关 ==========
+        html += '<div style="margin-top: 5px; margin-left: 10px; display: inline-block; -webkit-tap-highlight-color: transparent;">' +
+            '<input type="checkbox" id="ht_hideSource" ' + (hideSourceChecked ? 'checked' : '') + '>' +
+            '<label for="ht_hideSource" style="margin-left: 5px; cursor: pointer;">悬停显示来源</label>' +
+            '</div>';
+        // ========== 【新增结束】 ==========
         
         html += '</div>';
         
-        // 修改位置：在 autoSaveHandler 中添加纯文本格式保存逻辑
+        // ========== 【修改位置】在 autoSaveHandler 中添加悬停显示来源保存逻辑 ==========
         var autoSaveHandler = function(e) {
             var target = e.target || e.srcElement;
             if (!target) return;
@@ -7450,7 +7561,7 @@ function fetchHitokoto() {
                 }
             }
             
-            // 修改位置：当选回默认模式时，重置checkbox为默认勾选
+            // 当选回默认模式时，重置checkbox为默认勾选
             if (useDefault) {
                 selectedTypes = defaultCheckedTypes.slice();
                 var typeCheckboxes = document.querySelectorAll('input[name="hitokotoType"]');
@@ -7499,7 +7610,7 @@ function fetchHitokoto() {
                 }
             }
             
-            // 修改位置：获取纯文本格式开关状态并保存
+            // 获取纯文本格式开关状态并保存
             var plainTextCheckbox = document.getElementById('ht_plainText');
             var plainTextChecked = plainTextCheckbox ? plainTextCheckbox.checked : false;
             try {
@@ -7510,11 +7621,24 @@ function fetchHitokoto() {
                 }
             } catch(e) {}
             
+            // ========== 【新增】获取悬停显示来源开关状态并保存 ==========
+            var hideSourceCheckbox = document.getElementById('ht_hideSource');
+            var hideSourceChecked = hideSourceCheckbox ? hideSourceCheckbox.checked : false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoHideSourceChecked', hideSourceChecked ? 'true' : 'false');
+                }
+            } catch(e) {}
+            // ========== 【新增结束】 ==========
+            
             // 更新页面上的纯文本格式开关状态
             var mainPlainTextCheckbox = document.getElementById('hitokotoPlainTextCheckbox');
             if (mainPlainTextCheckbox) {
                 mainPlainTextCheckbox.checked = plainTextChecked;
             }
+            
+            // ========== 【新增】更新页面上的悬停显示来源开关状态（已删除，无需操作） ==========
+            // ========== 【新增结束】 ==========
             
             // 重新获取一言
             if (hitokotoCheckbox && hitokotoCheckbox.checked && hitokotoDisplay) {
@@ -7523,6 +7647,7 @@ function fetchHitokoto() {
                 }
             }
         };
+        // ========== 【修改结束】 ==========
         
         // 保存原始showCustomAlert函数引用
         var originalShowCustomAlert = window.showCustomAlert;
@@ -7545,7 +7670,7 @@ function fetchHitokoto() {
                         checkboxes[i].attachEvent('onchange', autoSaveHandler);
                     }
                 }
-                // 修改位置：为纯文本格式开关绑定change事件
+                // 为纯文本格式开关绑定change事件
                 var plainTextCheckbox = document.getElementById('ht_plainText');
                 if (plainTextCheckbox) {
                     if (plainTextCheckbox.addEventListener) {
@@ -7554,6 +7679,16 @@ function fetchHitokoto() {
                         plainTextCheckbox.attachEvent('onchange', autoSaveHandler);
                     }
                 }
+                // ========== 【新增】为悬停显示来源开关绑定change事件 ==========
+                var hideSourceCheckbox = document.getElementById('ht_hideSource');
+                if (hideSourceCheckbox) {
+                    if (hideSourceCheckbox.addEventListener) {
+                        hideSourceCheckbox.addEventListener('change', autoSaveHandler);
+                    } else if (hideSourceCheckbox.attachEvent) {
+                        hideSourceCheckbox.attachEvent('onchange', autoSaveHandler);
+                    }
+                }
+                // ========== 【新增结束】 ==========
                 
                 var defaultRadio = document.getElementById('ht_default');
                 var customRadio = document.getElementById('ht_custom');
@@ -7584,13 +7719,201 @@ function fetchHitokoto() {
             }, 50);
         };
         
-        showCustomAlert('一言类型个性化设置', html);
+        showCustomAlert('一言的高级设置', html);
         
         setTimeout(function() {
             window.showCustomAlert = originalShowCustomAlert;
         }, 100);
     };
+    // ========== 【修改结束】 ==========
 })();
+
+// 修改位置：在 一言类型选择功能 代码中添加 API 下拉框监听
+(function() {
+    var apiSelect = document.getElementById('hitokotoApiSelect');
+    var typeBtn = document.querySelector('label[for="hitokotoTypeBtn"]');
+    var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
+    
+    if (!apiSelect) return;
+    
+    // 加载保存的API选择
+    var savedApi = 'hitokApi_v1';
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var val = localStorage.getItem('hitokotoApiSelect');
+            if (val) savedApi = val;
+        }
+    } catch(e) {}
+    apiSelect.value = savedApi;
+    
+    function updateTypeBtnState() {
+        if (!typeBtn) return;
+        var isHitokotoChecked = hitokotoCheckbox ? hitokotoCheckbox.checked : false;
+        var isV1 = apiSelect.value === 'hitokApi_v1';
+        var disabled = !isV1 || !isHitokotoChecked;
+        
+        // 修改位置：控制 typeBtn 禁用状态
+        if (disabled) {
+            typeBtn.style.opacity = '0.7';
+            typeBtn.style.cursor = 'not-allowed';
+            typeBtn.style.pointerEvents = 'none';
+            typeBtn.setAttribute('data-disabled', 'true');
+        } else {
+            typeBtn.style.opacity = '1';
+            typeBtn.style.cursor = 'pointer';
+            typeBtn.style.pointerEvents = 'auto';
+            typeBtn.removeAttribute('data-disabled');
+        }
+        
+        // 修改位置：控制 hitokotoApiSelect 下拉框禁用状态
+        var apiSelectElem = document.getElementById('hitokotoApiSelect');
+        if (apiSelectElem) {
+            if (isHitokotoChecked) {
+                apiSelectElem.disabled = false;
+                apiSelectElem.style.opacity = '1';
+                apiSelectElem.style.cursor = 'pointer';
+            } else {
+                apiSelectElem.disabled = true;
+                apiSelectElem.style.opacity = '0.7';
+                apiSelectElem.style.cursor = 'not-allowed';
+            }
+        }
+    }
+    
+    // 初始更新状态
+    updateTypeBtnState();
+    
+    // 监听 API 下拉框变化
+    if (apiSelect.addEventListener) {
+        apiSelect.addEventListener('change', function() {
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoApiSelect', this.value);
+                }
+            } catch(e) {}
+            updateTypeBtnState();
+            // 重新获取一言
+            if (hitokotoCheckbox && hitokotoCheckbox.checked && document.getElementById('hitokotoDisplay')) {
+                if (typeof window.fetchHitokoto === 'function') {
+                    window.fetchHitokoto();
+                }
+            }
+        });
+    } else if (apiSelect.attachEvent) {
+        apiSelect.attachEvent('onchange', function() {
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoApiSelect', this.value);
+                }
+            } catch(e) {}
+            updateTypeBtnState();
+            if (hitokotoCheckbox && hitokotoCheckbox.checked && document.getElementById('hitokotoDisplay')) {
+                if (typeof window.fetchHitokoto === 'function') {
+                    window.fetchHitokoto();
+                }
+            }
+        });
+    }
+    
+    // 监听 hitokotoCheckbox 变化
+    if (hitokotoCheckbox) {
+        if (hitokotoCheckbox.addEventListener) {
+            hitokotoCheckbox.addEventListener('change', updateTypeBtnState);
+        } else if (hitokotoCheckbox.attachEvent) {
+            hitokotoCheckbox.attachEvent('onchange', updateTypeBtnState);
+        }
+    }
+})();
+
+// ========== 【修改位置】添加悬停显示来源功能 ==========
+(function() {
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    if (!hitokotoDisplay) return;
+    
+    // 鼠标悬停时显示完整内容
+    hitokotoDisplay.addEventListener('mouseenter', function() {
+        var hideSource = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+            }
+        } catch(e) {}
+        
+        if (hideSource) {
+            var fullText = this.getAttribute('data-fulltext');
+            if (fullText) {
+                this.textContent = fullText;
+            }
+        }
+    });
+    
+    // 鼠标离开时恢复显示
+    hitokotoDisplay.addEventListener('mouseleave', function() {
+        var hideSource = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+            }
+        } catch(e) {}
+        
+        if (hideSource) {
+            var displayText = this.getAttribute('data-displaytext');
+            if (displayText) {
+                this.textContent = displayText;
+            }
+        }
+    });
+    // ========== 【修改位置】点击时切换 active 状态，显示/隐藏来源 ==========
+    hitokotoDisplay.addEventListener('click', function(e) {
+        var hideSource = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+            }
+        } catch(e) {}
+        
+        if (hideSource) {
+            var isActive = this.getAttribute('data-active') === 'true';
+            // 切换 active 状态
+            updateHitokotoDisplay(!isActive);
+        }
+    });
+    // ========== 【修改结束】 ==========
+    // 移动端触摸支持 - 触摸开始
+    hitokotoDisplay.addEventListener('touchstart', function(e) {
+        var hideSource = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+            }
+        } catch(e) {}
+        
+        if (hideSource) {
+            var fullText = this.getAttribute('data-fulltext');
+            if (fullText) {
+                this.textContent = fullText;
+                this.setAttribute('data-touch-active', 'true');
+            }
+        }
+    });
+    hitokotoDisplay.addEventListener('touchend', function(e) {
+        var hideSource = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+            }
+        } catch(e) {}
+        
+        if (hideSource) {
+            var fullText = this.getAttribute('data-fulltext');
+            if (fullText) {
+                this.textContent = fullText;
+                this.setAttribute('data-touch-active', 'true');
+            }
+        }
+    });
+})();
+// ========== 【修改结束】 ==========
 
 // 修改位置：在 一言类型选择功能 代码中添加纯文本格式功能
 (function() {
@@ -7625,29 +7948,6 @@ function fetchHitokoto() {
             }
         } catch(e) {}
         
-        if (useDefault) {
-            url = 'https://v1.hitokoto.cn/';
-        } else {
-            var selectedTypes = [];
-            try {
-                if (typeof localStorage !== 'undefined' && localStorage) {
-                    var types = localStorage.getItem('hitokotoSelectedTypes');
-                    if (types) {
-                        selectedTypes = JSON.parse(types);
-                    }
-                }
-            } catch(e) {}
-            
-            if (selectedTypes.length === 0) {
-                url = 'https://v1.hitokoto.cn/';
-            } else {
-                var params = [];
-                for (var i = 0; i < selectedTypes.length; i++) {
-                    params.push('c=' + selectedTypes[i]);
-                }
-                url = 'https://v1.hitokoto.cn/?' + params.join('&');
-            }
-        }
         
         // 修改位置：如果纯文本格式开关已勾选，添加 encode=text 参数
         var isPlainText = false;
@@ -7845,25 +8145,25 @@ if (localStorage.getItem('focusCheckboxChecked') === 'true') {
         document.getElementById('hitokotoDisplay').style.display = 'none';
         document.getElementById('searchContainer').style.marginTop = '0';
         // 添加classList兼容性修复函数
-function addClass(element, className) {
-    if (element.classList) {
-        element.classList.add(className);
-    } else {
-        element.className += ' ' + className;
-    }
-}
-
-function removeClass(element, className) {
-    if (element.classList) {
-        element.classList.remove(className);
-    } else {
-        element.className = element.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
-    }
-}
-
-// 使用示例
-addClass(document.body, 'focused');
-addClass(document.querySelector('.search-container'), 'focused');
+        function addClass(element, className) {
+            if (element.classList) {
+                element.classList.add(className);
+            } else {
+                element.className += ' ' + className;
+            }
+        }
+        
+        function removeClass(element, className) {
+            if (element.classList) {
+                element.classList.remove(className);
+            } else {
+                element.className = element.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
+            }
+        }
+        
+        // 使用示例
+        addClass(document.body, 'focused');
+        addClass(document.querySelector('.search-container'), 'focused');
         var engineSelect = document.getElementById('engineSelect');
         if (engineSelect && engineSelect.value === 'iFramePlus') {
             var iframePlusSizeBtn = document.getElementById('iframePlusSizeBtn');
@@ -8929,7 +9229,8 @@ function exportSettingsData() {
         wheelScrollChecked: localStorage.getItem('wheelScrollChecked') || 'false',
         hitokotoSelectedTypes: localStorage.getItem('hitokotoSelectedTypes') || '[\"d\",\"i\",\"k\"]',
         hitokotoPlainTextChecked: localStorage.getItem('hitokotoPlainTextChecked') || 'false',
-        hitokotoUseDefault: localStorage.getItem('hitokotoUseDefault') || 'true'
+        hitokotoUseDefault: localStorage.getItem('hitokotoUseDefault') || 'true',
+        hitokotoApiSelect: localStorage.getItem('hitokotoApiSelect') || 'hitokApi_v1'
     };
     
     // ========== 新增：动态遍历 localStorage 捕获遗漏项 ==========
@@ -10071,8 +10372,7 @@ document.getElementById('urlInput').addEventListener('input', function() {
 document.getElementById('urlInput').addEventListener('blur', function() {
     // ========== 【修改位置】如果正在跳转导航中，不隐藏搜索建议（让切换引擎时能正常显示） ==========
     if (window._isNavigating) {
-        // 正在跳转中，不做任何处理，让切换引擎时能恢复
-        return;
+        window._isNavigating = false;
     }
     // ========== 【修改结束】 ==========
     setTimeout(function() {
@@ -10786,6 +11086,16 @@ function showCustomConfirm(title, callback) {
     // 创建唯一的回调函数名称以避免冲突
     var callbackName = 'confirmCallback_' + Date.now();
     window[callbackName] = function(result) {
+        // 修改位置：在回调执行前移除键盘事件
+        if (modal._keyHandler) {
+            if (document.removeEventListener) {
+                document.removeEventListener('keydown', modal._keyHandler);
+            } else if (document.detachEvent) {
+                document.detachEvent('onkeydown', modal._keyHandler);
+            }
+            modal._keyHandler = null;
+        }
+        
         if (modal.parentNode) {
             modal.parentNode.removeChild(modal);
         }
@@ -10819,8 +11129,7 @@ function showCustomConfirm(title, callback) {
         '</div>'
     ].join('');
     
-    // 添加键盘事件处理函数
-    // 【修复】兼容 IE 浏览器，确保回调函数存在后再调用
+    // 修改位置：创建键盘事件处理函数并保存引用
     modal._keyHandler = function(e) {
         e = e || window.event;
         var keyCode = e.keyCode || e.which;
@@ -12479,6 +12788,13 @@ if (isDesktop()) {
         var hideSearchCheckbox = document.getElementById('hideSearchContainerCheckbox');
         if (hideSearchCheckbox && hideSearchCheckbox.checked) return true;
         
+        // 修改位置：当勾选focusCheckbox并且搜索输入框已在聚焦时禁止使用快捷键切换搜索引擎
+        var focusCheckbox = document.getElementById('focusCheckbox');
+        var urlInput = document.getElementById('urlInput');
+        if (focusCheckbox && focusCheckbox.checked && urlInput && document.activeElement === urlInput) {
+            return true;
+        }
+        
         var engineSelect = document.getElementById('engineSelect');
         if (!engineSelect) return true;
         
@@ -12502,7 +12818,6 @@ if (isDesktop()) {
             if (newIndex >= visibleOptions.length) newIndex = 0;
             if (newIndex !== currentIndex && visibleOptions[newIndex]) {
                 engineSelect.selectedIndex = visibleOptions[newIndex].index;
-                // 触发 change 事件（兼容IE）
                 if (document.createEvent) {
                     var evt = document.createEvent('HTMLEvents');
                     evt.initEvent('change', true, false);
@@ -12510,7 +12825,6 @@ if (isDesktop()) {
                 } else if (engineSelect.fireEvent) {
                     engineSelect.fireEvent('onchange');
                 }
-                // 更新当前索引
                 currentIndex = newIndex;
             }
         }

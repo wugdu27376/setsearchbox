@@ -1,10 +1,14 @@
 <html>
 <head>
-    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>搜索Easy V7.3</title>
+    <meta
+        name="description"
+        content="这是一个简陋搜索页面，简陋到只有一个搜索框和顶部的一个大链接。"
+    />
     
-<link rel="icon" href="https://wugdu27376.github.io/setsearchbox/favicon.ico">
+<link rel="icon" href="https://wugdu27376.github.io/setsearchbox/favicon.ico"/>
 
 <script>
     (function() {
@@ -277,6 +281,10 @@
             -webkit-appearance: none;
             -moz-appearance: none;
             border: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
             background: transparent;
             font-family: inherit;
             font-size: inherit;
@@ -702,7 +710,18 @@
                 <input type="checkbox" id="wheelScrollCheckbox">
                 <label for="wheelScrollCheckbox">滚轮支持光标移动</label>
             </div>
-            <label id="showMoreLabelBtns" for="hitokotoTypeBtn" style="vertical-align: middle; cursor: pointer;">一言类型高级设置</label>
+            <label class="text-select-wrapper"><select id="hitokotoApiSelect">
+                <option value="hitokApi_v1" selected>一言接口: V1</option>
+                <option value="hitokApi_v2">一言接口: V2</option>
+                <option value="hitokApi_v3">一言接口: V3</option>
+                <option value="hitokApi_v4">一言接口: V4</option>
+                <option value="hitokApi_v5">一言接口: V5</option>
+                <option value="hitokApi_v6">一言接口: V6</option>
+                <option value="hitokApi_v7">一言接口: V7</option>
+                <option value="hitokApi_v8">一言接口: V8</option>
+                <option value="hitokApi_v9">一言接口: V9</option>
+            </select></label>
+            <label id="showMoreLabelBtns" for="hitokotoTypeBtn" style="vertical-align: middle; cursor: pointer;">一言显示高级设置</label>
             <input type="submit" id="hitokotoTypeBtn" style="display: none;">
             <label id="showMoreSettingsBtn" style="vertical-align: middle; cursor: pointer;">展开更多设置</label>
             <label for="clearAllSettingsBtn" style="vertical-align: middle; cursor: pointer;">重置所有设置</label>
@@ -912,6 +931,8 @@
                     return 'http://' + encodeUrl(keyword);
                 } else if (engine === 'autofillHttps') {
                     return 'https://' + encodeUrl(keyword);
+                } else if (engine === 'baiduTw') {
+                    return 'https://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeUrl(keyword);
                 } else {
                     return 'http://www.baidu.com/s?wd=' + encodeUrl(keyword);
                 }
@@ -1005,7 +1026,7 @@
             }
         } else {
             // 创建script元素
-            document.write('<script src="corescript.js" type="text/javascript"><\/script>');
+            document.write('<script src="corescript.js" type="text/javascript" charset="UTF-8"><\/script>');
         }
     })();
     (function() {
