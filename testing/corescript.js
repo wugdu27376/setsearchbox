@@ -7216,7 +7216,7 @@ function fetchHitokoto() {
         url = 'https://api.suyanw.cn/api/yiyan.php?type=json';
     } else if (selectedApi === 'hitokApi_v9') {
         url = 'https://v.api.aa1.cn/api/yiyan/index.php?type=json';
-    } else if (selectedApi === 'hitokApi_v1') {
+    } else {
         // V1 API：默认类型
         var useDefault = true;
         try {
@@ -8041,6 +8041,319 @@ function fetchHitokoto() {
         });
     }
 })();
+
+// ========== 【修改位置】剪贴板自动填充搜索功能 ==========
+(function() {
+    var clipboardCheckbox = document.getElementById('clipboardAutoFillCheckbox');
+    var urlInput = document.getElementById('urlInput');
+    var submitBtn = document.getElementById('submitBtn');
+    
+    if (!clipboardCheckbox || !urlInput || !submitBtn) return;
+    
+    // 剪贴板读取函数（兼容所有浏览器）
+    function readClipboardText(callback) {
+        var isIE = false;
+        try {
+            isIE = /*@cc_on!@*/false || !!document.documentMode;
+        } catch(e) { isIE = false; }
+        
+        // 方法1：使用 navigator.clipboard.readText（现代浏览器）
+        if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+            navigator.clipboard.readText().then(function(text) {
+                if (callback) callback(text);
+            }).catch(function(err) {
+                if (callback) callback(null);
+            });
+            return;
+        }
+        
+        // 方法2：IE 使用 window.clipboardData
+        if (isIE && window.clipboardData && typeof window.clipboardData.getData === 'function') {
+            try {
+                var text = window.clipboardData.getData('Text');
+                if (callback) callback(text || null);
+            } catch(e) {
+                if (callback) callback(null);
+            }
+            return;
+        }
+        
+        // 方法3：使用 document.execCommand('paste')（需要用户交互）
+        try {
+            var textarea = document.createElement('textarea');
+            textarea.style.position = 'fixed';
+            textarea.style.top = '-1000px';
+            textarea.style.left = '-1000px';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            
+            var success = document.execCommand('paste');
+            var text = textarea.value;
+            document.body.removeChild(textarea);
+            
+            if (success && text) {
+                if (callback) callback(text);
+                return;
+            }
+        } catch(e) {}
+        
+        if (callback) callback(null);
+    }
+    
+    // 加载保存的状态
+    var savedState = false;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            savedState = localStorage.getItem('clipboardAutoFillChecked') === 'true';
+        }
+    } catch(e) {}
+    clipboardCheckbox.checked = savedState;
+    
+    // 存储当前剪贴板内容
+    var currentClipboardText = '';
+    
+    // 读取剪贴板内容并更新 placeholder
+    function updateClipboardPlaceholder() {
+        if (!clipboardCheckbox.checked) return;
+        if (document.activeElement !== urlInput) return;
+        if (urlInput.value && urlInput.value.trim() !== '') return;
+        
+        readClipboardText(function(text) {
+            if (text && text.trim() !== '') {
+                currentClipboardText = text.trim();
+                // 截断显示，避免 placeholder 过长
+                var displayText = text.trim();
+                if (displayText.length > 30) {
+                    displayText = displayText.substring(0, 30) + '...';
+                }
+                urlInput.placeholder = '粘贴: ' + displayText + ' (Enter跳转)';
+            } else {
+                // 恢复默认 placeholder
+                var savedPlaceholder = '';
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage) {
+                        savedPlaceholder = localStorage.getItem('urlInputPlaceholder') || '输入网址';
+                    }
+                } catch(e) {}
+                urlInput.placeholder = savedPlaceholder || '输入网址';
+                currentClipboardText = '';
+            }
+        });
+    }
+    
+    // 执行剪贴板填充并跳转
+    function executeClipboardFill() {
+        if (!clipboardCheckbox.checked) return false;
+        if (!currentClipboardText || currentClipboardText.trim() === '') return false;
+        
+        urlInput.value = currentClipboardText;
+        // 触发输入事件
+        if (document.createEvent) {
+            var evt = document.createEvent('HTMLEvents');
+            evt.initEvent('input', true, false);
+            urlInput.dispatchEvent(evt);
+        } else if (urlInput.fireEvent) {
+            urlInput.fireEvent('oninput');
+        }
+        
+        // 延迟执行跳转
+        setTimeout(function() {
+            if (submitBtn.click) {
+                submitBtn.click();
+            } else if (submitBtn.fireEvent) {
+                submitBtn.fireEvent('onclick');
+            }
+        }, 50);
+        
+        return true;
+    }
+    
+    // 监听输入框聚焦事件
+    urlInput.addEventListener('focus', function() {
+        if (clipboardCheckbox.checked) {
+            setTimeout(function() {
+                if (this.value === '' || this.value === 'https://') {
+                    updateClipboardPlaceholder();
+                }
+            }, 100);
+        }
+    });
+    
+    // 监听输入框输入事件
+    urlInput.addEventListener('input', function() {
+        if (clipboardCheckbox.checked) {
+            if (this.value && this.value.trim() !== '') {
+                // 用户输入时恢复默认 placeholder
+                var savedPlaceholder = '';
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage) {
+                        savedPlaceholder = localStorage.getItem('urlInputPlaceholder') || '输入网址';
+                    }
+                } catch(e) {}
+                this.placeholder = savedPlaceholder || '输入网址';
+            } else {
+                // 输入为空时重新读取剪贴板
+                setTimeout(function() {
+                    updateClipboardPlaceholder();
+                }, 100);
+            }
+        }
+    });
+    
+    // 监听 Enter 键
+    urlInput.addEventListener('keydown', function(e) {
+        e = e || window.event;
+        var keyCode = e.keyCode || e.which;
+        
+        if (keyCode === 13 && clipboardCheckbox.checked) {
+            // 如果输入框为空，尝试使用剪贴板内容
+            if (!this.value || this.value.trim() === '' || this.value === 'https://') {
+                if (currentClipboardText && currentClipboardText.trim() !== '') {
+                    e.preventDefault();
+                    e.returnValue = false;
+                    executeClipboardFill();
+                    return false;
+                }
+            }
+        }
+    });
+    
+    // 监听跳转按钮点击
+    submitBtn.addEventListener('click', function(e) {
+        if (clipboardCheckbox.checked) {
+            var inputValue = urlInput.value;
+            if (!inputValue || inputValue.trim() === '' || inputValue === 'https://') {
+                if (currentClipboardText && currentClipboardText.trim() !== '') {
+                    e.preventDefault();
+                    e.returnValue = false;
+                    executeClipboardFill();
+                    return false;
+                }
+            }
+        }
+    });
+    
+    // 定期更新剪贴板内容（仅在开关启用且输入框聚焦时）
+    var clipboardInterval = null;
+    
+    function startClipboardInterval() {
+        if (clipboardInterval) {
+            clearInterval(clipboardInterval);
+            clipboardInterval = null;
+        }
+        if (clipboardCheckbox.checked) {
+            clipboardInterval = setInterval(function() {
+                if (document.activeElement === urlInput) {
+                    var inputValue = urlInput.value;
+                    if (!inputValue || inputValue.trim() === '' || inputValue === 'https://') {
+                        updateClipboardPlaceholder();
+                    }
+                }
+            }, 2000);
+        }
+    }
+    
+    // 监听开关变化
+    clipboardCheckbox.addEventListener('change', function() {
+        var isChecked = this.checked;
+        
+        if (isChecked) {
+            // 启用时弹出确认框
+            showCustomConfirm('启用剪贴板自动填充搜索功能后，当输入框为空并聚焦时，会自动读取剪贴板内容显示在提示框中。按 Enter 键或点击跳转按钮将自动填充剪贴板内容并执行搜索/跳转。确定要启用吗？', function(result) {
+                if (result) {
+                    // 请求剪贴板权限
+                    showCustomAlert('正在请求读取剪贴板权限...', '请允许浏览器读取剪贴板内容');
+                    
+                    // 延迟执行权限检查
+                    setTimeout(function() {
+                        readClipboardText(function(text) {
+                            var success = (text !== null && text !== undefined);
+                            
+                            if (success) {
+                                try {
+                                    if (typeof localStorage !== 'undefined' && localStorage) {
+                                        localStorage.setItem('clipboardAutoFillChecked', 'true');
+                                    }
+                                } catch(e) {}
+                                clipboardCheckbox.checked = true;
+                                showCustomAlert('权限获取成功', '剪贴板自动填充搜索功能已启用');
+                                startClipboardInterval();
+                                // 如果输入框为空且已聚焦，立即更新 placeholder
+                                if (document.activeElement === urlInput) {
+                                    var inputValue = urlInput.value;
+                                    if (!inputValue || inputValue.trim() === '' || inputValue === 'https://') {
+                                        setTimeout(function() {
+                                            updateClipboardPlaceholder();
+                                        }, 100);
+                                    }
+                                }
+                            } else {
+                                // 权限获取失败或浏览器不支持
+                                try {
+                                    if (typeof localStorage !== 'undefined' && localStorage) {
+                                        localStorage.setItem('clipboardAutoFillChecked', 'false');
+                                    }
+                                } catch(e) {}
+                                clipboardCheckbox.checked = false;
+                                showCustomAlert('权限获取失败', '浏览器不支持读取剪贴板或用户拒绝了权限请求，功能已自动关闭');
+                            }
+                        });
+                    }, 500);
+                } else {
+                    clipboardCheckbox.checked = false;
+                    try {
+                        if (typeof localStorage !== 'undefined' && localStorage) {
+                            localStorage.setItem('clipboardAutoFillChecked', 'false');
+                        }
+                    } catch(e) {}
+                }
+            });
+        } else {
+            // 取消勾选时直接保存状态
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('clipboardAutoFillChecked', 'false');
+                }
+            } catch(e) {}
+            if (clipboardInterval) {
+                clearInterval(clipboardInterval);
+                clipboardInterval = null;
+            }
+            // 恢复默认 placeholder
+            var savedPlaceholder = '';
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    savedPlaceholder = localStorage.getItem('urlInputPlaceholder') || '输入网址';
+                }
+            } catch(e) {}
+            urlInput.placeholder = savedPlaceholder || '输入网址';
+            currentClipboardText = '';
+        }
+    });
+    
+    // 页面加载时，如果开关已启用，启动定时器
+    if (clipboardCheckbox.checked) {
+        setTimeout(function() {
+            startClipboardInterval();
+        }, 500);
+    }
+    
+    // 页面卸载时清理定时器
+    var cleanup = function() {
+        if (clipboardInterval) {
+            clearInterval(clipboardInterval);
+            clipboardInterval = null;
+        }
+    };
+    
+    if (window.addEventListener) {
+        window.addEventListener('beforeunload', cleanup);
+    } else if (window.attachEvent) {
+        window.attachEvent('onbeforeunload', cleanup);
+    }
+})();
+// ========== 【修改结束】 ==========
 
 // 保存和加载搜索引擎显示checkbox状态
 var savedSearchEngineDisplayState = localStorage.getItem('searchEngineDisplayChecked');
