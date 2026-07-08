@@ -8138,7 +8138,7 @@ function fetchHitokoto() {
 })();
 // ========== 【修改结束】 ==========
 
-// ========== 【修改位置】工具面板元素间距调整功能（排除指定 label） ==========
+// ========== 【修改位置】工具面板元素间距调整功能 ==========
 (function() {
     var spacingBtn = document.getElementById('toolPanelSpacingBtn');
     if (!spacingBtn) return;
@@ -8165,55 +8165,76 @@ function fetchHitokoto() {
         'importLinksBtn',
         'exportLinksBtn',
         'clearLinksBtn',
-        'quickLinksHeadName',
         'importSettingsBtn',
-        'exportSettingsBtn'
+        'exportSettingsBtn',
+        'quickLinksHeadName'
     ];
     
-    // ========== 【修改位置】清除所有间距时排除指定 label ==========
+    // ========== 【新增】需要排除的 div id 列表 ==========
+    var excludedDivIds = [
+        'browserInfosBlock'
+    ];
+    // ========== 【新增结束】 ==========
+    
+    // 检查元素是否在排除列表中
+    function isElementExcluded(element) {
+        if (!element) return false;
+        
+        // 检查 label 元素
+        if (element.tagName === 'LABEL') {
+            var forAttr = element.getAttribute('for');
+            if (forAttr) {
+                for (var j = 0; j < excludedLabels.length; j++) {
+                    if (forAttr === excludedLabels[j]) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        // ========== 【新增】检查 div 元素的 id 是否在排除列表中 ==========
+        if (element.tagName === 'DIV') {
+            var idAttr = element.id;
+            if (idAttr) {
+                for (var k = 0; k < excludedDivIds.length; k++) {
+                    if (idAttr === excludedDivIds[k]) {
+                        return true;
+                    }
+                }
+            }
+        }
+        // ========== 【新增结束】 ==========
+        
+        // 检查 span 元素（排除 linkCreatorBtn 内的 span）
+        if (element.tagName === 'SPAN') {
+            var parent = element.parentNode;
+            while (parent && parent !== toolPanel) {
+                if (parent.tagName === 'LABEL') {
+                    var forAttrParent = parent.getAttribute('for');
+                    if (forAttrParent) {
+                        for (var m = 0; m < excludedLabels.length; m++) {
+                            if (forAttrParent === excludedLabels[m]) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                parent = parent.parentNode;
+            }
+        }
+        
+        return false;
+    }
+    
+    // 清除所有间距时排除指定元素
     function clearAllSpacing() {
         var children = toolPanel.children;
         for (var i = 0; i < children.length; i++) {
             var child = children[i];
             
-            // 检查是否为 label 元素
-            if (child.tagName === 'LABEL') {
-                var forAttr = child.getAttribute('for');
-                var isExcluded = false;
-                if (forAttr) {
-                    for (var j = 0; j < excludedLabels.length; j++) {
-                        if (forAttr === excludedLabels[j]) {
-                            isExcluded = true;
-                            break;
-                        }
-                    }
-                }
-                if (isExcluded) {
-                    continue; // 跳过排除的 label
-                }
-            }
-            
-            // 检查是否为 span（排除 linkCreatorBtn 内的 span）
-            if (child.tagName === 'SPAN') {
-                var parent = child.parentNode;
-                var isSpanExcluded = false;
-                while (parent && parent !== toolPanel) {
-                    if (parent.tagName === 'LABEL') {
-                        var forAttrParent = parent.getAttribute('for');
-                        if (forAttrParent) {
-                            for (var k = 0; k < excludedLabels.length; k++) {
-                                if (forAttrParent === excludedLabels[k]) {
-                                    isSpanExcluded = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    parent = parent.parentNode;
-                }
-                if (isSpanExcluded) {
-                    continue; // 跳过排除的 span
-                }
+            // 检查是否在排除列表中
+            if (isElementExcluded(child)) {
+                continue; // 跳过排除的元素
             }
             
             // 清除间距
@@ -8223,7 +8244,6 @@ function fetchHitokoto() {
             child.style.marginBottom = '';
         }
     }
-    // ========== 【修改结束】 ==========
     
     // 应用间距设置（覆盖已有间距）
     function applyToolPanelSpacing(horizontal, vertical) {
@@ -8233,52 +8253,27 @@ function fetchHitokoto() {
         // 收集所有需要应用间距的元素
         for (var i = 0; i < children.length; i++) {
             var child = children[i];
-            // 检查是否为 div（包含 checkbox 和 label 的组合）
+            
+            // 检查是否在排除列表中
+            if (isElementExcluded(child)) {
+                continue; // 跳过排除的元素
+            }
+            
+            // 检查是否为 div
             if (child.tagName === 'DIV') {
                 displayBlocks.push(child);
             }
             // 检查是否为 label 按钮
             if (child.tagName === 'LABEL' && child.id !== 'showMoreSettingsBtn') {
-                // 检查是否在排除列表中
-                var isExcluded = false;
-                var forAttr = child.getAttribute('for');
-                if (forAttr) {
-                    for (var j = 0; j < excludedLabels.length; j++) {
-                        if (forAttr === excludedLabels[j]) {
-                            isExcluded = true;
-                            break;
-                        }
-                    }
-                }
-                if (!isExcluded) {
-                    displayBlocks.push(child);
-                }
+                displayBlocks.push(child);
             }
             // 检查是否为 select-wrapper
             if (child.className === 'text-select-wrapper') {
                 displayBlocks.push(child);
             }
-            // 检查是否为 span（如 linkCreatorBtn 内的 span）
+            // 检查是否为 span
             if (child.tagName === 'SPAN') {
-                var parent = child.parentNode;
-                var isSpanExcluded = false;
-                while (parent && parent !== toolPanel) {
-                    if (parent.tagName === 'LABEL') {
-                        var forAttrParent = parent.getAttribute('for');
-                        if (forAttrParent) {
-                            for (var k = 0; k < excludedLabels.length; k++) {
-                                if (forAttrParent === excludedLabels[k]) {
-                                    isSpanExcluded = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    parent = parent.parentNode;
-                }
-                if (!isSpanExcluded) {
-                    displayBlocks.push(child);
-                }
+                displayBlocks.push(child);
             }
             // 检查是否为 br 标签
             if (child.tagName === 'BR') {
@@ -8373,14 +8368,13 @@ function fetchHitokoto() {
                     }
                 } catch(e) {}
                 
-                // ========== 【修改位置】应用间距或清除间距时排除指定 label ==========
+                // 应用间距或清除间距时排除指定元素
                 if (horizontal === '0' && vertical === '0') {
-                    // 清除所有间距（排除指定 label）
+                    // 清除所有间距（排除指定元素）
                     clearAllSpacing();
                 } else {
                     applyToolPanelSpacing(horizontal, vertical);
                 }
-                // ========== 【修改结束】 ==========
             }
         );
     };
