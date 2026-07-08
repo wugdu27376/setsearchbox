@@ -22,11 +22,11 @@
         
         var currentIndex = 0;
         var head = document.getElementsByTagName('head')[0];
-        var loadedSuccessfully = false;  // 【修改位置】添加加载成功标记
-        var timeoutId = null;  // 【修改位置】保存超时ID以便清除
+        var loadedSuccessfully = false;
+        var timeoutId = null;
         
         function loadCSS(url) {
-            if (loadedSuccessfully) return;  // 【修改位置】已加载成功则直接返回
+            if (loadedSuccessfully) return;
             
             var link = document.createElement('link');
             link.rel = 'stylesheet';
@@ -39,21 +39,49 @@
                 timeoutId = null;
             }
             
-            // 兼容 Chrome 7 及低版本浏览器的加载检测
+            // ========== 【修改位置】加载成功标记（兼容所有浏览器） ==========
+            // 现代浏览器：使用 onload 事件
+            link.onload = function() {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                loadedSuccessfully = true;
+                // 清除 onreadystatechange 防止重复触发
+                link.onreadystatechange = null;
+            };
+            
+            // IE 兼容：使用 onreadystatechange 检测加载状态
+            link.onreadystatechange = function() {
+                if (!this.readyState || this.readyState === 'loaded' || this.readyState === 'complete') {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    loadedSuccessfully = true;
+                    // 清除 onreadystatechange 防止重复触发
+                    link.onreadystatechange = null;
+                }
+            };
+            
+            // 额外安全检测：使用 img 标签检测加载失败（兼容老浏览器）
             var img = document.createElement('img');
             img.onerror = function() {
-                if (!loadedSuccessfully) {  // 【修改位置】仅当未成功时才尝试下一个
+                if (!loadedSuccessfully) {
                     currentIndex++;
                     if (currentIndex < links.length) {
                         loadCSS(links[currentIndex]);
                     }
                 }
+                // 清理 img 引用
+                img.onerror = null;
+                img.src = '';
             };
             img.src = url;
             
             // 使用 setTimeout 检测加载失败（兼容不支持 onerror 的浏览器）
             timeoutId = setTimeout(function() {
-                if (!loadedSuccessfully && !link.sheet && !link.styleSheet) {  // 【修改位置】仅当未成功时才尝试下一个
+                if (!loadedSuccessfully && !link.sheet && !link.styleSheet) {
                     currentIndex++;
                     if (currentIndex < links.length) {
                         loadCSS(links[currentIndex]);
@@ -61,6 +89,7 @@
                 }
                 timeoutId = null;
             }, 3000);
+            // ========== 【修改结束】 ==========
             
             // 添加到 head
             if (head) {
@@ -68,17 +97,6 @@
             } else {
                 document.body.appendChild(link);
             }
-            
-            // 清理超时并标记加载成功
-            link.onload = link.onreadystatechange = function() {
-                if (!this.readyState || this.readyState === 'loaded' || this.readyState === 'complete') {
-                    if (timeoutId) {
-                        clearTimeout(timeoutId);
-                        timeoutId = null;
-                    }
-                    loadedSuccessfully = true;  // 【修改位置】标记加载成功，阻止后续备用链接加载
-                }
-            };
         }
         
         // 开始加载第一个链接
@@ -723,19 +741,15 @@
             </select></label>
             <label id="showMoreLabelBtns" for="hitokotoTypeBtn" style="vertical-align: middle; cursor: pointer;">一言显示高级设置</label>
             <input type="submit" id="hitokotoTypeBtn" style="display: none;">
-            <!-- ========== 【修改位置】添加剪贴板自动填充搜索开关 ========== -->
-<div id="showMoreCheckboxBlock">
-    <input type="checkbox" id="clipboardAutoFillCheckbox">
-    <label for="clipboardAutoFillCheckbox">剪贴板自动填充搜索</label>
-</div>
-<!-- ========== 【修改结束】 ========== -->
+            <label id="showMoreLabelBtns" for="searchContainerMaxWidthBtn" style="vertical-align: middle; cursor: pointer;">搜索框最大宽: <span id="searchContainerMaxWidthValue">800px</span></label>
+            <input type="submit" id="searchContainerMaxWidthBtn" style="display: none;">
+            <label id="showMoreLabelBtns" for="toolPanelSpacingBtn" style="vertical-align: middle; cursor: pointer;">工具面板间距</label>
+            <input type="submit" id="toolPanelSpacingBtn" style="display: none;">
             <label id="showMoreSettingsBtn" style="vertical-align: middle; cursor: pointer;">展开更多设置</label>
             <label for="clearAllSettingsBtn" style="vertical-align: middle; cursor: pointer;">重置所有设置</label>
             <br/>
-            <label style="margin-right: 0;" id="noActiveLab">超链接:</label>
-            <span id="linkCreatorBtn">
-            <label for="linkCreatorBtn0" style="margin-right: 0; vertical-align: middle; cursor: pointer;">新建</label>
-            </span>
+            <label for="quickLinksHeadName" style="margin-right: 0;" id="noActiveLab">超链接:</label>
+            <label for="linkCreatorBtn" style="margin-right: 0; vertical-align: middle; cursor: pointer;">新建</label>
             <label for="defaultLinksBtn" style="margin-right: 0; vertical-align: middle; cursor: pointer;">书签</label>
             <label for="importLinksBtn" style="margin-right: 0; vertical-align: middle; cursor: pointer;">导入</label>
             <label for="exportLinksBtn" style="margin-right: 0; vertical-align: middle; cursor: pointer;">导出</label>
@@ -744,7 +758,7 @@
             <div id="linkCreatorPanel" style="display: none; margin-top: 10px; margin-bottom: -20px;">
         </div>
         <br/>
-        <div style="margin-top: 10px;">
+        <div style="position: relative; top: 10px;">
             <span id="browserInfo"></span>
         </div>
     </div>

@@ -4806,10 +4806,8 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
     if (this.value === 'showCheckbox') {
         document.getElementById('showToolPanel').style.display = 'block';
-        linkCreatorBtn.style.display = 'inline-block';
     } else {
         document.getElementById('showToolPanel').style.display = 'none';
-        linkCreatorBtn.style.display = 'none';
         document.getElementById('linkCreatorPanel').style.display = 'none';
     }
     // 保存自定义搜索选项的选择状态
@@ -4841,7 +4839,6 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                     localStorage.removeItem('selectedCustomSearch');
                 }
                 if (document.getElementById('engineSelect').value === 'showCheckbox') {
-                    linkCreatorBtn.style.display = 'inline-block';
                     updateQuickLinks();
                     document.getElementById('showToolPanel').style.display = 'block';
                     submitBtn.disabled = true;
@@ -4901,7 +4898,6 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                     localStorage.removeItem('selectedCustomSearch');
                 }
                 if (document.getElementById('engineSelect').value === 'showCheckbox') {
-                    linkCreatorBtn.style.display = 'inline-block';
                     updateQuickLinks();
                     document.getElementById('showToolPanel').style.display = 'block';
                     submitBtn.disabled = true;
@@ -7216,7 +7212,7 @@ function fetchHitokoto() {
         url = 'https://api.suyanw.cn/api/yiyan.php?type=json';
     } else if (selectedApi === 'hitokApi_v9') {
         url = 'https://v.api.aa1.cn/api/yiyan/index.php?type=json';
-    } else {
+    } else if (selectedApi === 'hitokApi_v1') {
         // V1 API：默认类型
         var useDefault = true;
         try {
@@ -7539,6 +7535,27 @@ function fetchHitokoto() {
         var autoSaveHandler = function(e) {
             var target = e.target || e.srcElement;
             if (!target) return;
+            
+            // ========== 【新增】获取两个开关元素 ==========
+            var plainTextCheckbox = document.getElementById('ht_plainText');
+            var hideSourceCheckbox = document.getElementById('ht_hideSource');
+            // ========== 【新增结束】 ==========
+            
+            // ========== 【新增】互斥逻辑：当勾选纯文本格式时，自动取消勾选悬停显示来源 ==========
+            if (target.id === 'ht_plainText' && target.checked) {
+                if (hideSourceCheckbox && hideSourceCheckbox.checked) {
+                    hideSourceCheckbox.checked = false;
+                }
+            }
+            // ========== 【新增结束】 ==========
+            
+            // ========== 【新增】互斥逻辑：当勾选悬停显示来源时，自动取消勾选纯文本格式 ==========
+            if (target.id === 'ht_hideSource' && target.checked) {
+                if (plainTextCheckbox && plainTextCheckbox.checked) {
+                    plainTextCheckbox.checked = false;
+                }
+            }
+            // ========== 【新增结束】 ==========
             
             // 获取选择的模式
             var modeRadios = document.querySelectorAll('input[name="hitokotoTypeMode"]');
@@ -8042,316 +8059,331 @@ function fetchHitokoto() {
     }
 })();
 
-// ========== 【修改位置】剪贴板自动填充搜索功能 ==========
+// ========== 【修改位置】搜索框最大宽度调整功能（自动填充当前值） ==========
 (function() {
-    var clipboardCheckbox = document.getElementById('clipboardAutoFillCheckbox');
-    var urlInput = document.getElementById('urlInput');
-    var submitBtn = document.getElementById('submitBtn');
+    var maxWidthBtn = document.getElementById('searchContainerMaxWidthBtn');
+    if (!maxWidthBtn) return;
     
-    if (!clipboardCheckbox || !urlInput || !submitBtn) return;
+    var searchContainer = document.getElementById('searchContainer');
+    if (!searchContainer) return;
     
-    // 剪贴板读取函数（兼容所有浏览器）
-    function readClipboardText(callback) {
-        var isIE = false;
-        try {
-            isIE = /*@cc_on!@*/false || !!document.documentMode;
-        } catch(e) { isIE = false; }
-        
-        // 方法1：使用 navigator.clipboard.readText（现代浏览器）
-        if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
-            navigator.clipboard.readText().then(function(text) {
-                if (callback) callback(text);
-            }).catch(function(err) {
-                if (callback) callback(null);
-            });
-            return;
+    // 加载保存的最大宽度设置
+    var savedMaxWidth = '800px';
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var val = localStorage.getItem('searchContainerMaxWidth');
+            if (val) savedMaxWidth = val;
         }
-        
-        // 方法2：IE 使用 window.clipboardData
-        if (isIE && window.clipboardData && typeof window.clipboardData.getData === 'function') {
-            try {
-                var text = window.clipboardData.getData('Text');
-                if (callback) callback(text || null);
-            } catch(e) {
-                if (callback) callback(null);
+    } catch(e) {}
+    
+    // 应用保存的最大宽度
+    searchContainer.style.maxWidth = savedMaxWidth;
+    document.getElementById('searchContainerMaxWidthValue').textContent = savedMaxWidth;
+    
+    // 点击按钮弹出设置对话框
+    var label = document.querySelector('label[for="searchContainerMaxWidthBtn"]');
+    if (!label) return;
+    
+    label.onclick = function() {
+        // ========== 【修改位置】始终获取当前值，即使为默认值也显示 ==========
+        var currentWidth = '800px';
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var val = localStorage.getItem('searchContainerMaxWidth');
+                if (val) currentWidth = val;
             }
-            return;
+        } catch(e) {}
+        // ========== 【修改结束】 ==========
+        
+        showCustomModal('请输入搜索框最大宽度（默认800px，范围300px-1000px，输入空值恢复默认）：', 
+            currentWidth,  // ========== 【修改位置】始终传入当前值 ==========
+            function(newWidth) {
+                if (newWidth === null) return;
+                
+                if (newWidth === '') {
+                    // 恢复默认
+                    var defaultWidth = '800px';
+                    searchContainer.style.maxWidth = defaultWidth;
+                    document.getElementById('searchContainerMaxWidthValue').textContent = defaultWidth;
+                    try {
+                        if (typeof localStorage !== 'undefined' && localStorage) {
+                            localStorage.setItem('searchContainerMaxWidth', defaultWidth);
+                        }
+                    } catch(e) {}
+                    return;
+                }
+                
+                // 验证输入格式
+                var match = newWidth.match(/^(\d+)(px)$/);
+                if (!match) return;
+                
+                var value = parseInt(match[1], 10);
+                var unit = match[2];
+                
+                // 验证范围 300-1000px
+                if (value >= 300 && value <= 1000) {
+                    var finalWidth = value + unit;
+                    searchContainer.style.maxWidth = finalWidth;
+                    document.getElementById('searchContainerMaxWidthValue').textContent = finalWidth;
+                    try {
+                        if (typeof localStorage !== 'undefined' && localStorage) {
+                            localStorage.setItem('searchContainerMaxWidth', finalWidth);
+                        }
+                    } catch(e) {}
+                    truncateText('searchContainerMaxWidthValue', finalWidth, 80);
+                }
+            }
+        );
+    };
+})();
+// ========== 【修改结束】 ==========
+
+// ========== 【修改位置】工具面板元素间距调整功能（排除指定 label） ==========
+(function() {
+    var spacingBtn = document.getElementById('toolPanelSpacingBtn');
+    if (!spacingBtn) return;
+    
+    var toolPanel = document.getElementById('showToolPanel');
+    if (!toolPanel) return;
+    
+    // 加载保存的间距设置
+    var savedHorizontalSpacing = '0';
+    var savedVerticalSpacing = '0';
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var h = localStorage.getItem('toolPanelHorizontalSpacing');
+            var v = localStorage.getItem('toolPanelVerticalSpacing');
+            if (h) savedHorizontalSpacing = h;
+            if (v) savedVerticalSpacing = v;
+        }
+    } catch(e) {}
+    
+    // 需要排除的 label for 属性列表
+    var excludedLabels = [
+        'linkCreatorBtn',
+        'defaultLinksBtn',
+        'importLinksBtn',
+        'exportLinksBtn',
+        'clearLinksBtn',
+        'quickLinksHeadName',
+        'importSettingsBtn',
+        'exportSettingsBtn'
+    ];
+    
+    // ========== 【修改位置】清除所有间距时排除指定 label ==========
+    function clearAllSpacing() {
+        var children = toolPanel.children;
+        for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            
+            // 检查是否为 label 元素
+            if (child.tagName === 'LABEL') {
+                var forAttr = child.getAttribute('for');
+                var isExcluded = false;
+                if (forAttr) {
+                    for (var j = 0; j < excludedLabels.length; j++) {
+                        if (forAttr === excludedLabels[j]) {
+                            isExcluded = true;
+                            break;
+                        }
+                    }
+                }
+                if (isExcluded) {
+                    continue; // 跳过排除的 label
+                }
+            }
+            
+            // 检查是否为 span（排除 linkCreatorBtn 内的 span）
+            if (child.tagName === 'SPAN') {
+                var parent = child.parentNode;
+                var isSpanExcluded = false;
+                while (parent && parent !== toolPanel) {
+                    if (parent.tagName === 'LABEL') {
+                        var forAttrParent = parent.getAttribute('for');
+                        if (forAttrParent) {
+                            for (var k = 0; k < excludedLabels.length; k++) {
+                                if (forAttrParent === excludedLabels[k]) {
+                                    isSpanExcluded = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    parent = parent.parentNode;
+                }
+                if (isSpanExcluded) {
+                    continue; // 跳过排除的 span
+                }
+            }
+            
+            // 清除间距
+            child.style.marginLeft = '';
+            child.style.marginRight = '';
+            child.style.marginTop = '';
+            child.style.marginBottom = '';
+        }
+    }
+    // ========== 【修改结束】 ==========
+    
+    // 应用间距设置（覆盖已有间距）
+    function applyToolPanelSpacing(horizontal, vertical) {
+        var children = toolPanel.children;
+        var displayBlocks = [];
+        
+        // 收集所有需要应用间距的元素
+        for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            // 检查是否为 div（包含 checkbox 和 label 的组合）
+            if (child.tagName === 'DIV') {
+                displayBlocks.push(child);
+            }
+            // 检查是否为 label 按钮
+            if (child.tagName === 'LABEL' && child.id !== 'showMoreSettingsBtn') {
+                // 检查是否在排除列表中
+                var isExcluded = false;
+                var forAttr = child.getAttribute('for');
+                if (forAttr) {
+                    for (var j = 0; j < excludedLabels.length; j++) {
+                        if (forAttr === excludedLabels[j]) {
+                            isExcluded = true;
+                            break;
+                        }
+                    }
+                }
+                if (!isExcluded) {
+                    displayBlocks.push(child);
+                }
+            }
+            // 检查是否为 select-wrapper
+            if (child.className === 'text-select-wrapper') {
+                displayBlocks.push(child);
+            }
+            // 检查是否为 span（如 linkCreatorBtn 内的 span）
+            if (child.tagName === 'SPAN') {
+                var parent = child.parentNode;
+                var isSpanExcluded = false;
+                while (parent && parent !== toolPanel) {
+                    if (parent.tagName === 'LABEL') {
+                        var forAttrParent = parent.getAttribute('for');
+                        if (forAttrParent) {
+                            for (var k = 0; k < excludedLabels.length; k++) {
+                                if (forAttrParent === excludedLabels[k]) {
+                                    isSpanExcluded = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    parent = parent.parentNode;
+                }
+                if (!isSpanExcluded) {
+                    displayBlocks.push(child);
+                }
+            }
+            // 检查是否为 br 标签
+            if (child.tagName === 'BR') {
+                displayBlocks.push(child);
+            }
         }
         
-        // 方法3：使用 document.execCommand('paste')（需要用户交互）
+        // 应用间距到每个元素
+        for (var i = 0; i < displayBlocks.length; i++) {
+            var el = displayBlocks[i];
+            if (horizontal !== '0') {
+                el.style.marginLeft = horizontal;
+                el.style.marginRight = horizontal;
+            } else {
+                el.style.marginLeft = '';
+                el.style.marginRight = '';
+            }
+            if (vertical !== '0') {
+                el.style.marginTop = vertical;
+                el.style.marginBottom = vertical;
+            } else {
+                el.style.marginTop = '';
+                el.style.marginBottom = '';
+            }
+        }
+    }
+    
+    // 应用保存的间距
+    if (savedHorizontalSpacing !== '0' || savedVerticalSpacing !== '0') {
+        applyToolPanelSpacing(savedHorizontalSpacing, savedVerticalSpacing);
+    }
+    
+    // 点击按钮弹出设置对话框
+    var label = document.querySelector('label[for="toolPanelSpacingBtn"]');
+    if (!label) return;
+    
+    label.onclick = function() {
+        var currentHorizontal = '0';
+        var currentVertical = '0';
         try {
-            var textarea = document.createElement('textarea');
-            textarea.style.position = 'fixed';
-            textarea.style.top = '-1000px';
-            textarea.style.left = '-1000px';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.focus();
-            
-            var success = document.execCommand('paste');
-            var text = textarea.value;
-            document.body.removeChild(textarea);
-            
-            if (success && text) {
-                if (callback) callback(text);
-                return;
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var h = localStorage.getItem('toolPanelHorizontalSpacing');
+                var v = localStorage.getItem('toolPanelVerticalSpacing');
+                if (h) currentHorizontal = h;
+                if (v) currentVertical = v;
             }
         } catch(e) {}
         
-        if (callback) callback(null);
-    }
-    
-    // 加载保存的状态
-    var savedState = false;
-    try {
-        if (typeof localStorage !== 'undefined' && localStorage) {
-            savedState = localStorage.getItem('clipboardAutoFillChecked') === 'true';
-        }
-    } catch(e) {}
-    clipboardCheckbox.checked = savedState;
-    
-    // 存储当前剪贴板内容
-    var currentClipboardText = '';
-    
-    // 读取剪贴板内容并更新 placeholder
-    function updateClipboardPlaceholder() {
-        if (!clipboardCheckbox.checked) return;
-        if (document.activeElement !== urlInput) return;
-        if (urlInput.value && urlInput.value.trim() !== '') return;
+        // 如果当前值为0，显示空字符串
+        var displayH = currentHorizontal === '0' ? '' : currentHorizontal;
+        var displayV = currentVertical === '0' ? '' : currentVertical;
         
-        readClipboardText(function(text) {
-            if (text && text.trim() !== '') {
-                currentClipboardText = text.trim();
-                // 截断显示，避免 placeholder 过长
-                var displayText = text.trim();
-                if (displayText.length > 30) {
-                    displayText = displayText.substring(0, 30) + '...';
-                }
-                urlInput.placeholder = '粘贴: ' + displayText + ' (Enter跳转)';
-            } else {
-                // 恢复默认 placeholder
-                var savedPlaceholder = '';
-                try {
-                    if (typeof localStorage !== 'undefined' && localStorage) {
-                        savedPlaceholder = localStorage.getItem('urlInputPlaceholder') || '输入网址';
-                    }
-                } catch(e) {}
-                urlInput.placeholder = savedPlaceholder || '输入网址';
-                currentClipboardText = '';
-            }
-        });
-    }
-    
-    // 执行剪贴板填充并跳转
-    function executeClipboardFill() {
-        if (!clipboardCheckbox.checked) return false;
-        if (!currentClipboardText || currentClipboardText.trim() === '') return false;
-        
-        urlInput.value = currentClipboardText;
-        // 触发输入事件
-        if (document.createEvent) {
-            var evt = document.createEvent('HTMLEvents');
-            evt.initEvent('input', true, false);
-            urlInput.dispatchEvent(evt);
-        } else if (urlInput.fireEvent) {
-            urlInput.fireEvent('oninput');
-        }
-        
-        // 延迟执行跳转
-        setTimeout(function() {
-            if (submitBtn.click) {
-                submitBtn.click();
-            } else if (submitBtn.fireEvent) {
-                submitBtn.fireEvent('onclick');
-            }
-        }, 50);
-        
-        return true;
-    }
-    
-    // 监听输入框聚焦事件
-    urlInput.addEventListener('focus', function() {
-        if (clipboardCheckbox.checked) {
-            setTimeout(function() {
-                if (this.value === '' || this.value === 'https://') {
-                    updateClipboardPlaceholder();
-                }
-            }, 100);
-        }
-    });
-    
-    // 监听输入框输入事件
-    urlInput.addEventListener('input', function() {
-        if (clipboardCheckbox.checked) {
-            if (this.value && this.value.trim() !== '') {
-                // 用户输入时恢复默认 placeholder
-                var savedPlaceholder = '';
-                try {
-                    if (typeof localStorage !== 'undefined' && localStorage) {
-                        savedPlaceholder = localStorage.getItem('urlInputPlaceholder') || '输入网址';
-                    }
-                } catch(e) {}
-                this.placeholder = savedPlaceholder || '输入网址';
-            } else {
-                // 输入为空时重新读取剪贴板
-                setTimeout(function() {
-                    updateClipboardPlaceholder();
-                }, 100);
-            }
-        }
-    });
-    
-    // 监听 Enter 键
-    urlInput.addEventListener('keydown', function(e) {
-        e = e || window.event;
-        var keyCode = e.keyCode || e.which;
-        
-        if (keyCode === 13 && clipboardCheckbox.checked) {
-            // 如果输入框为空，尝试使用剪贴板内容
-            if (!this.value || this.value.trim() === '' || this.value === 'https://') {
-                if (currentClipboardText && currentClipboardText.trim() !== '') {
-                    e.preventDefault();
-                    e.returnValue = false;
-                    executeClipboardFill();
-                    return false;
-                }
-            }
-        }
-    });
-    
-    // 监听跳转按钮点击
-    submitBtn.addEventListener('click', function(e) {
-        if (clipboardCheckbox.checked) {
-            var inputValue = urlInput.value;
-            if (!inputValue || inputValue.trim() === '' || inputValue === 'https://') {
-                if (currentClipboardText && currentClipboardText.trim() !== '') {
-                    e.preventDefault();
-                    e.returnValue = false;
-                    executeClipboardFill();
-                    return false;
-                }
-            }
-        }
-    });
-    
-    // 定期更新剪贴板内容（仅在开关启用且输入框聚焦时）
-    var clipboardInterval = null;
-    
-    function startClipboardInterval() {
-        if (clipboardInterval) {
-            clearInterval(clipboardInterval);
-            clipboardInterval = null;
-        }
-        if (clipboardCheckbox.checked) {
-            clipboardInterval = setInterval(function() {
-                if (document.activeElement === urlInput) {
-                    var inputValue = urlInput.value;
-                    if (!inputValue || inputValue.trim() === '' || inputValue === 'https://') {
-                        updateClipboardPlaceholder();
-                    }
-                }
-            }, 2000);
-        }
-    }
-    
-    // 监听开关变化
-    clipboardCheckbox.addEventListener('change', function() {
-        var isChecked = this.checked;
-        
-        if (isChecked) {
-            // 启用时弹出确认框
-            showCustomConfirm('启用剪贴板自动填充搜索功能后，当输入框为空并聚焦时，会自动读取剪贴板内容显示在提示框中。按 Enter 键或点击跳转按钮将自动填充剪贴板内容并执行搜索/跳转。确定要启用吗？', function(result) {
-                if (result) {
-                    // 请求剪贴板权限
-                    showCustomAlert('正在请求读取剪贴板权限...', '请允许浏览器读取剪贴板内容');
-                    
-                    // 延迟执行权限检查
-                    setTimeout(function() {
-                        readClipboardText(function(text) {
-                            var success = (text !== null && text !== undefined);
-                            
-                            if (success) {
-                                try {
-                                    if (typeof localStorage !== 'undefined' && localStorage) {
-                                        localStorage.setItem('clipboardAutoFillChecked', 'true');
-                                    }
-                                } catch(e) {}
-                                clipboardCheckbox.checked = true;
-                                showCustomAlert('权限获取成功', '剪贴板自动填充搜索功能已启用');
-                                startClipboardInterval();
-                                // 如果输入框为空且已聚焦，立即更新 placeholder
-                                if (document.activeElement === urlInput) {
-                                    var inputValue = urlInput.value;
-                                    if (!inputValue || inputValue.trim() === '' || inputValue === 'https://') {
-                                        setTimeout(function() {
-                                            updateClipboardPlaceholder();
-                                        }, 100);
-                                    }
-                                }
-                            } else {
-                                // 权限获取失败或浏览器不支持
-                                try {
-                                    if (typeof localStorage !== 'undefined' && localStorage) {
-                                        localStorage.setItem('clipboardAutoFillChecked', 'false');
-                                    }
-                                } catch(e) {}
-                                clipboardCheckbox.checked = false;
-                                showCustomAlert('权限获取失败', '浏览器不支持读取剪贴板或用户拒绝了权限请求，功能已自动关闭');
-                            }
-                        });
-                    }, 500);
+        showCustomDoubleInput(
+            '设置工具面板元素间距',
+            '输入左右间距（如 10px 或 5.5px，输入空值恢复默认）',
+            '输入上下间距（如 5px 或 3.5px，输入空值恢复默认）',
+            displayH,
+            displayV,
+            function(horizontal, vertical) {
+                if (horizontal === null || vertical === null) return;
+                
+                var defaultH = '0';
+                var defaultV = '0';
+                
+                // 处理左右间距（支持小数）
+                if (horizontal === '') {
+                    horizontal = defaultH;
                 } else {
-                    clipboardCheckbox.checked = false;
-                    try {
-                        if (typeof localStorage !== 'undefined' && localStorage) {
-                            localStorage.setItem('clipboardAutoFillChecked', 'false');
-                        }
-                    } catch(e) {}
+                    var matchH = horizontal.match(/^(\d+\.?\d*)(px)$/);
+                    if (!matchH) return;
+                    var valueH = parseFloat(matchH[1]);
+                    if (valueH < 0) return;
+                    if (valueH > 100) return;
                 }
-            });
-        } else {
-            // 取消勾选时直接保存状态
-            try {
-                if (typeof localStorage !== 'undefined' && localStorage) {
-                    localStorage.setItem('clipboardAutoFillChecked', 'false');
+                
+                // 处理上下间距（支持小数）
+                if (vertical === '') {
+                    vertical = defaultV;
+                } else {
+                    var matchV = vertical.match(/^(\d+\.?\d*)(px)$/);
+                    if (!matchV) return;
+                    var valueV = parseFloat(matchV[1]);
+                    if (valueV < 0) return;
+                    if (valueV > 100) return;
                 }
-            } catch(e) {}
-            if (clipboardInterval) {
-                clearInterval(clipboardInterval);
-                clipboardInterval = null;
+                
+                // 直接保存新值，覆盖已有值
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage) {
+                        localStorage.setItem('toolPanelHorizontalSpacing', horizontal);
+                        localStorage.setItem('toolPanelVerticalSpacing', vertical);
+                    }
+                } catch(e) {}
+                
+                // ========== 【修改位置】应用间距或清除间距时排除指定 label ==========
+                if (horizontal === '0' && vertical === '0') {
+                    // 清除所有间距（排除指定 label）
+                    clearAllSpacing();
+                } else {
+                    applyToolPanelSpacing(horizontal, vertical);
+                }
+                // ========== 【修改结束】 ==========
             }
-            // 恢复默认 placeholder
-            var savedPlaceholder = '';
-            try {
-                if (typeof localStorage !== 'undefined' && localStorage) {
-                    savedPlaceholder = localStorage.getItem('urlInputPlaceholder') || '输入网址';
-                }
-            } catch(e) {}
-            urlInput.placeholder = savedPlaceholder || '输入网址';
-            currentClipboardText = '';
-        }
-    });
-    
-    // 页面加载时，如果开关已启用，启动定时器
-    if (clipboardCheckbox.checked) {
-        setTimeout(function() {
-            startClipboardInterval();
-        }, 500);
-    }
-    
-    // 页面卸载时清理定时器
-    var cleanup = function() {
-        if (clipboardInterval) {
-            clearInterval(clipboardInterval);
-            clipboardInterval = null;
-        }
+        );
     };
-    
-    if (window.addEventListener) {
-        window.addEventListener('beforeunload', cleanup);
-    } else if (window.attachEvent) {
-        window.attachEvent('onbeforeunload', cleanup);
-    }
 })();
 // ========== 【修改结束】 ==========
 
@@ -9287,7 +9319,7 @@ if (savedFontColor) {
 }
 
 // 超链接快捷跳转功能
-document.querySelector('label[for="linkCreatorBtn0"]').addEventListener('click', function() {
+document.querySelector('label[for="linkCreatorBtn"]').addEventListener('click', function() {
     showCustomDoubleInput(
         '创建快捷链接',
         '输入链接显示文本',
@@ -9543,7 +9575,10 @@ function exportSettingsData() {
         hitokotoSelectedTypes: localStorage.getItem('hitokotoSelectedTypes') || '[\"d\",\"i\",\"k\"]',
         hitokotoPlainTextChecked: localStorage.getItem('hitokotoPlainTextChecked') || 'false',
         hitokotoUseDefault: localStorage.getItem('hitokotoUseDefault') || 'true',
-        hitokotoApiSelect: localStorage.getItem('hitokotoApiSelect') || 'hitokApi_v1'
+        hitokotoApiSelect: localStorage.getItem('hitokotoApiSelect') || 'hitokApi_v1',
+        toolPanelHorizontalSpacing: localStorage.getItem('toolPanelHorizontalSpacing') || '0',
+        toolPanelVerticalSpacing: localStorage.getItem('toolPanelVerticalSpacing') || '0',
+        searchContainerMaxWidth: localStorage.getItem('searchContainerMaxWidth') || '800px'
     };
     
     // ========== 新增：动态遍历 localStorage 捕获遗漏项 ==========
