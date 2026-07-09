@@ -8059,7 +8059,7 @@ function fetchHitokoto() {
     }
 })();
 
-// ========== 【修改位置】搜索框最大宽度调整功能（自动填充当前值） ==========
+// ========== 【修改位置】搜索框最大宽度调整功能（支持百分比） ==========
 (function() {
     var maxWidthBtn = document.getElementById('searchContainerMaxWidthBtn');
     if (!maxWidthBtn) return;
@@ -8085,7 +8085,6 @@ function fetchHitokoto() {
     if (!label) return;
     
     label.onclick = function() {
-        // ========== 【修改位置】始终获取当前值，即使为默认值也显示 ==========
         var currentWidth = '800px';
         try {
             if (typeof localStorage !== 'undefined' && localStorage) {
@@ -8093,10 +8092,10 @@ function fetchHitokoto() {
                 if (val) currentWidth = val;
             }
         } catch(e) {}
-        // ========== 【修改结束】 ==========
         
-        showCustomModal('请输入搜索框最大宽度（默认800px，范围300px-1000px，输入空值恢复默认）：', 
-            currentWidth,  // ========== 【修改位置】始终传入当前值 ==========
+        // ========== 【修改位置】支持 px 和 % 单位 ==========
+        showCustomModal('请输入搜索框最大宽度（如 800px 或 80%，输入空值恢复默认）：', 
+            currentWidth,
             function(newWidth) {
                 if (newWidth === null) return;
                 
@@ -8113,25 +8112,42 @@ function fetchHitokoto() {
                     return;
                 }
                 
-                // 验证输入格式
-                var match = newWidth.match(/^(\d+)(px)$/);
-                if (!match) return;
+                // ========== 【修改位置】支持 px 和 % 单位验证 ==========
+                var matchPx = newWidth.match(/^(\d+)(px)$/);
+                var matchPercent = newWidth.match(/^(\d+)(%)$/);
                 
-                var value = parseInt(match[1], 10);
-                var unit = match[2];
-                
-                // 验证范围 300-1000px
-                if (value >= 300 && value <= 1000) {
-                    var finalWidth = value + unit;
-                    searchContainer.style.maxWidth = finalWidth;
-                    document.getElementById('searchContainerMaxWidthValue').textContent = finalWidth;
-                    try {
-                        if (typeof localStorage !== 'undefined' && localStorage) {
-                            localStorage.setItem('searchContainerMaxWidth', finalWidth);
-                        }
-                    } catch(e) {}
-                    truncateText('searchContainerMaxWidthValue', finalWidth, 80);
+                if (matchPx) {
+                    var value = parseInt(matchPx[1], 10);
+                    var unit = matchPx[2];
+                    // 验证范围 300-1000px
+                    if (value >= 300 && value <= 1000) {
+                        var finalWidth = value + unit;
+                        searchContainer.style.maxWidth = finalWidth;
+                        document.getElementById('searchContainerMaxWidthValue').textContent = finalWidth;
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('searchContainerMaxWidth', finalWidth);
+                            }
+                        } catch(e) {}
+                        truncateText('searchContainerMaxWidthValue', finalWidth, 80);
+                    }
+                } else if (matchPercent) {
+                    var value = parseInt(matchPercent[1], 10);
+                    var unit = matchPercent[2];
+                    // 验证范围 10%-100%
+                    if (value >= 10 && value <= 100) {
+                        var finalWidth = value + unit;
+                        searchContainer.style.maxWidth = finalWidth;
+                        document.getElementById('searchContainerMaxWidthValue').textContent = finalWidth;
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('searchContainerMaxWidth', finalWidth);
+                            }
+                        } catch(e) {}
+                        truncateText('searchContainerMaxWidthValue', finalWidth, 80);
+                    }
                 }
+                // ========== 【修改结束】 ==========
             }
         );
     };
