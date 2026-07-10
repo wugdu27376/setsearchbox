@@ -7168,7 +7168,7 @@ document.getElementById('hitokotoCheckbox').addEventListener('change', function(
     }
 });
 
-// 修改位置：在 fetchHitokoto 函数中修改加载链接部分
+// 获取一言数据
 function fetchHitokoto() {
     var hitokotoDisplay = document.getElementById('hitokotoDisplay');
     if (!hitokotoDisplay) return;
@@ -7212,7 +7212,7 @@ function fetchHitokoto() {
         url = 'https://api.suyanw.cn/api/yiyan.php?type=json';
     } else if (selectedApi === 'hitokApi_v9') {
         url = 'https://v.api.aa1.cn/api/yiyan/index.php?type=json';
-    } else if (selectedApi === 'hitokApi_v1') {
+    } else {
         // V1 API：默认类型
         var useDefault = true;
         try {
