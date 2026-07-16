@@ -5783,7 +5783,7 @@ document.querySelector('label[for="linkColorPicker"]').addEventListener('click',
     if (savedLinkImage) {
         // 当前使用图片，直接弹出图片URL输入框
         var currentImage = localStorage.getItem('linkImage') || '';
-        showCustomModal('请输入图片URL：', currentImage, function(imageUrl) {
+        showCustomModal('请输入图片URL（输入为空时取消使用图片）：', currentImage, function(imageUrl) {
             if (imageUrl && imageUrl.trim() !== '') {
                 var linkElement = document.getElementById('85727544071588039023');
                 var linkSize = localStorage.getItem('linkSize') || '30px';
@@ -5903,6 +5903,11 @@ if (savedLinkImage) {
 // 添加重命名功能
 document.querySelector('label[for="renameLinkBtn"]').addEventListener('click', function() {
     if (!document.getElementById('showLinkCheckbox').checked) {
+        return;
+    }
+    var linkImage = localStorage.getItem('linkImage');
+    if (linkImage) {
+        // 使用图片时禁用重命名
         return;
     }
     if (document.getElementById('showTimeCheckbox').checked) {
@@ -9200,7 +9205,7 @@ document.querySelector('label[for="bgColorPicker"]').addEventListener('click', f
     if (savedBackgroundImage) {
         // 当前使用图片，直接弹出图片URL输入框
         var currentImage = localStorage.getItem('backgroundImage') || '';
-        showCustomModal('请输入图片URL：', currentImage, function(imageUrl) {
+        showCustomModal('请输入图片URL（输入为空时取消使用图片）：', currentImage, function(imageUrl) {
             if (imageUrl && imageUrl.trim() !== '') {
                 document.body.style.backgroundColor = '';
                 document.body.style.backgroundImage = 'url("' + imageUrl + '")';
