@@ -5398,6 +5398,20 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                     }
                 } catch(e) {}
             }, 10);
+            setTimeout(function() {
+                var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
+                var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+                var historyInSuggestChecked = document.getElementById('searchHistoryInSuggestCheckbox').checked;
+                var engine = document.getElementById('engineSelect');
+                var searchSuggestionsElem = document.getElementById('searchSuggestions');
+                if (historyChecked && suggestionsChecked && historyInSuggestChecked) {
+                    if (engine.value !== 'iFrameFree' && engine.value !== 'iFramePlus' && engine.value !== 'showCheckbox') {
+                        showSearchSuggestions([]);
+                    } else {
+                        searchSuggestionsElem.style.display = 'none';
+                    }
+                }
+            }, 100);
         }
     }
     
