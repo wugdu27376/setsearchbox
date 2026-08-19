@@ -3881,6 +3881,357 @@ function createIframePlusWindow(url) {
     return windowId;
 }
 
+// ========== LocalStorage管理功能（兼容所有浏览器版本，包括IE6+） ==========
+(function() {
+    var managerBtn = document.getElementById('localStorageManagerBtn');
+    if (!managerBtn) return;
+    
+    // 检测localStorage是否可用（兼容所有浏览器）
+    function isLocalStorageAvailable() {
+        try {
+            if (typeof localStorage === 'undefined' || localStorage === null) return false;
+            var testKey = '__ls_test_' + new Date().getTime();
+            localStorage.setItem(testKey, testKey);
+            localStorage.removeItem(testKey);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+    
+    // 获取所有localStorage键值对（兼容IE6+）
+    function getAllLocalStorageItems() {
+        var items = [];
+        var lsAvailable = isLocalStorageAvailable();
+        if (!lsAvailable) return items;
+        
+        try {
+            // 方法1：使用 localStorage.length 和 key()（标准方法，IE8+支持）
+            if (typeof localStorage.length !== 'undefined' && typeof localStorage.key === 'function') {
+                var len = localStorage.length;
+                for (var i = 0; i < len; i++) {
+                    var key = localStorage.key(i);
+                    if (key && key !== null && key !== '') {
+                        var value = localStorage.getItem(key);
+                        items.push({ key: key, value: (value !== null && value !== undefined) ? String(value) : '' });
+                    }
+                }
+                return items;
+            }
+        } catch(e) {
+            // 方法1失败，尝试方法2
+        }
+        
+        try {
+            // 方法2：使用 for...in 遍历（兼容性更好，但可能包含原型链属性）
+            for (var key in localStorage) {
+                if (localStorage.hasOwnProperty && localStorage.hasOwnProperty(key)) {
+                    var value = localStorage.getItem(key);
+                    if (value !== null && value !== undefined) {
+                        items.push({ key: key, value: String(value) });
+                    }
+                }
+            }
+        } catch(e) {
+            // 方法2失败
+        }
+        
+        // 去重（防止重复键）
+        var uniqueItems = [];
+        var seenKeys = {};
+        for (var i = 0; i < items.length; i++) {
+            var key = items[i].key;
+            if (!seenKeys[key]) {
+                seenKeys[key] = true;
+                uniqueItems.push(items[i]);
+            }
+        }
+        return uniqueItems;
+    }
+    
+    // 删除指定键（兼容所有浏览器）
+    function removeLocalStorageItem(key) {
+        if (!isLocalStorageAvailable()) return;
+        try {
+            localStorage.removeItem(key);
+        } catch(e) {}
+    }
+    
+    // 更新指定键的值（兼容所有浏览器）
+    function updateLocalStorageItem(key, value) {
+        if (!isLocalStorageAvailable()) return;
+        try {
+            localStorage.setItem(key, String(value));
+        } catch(e) {}
+    }
+    
+    // 转义HTML特殊字符（防止XSS）
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        text = String(text);
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    
+    // 生成管理界面的HTML
+    function generateManagerHTML() {
+        var items = getAllLocalStorageItems();
+        if (items.length === 0) {
+            return '<div style="text-align: center; padding: 10px 0; color: #666; font-size: 14px;">暂无LocalStorage数据</div>';
+        }
+        
+        var html = '<div style="overflow-y: auto; margin: 5px 0;">';
+        html += '<style>#lsManagerContainer .ls-item-row { display: table; width: 100%; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 13px; } #lsManagerContainer .ls-key-cell { display: table-cell; vertical-align: middle; white-space: nowrap; padding-right: 8px; font-weight: bold; min-width: 80px; } #lsManagerContainer .ls-value-cell { display: table-cell; vertical-align: middle; width: 100%; padding-right: 6px; } #lsManagerContainer .ls-value-cell input { width: 100%; border: none; background: #ffffff; padding: 2px 4px; box-sizing: border-box; font-size: 13px; outline: none; border: 1px solid transparent; } #lsManagerContainer .ls-value-cell input:hover { border-color: #ccc; } #lsManagerContainer .ls-value-cell input:focus { border-color: #66afe9; } #lsManagerContainer .ls-delete-cell { display: table-cell; vertical-align: middle; white-space: nowrap; padding-left: 4px; } #lsManagerContainer .ls-delete-cell i { cursor: pointer; color: #999; font-size: 14px; } #lsManagerContainer .ls-delete-cell i:hover { color: #ff0000; }</style>';
+        html += '<div id="lsManagerContainer">';
+        
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var safeKey = item.key.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            var safeValue = (item.value !== null && item.value !== undefined) ? String(item.value).replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+            var rowId = 'ls_row_' + i + '_' + Date.now();
+            
+            html += '<div class="ls-item-row" id="' + rowId + '">';
+            html += '<span class="ls-key-cell" title="' + safeKey + '">' + safeKey + '</span>';
+            html += '<span class="ls-value-cell"><input type="text" id="ls_input_' + rowId + '" value="' + safeValue + '" data-key="' + safeKey + '"></span>';
+            html += '<span class="ls-delete-cell"><i class="fa fa-close" data-key="' + safeKey + '" style="cursor:pointer;color:#999;font-size:15px;"></i></span>';
+            html += '</div>';
+        }
+        
+        html += '</div></div>';
+        return html;
+    }
+    
+    // 绑定事件（兼容所有浏览器）
+    function bindManagerEvents() {
+        var container = document.getElementById('lsManagerContainer');
+        if (!container) return;
+        
+        // 为所有删除按钮绑定事件
+        var deleteIcons = container.getElementsByTagName('i');
+        for (var i = 0; i < deleteIcons.length; i++) {
+            var icon = deleteIcons[i];
+            // 检查是否是删除图标（包含 fa-close 类）
+            var className = icon.className || '';
+            if (className.indexOf('fa-close') === -1) continue;
+            if (icon._boundDelete) continue;
+            icon._boundDelete = true;
+            
+            var key = icon.getAttribute('data-key');
+            if (!key) continue;
+            
+            // 兼容所有浏览器的点击事件
+            (function(iconEl, keyVal) {
+                var clickHandler = function(e) {
+                    e = e || window.event;
+                    if (e.stopPropagation) e.stopPropagation();
+                    if (e.cancelBubble !== undefined) e.cancelBubble = true;
+                    if (e.preventDefault) e.preventDefault();
+                    e.returnValue = false;
+                    
+                    removeLocalStorageItem(keyVal);
+                    // 刷新管理界面
+                    refreshManager();
+                    return false;
+                };
+                
+                if (iconEl.addEventListener) {
+                    iconEl.addEventListener('click', clickHandler);
+                } else if (iconEl.attachEvent) {
+                    iconEl.attachEvent('onclick', clickHandler);
+                } else {
+                    iconEl.onclick = clickHandler;
+                }
+            })(icon, key);
+        }
+        
+        // 为所有输入框绑定事件
+        var inputs = container.getElementsByTagName('input');
+        for (var i = 0; i < inputs.length; i++) {
+            var input = inputs[i];
+            if (input._boundEvents) continue;
+            input._boundEvents = true;
+            
+            var key = input.getAttribute('data-key');
+            if (!key) continue;
+            
+            // 失焦保存
+            (function(inputEl, keyVal) {
+                var blurHandler = function() {
+                    var newValue = this.value;
+                    updateLocalStorageItem(keyVal, newValue);
+                };
+                
+                var keydownHandler = function(e) {
+                    e = e || window.event;
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode === 13) {
+                        if (e.preventDefault) e.preventDefault();
+                        e.returnValue = false;
+                        var newValue = this.value;
+                        updateLocalStorageItem(keyVal, newValue);
+                        this.blur();
+                        return false;
+                    }
+                };
+                
+                if (inputEl.addEventListener) {
+                    inputEl.addEventListener('blur', blurHandler);
+                    inputEl.addEventListener('keydown', keydownHandler);
+                } else if (inputEl.attachEvent) {
+                    inputEl.attachEvent('onblur', blurHandler);
+                    inputEl.attachEvent('onkeydown', keydownHandler);
+                } else {
+                    inputEl.onblur = blurHandler;
+                    inputEl.onkeydown = keydownHandler;
+                }
+            })(input, key);
+        }
+    }
+    
+    // 刷新管理界面
+    function refreshManager() {
+        var modalContent = document.querySelector('#userSelectModalDisabled');
+        if (!modalContent) return;
+        
+        // 查找管理界面容器
+        var container = document.getElementById('lsManagerContainer');
+        if (!container) {
+            // 关闭弹窗重新打开
+            var closeBtn = document.querySelector('label[onclick*="alertCallback_"]');
+            if (closeBtn) {
+                var onclickAttr = closeBtn.getAttribute('onclick');
+                if (onclickAttr) {
+                    try { eval(onclickAttr); } catch(e) {}
+                }
+            }
+            setTimeout(function() {
+                if (managerBtn) managerBtn.click();
+            }, 150);
+            return;
+        }
+        
+        // 保存滚动位置
+        var parentContainer = container.parentNode;
+        var scrollTop = 0;
+        if (parentContainer) {
+            scrollTop = parentContainer.scrollTop || 0;
+        }
+        
+        // 检查是否还有数据
+        var items = getAllLocalStorageItems();
+        
+        // 生成新内容
+        var newHtml = generateManagerHTML();
+        var tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newHtml;
+        var newContainer = tempDiv.querySelector('#lsManagerContainer');
+        
+        if (newContainer) {
+            // 替换容器
+            if (container.parentNode) {
+                container.parentNode.replaceChild(newContainer, container);
+            }
+        } else {
+            // 如果新容器不存在（无数据时），移除旧容器并显示空状态
+            if (container.parentNode) {
+                // 创建空状态显示
+                var emptyDiv = document.createElement('div');
+                emptyDiv.id = 'lsManagerContainer';
+                emptyDiv.innerHTML = '<div style="text-align: center; padding: 15px 0; color: #999; font-size: 14px;">暂无LocalStorage数据</div>';
+                container.parentNode.replaceChild(emptyDiv, container);
+            }
+        }
+        
+        // 恢复滚动位置
+        var newParent = document.getElementById('lsManagerContainer');
+        if (newParent && newParent.parentNode && scrollTop > 0) {
+            newParent.parentNode.scrollTop = scrollTop;
+        }
+        
+        // 重新绑定事件
+        setTimeout(function() {
+            bindManagerEvents();
+        }, 50);
+    }
+    
+    // 点击管理按钮
+    managerBtn.onclick = function() {
+        // 再次检查是否启用（防止被意外调用）
+        var enabled = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                enabled = localStorage.getItem('enableExperimentalFeature') === 'true';
+            }
+        } catch(e) {}
+        if (!enabled) {
+            this.style.display = 'none';
+            return;
+        }
+        
+        var items = getAllLocalStorageItems();
+        var count = items ? items.length : 0;
+        var titleHtml = 'LocalStorage管理 <span style="font-size:12px;font-weight:normal;color:#666;">(共' + count + '项)</span>';
+        var contentHtml = generateManagerHTML();
+        
+        showCustomAlert(titleHtml, contentHtml);
+        
+        setTimeout(function() {
+            bindManagerEvents();
+        }, 100);
+    };
+})();
+// ========== LocalStorage管理功能结束 ==========
+
+// ========== 实验性功能控制（兼容所有浏览器版本） ==========
+(function() {
+    // 检测localStorage是否可用
+    function isLS_Available() {
+        try {
+            if (typeof localStorage === 'undefined' || localStorage === null) return false;
+            var testKey = '__ls_test_' + new Date().getTime();
+            localStorage.setItem(testKey, testKey);
+            localStorage.removeItem(testKey);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+    
+    // 检查实验性功能是否启用
+    function isExperimentalEnabled() {
+        if (!isLS_Available()) return false;
+        try {
+            return localStorage.getItem('enableExperimentalFeature') === 'true';
+        } catch(e) {
+            return false;
+        }
+    }
+    
+    // 控制localStorageManagerBtn显示
+    function updateManagerBtnVisibility() {
+        var managerBtn = document.getElementById('localStorageManagerBtn');
+        if (!managerBtn) return;
+        var enabled = isExperimentalEnabled();
+        managerBtn.style.display = enabled ? 'inline-block' : 'none';
+    }
+    
+    // 页面加载时更新按钮可见性
+    if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', updateManagerBtnVisibility);
+    } else if (document.attachEvent) {
+        document.attachEvent('onreadystatechange', function() {
+            if (document.readyState === 'complete') {
+                updateManagerBtnVisibility();
+            }
+        });
+    } else {
+        window.onload = updateManagerBtnVisibility;
+    }
+    
+    // 如果localStorageManagerBtn已存在，页面加载后立即执行
+    setTimeout(updateManagerBtnVisibility, 0);
+})();
+// ========== 实验性功能控制结束 ==========
+
 function closeIframePlusWindow(windowId) {
     var container = document.getElementById('iframePlusContainer');
     if (!container) return;
@@ -12954,7 +13305,7 @@ window.onload = function() {
                     deviceVersionDisplay = browserInfo.deviceVersion;
                 }
             }
-            showCustomAlert('关于', '<div style="font-size: 15px; margin-top: 12px;">搜索Easy<br>' + '<p>网页版本号: v7.3<br></p>' + '<p>浏览器: ' + browserInfo.name + '<br></p>' + '<p>浏览器版本: ' + browserInfo.version + '<br></p>' + '<p>内核: ' + engineType + ' ' + engineVersion + '<br></p>' + '<p>系统版本: ' + deviceVersionDisplay + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<p><b>小提示: </b>' + randomTip + '<div>Github源码: <button onclick="window.open(&#39;https://github.com/wugdu27376/setsearchbox/&#39;, &#39;_blank&#39;);" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div><div style="margin-top: 20px;">扩展下载: <div style="display: inline-block; width: 100%; max-width: 150px; float: right;"><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126071_Beta.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Beta</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126069.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">ZIP</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126070.crx&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126072.zip&#39;" style="margin-left: 4px; margin-top: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX-ZIP</button></div></div>' + '</div>');
+            showCustomAlert('关于', '<div style="font-size: 15px; margin-top: 12px;">搜索Easy<br>' + '<p>网页版本号: v7.3<br></p>' + '<p>浏览器: ' + browserInfo.name + '<br></p>' + '<p>浏览器版本: ' + browserInfo.version + '<br></p>' + '<p>内核: ' + engineType + ' ' + engineVersion + '<br></p>' + '<p>系统版本: ' + deviceVersionDisplay + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<p><b>小提示: </b>' + randomTip + '<div>Github源码: <button onclick="window.open(&#39;https://github.com/wugdu27376/setsearchbox/&#39;, &#39;_blank&#39;);" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div><div style="margin-top: 20px;">扩展下载: <div style="display: inline-block; width: 100%; max-width: 150px; float: right;"><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126071_Beta.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Beta</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126069.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">ZIP</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126070.crx&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126072.zip&#39;" style="margin-left: 4px; margin-top: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX-ZIP</button></div></div><div style="margin-top: 40px;">Experiment: <button onclick="localStorage.setItem(\'enableExperimentalFeature\', \'true\');" style="float: right; margin-left: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent;">Enabled</button><button onclick="localStorage.setItem(\'enableExperimentalFeature\', \'false\');" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Disabled</button></div>' + '</div>');
         };
         
         // 判断是否为移动端
