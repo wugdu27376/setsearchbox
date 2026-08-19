@@ -9944,7 +9944,9 @@ function exportSettingsData() {
         hitokotoApiSelect: localStorage.getItem('hitokotoApiSelect') || 'hitokApi_v1',
         toolPanelHorizontalSpacing: localStorage.getItem('toolPanelHorizontalSpacing') || '0',
         toolPanelVerticalSpacing: localStorage.getItem('toolPanelVerticalSpacing') || '0',
-        searchContainerMaxWidth: localStorage.getItem('searchContainerMaxWidth') || '800px'
+        searchContainerMaxWidth: localStorage.getItem('searchContainerMaxWidth') || '800px',
+        previousEngine: localStorage.getItem('previousEngine') || 'showCheckbox',
+        enableExperimentalFeature: localStorage.getItem('enableExperimentalFeature') || 'false'
     };
     
     // ========== 新增：动态遍历 localStorage 捕获遗漏项 ==========
