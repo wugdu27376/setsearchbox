@@ -1,3 +1,2246 @@
+// ========== IE兼容性补丁(第2330行后结束) ==========
+(function() {
+    // 检测是否为IE浏览器
+    var isIE = /*@cc_on!@*/false || !!document.documentMode;
+    
+    if (isIE) {
+        // 控制台兼容（IE下console.log在未打开开发者工具时会报错）
+        if (!window.console) {
+            window.console = {
+                log: function() {},
+                error: function() {},
+                warn: function() {}
+            };
+        }
+        
+        // String.trim polyfill
+        if (!String.prototype.trim) {
+            String.prototype.trim = function() {
+                return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+            };
+        }
+        
+        // Array.prototype.indexOf polyfill (IE8及以下)
+        if (!Array.prototype.indexOf) {
+            Array.prototype.indexOf = function(searchElement, fromIndex) {
+                var k;
+                if (this == null) {
+                    throw new TypeError('"this" is null or not defined');
+                }
+                var O = Object(this);
+                var len = O.length >>> 0;
+                if (len === 0) return -1;
+                var n = fromIndex | 0;
+                if (n >= len) return -1;
+                k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+                while (k < len) {
+                    if (k in O && O[k] === searchElement) return k;
+                    k++;
+                }
+                return -1;
+            };
+        }
+        
+        // Array.prototype.filter polyfill
+        if (!Array.prototype.filter) {
+            Array.prototype.filter = function(callback, thisArg) {
+                if (this == null) throw new TypeError('this is null or not defined');
+                var O = Object(this);
+                var len = O.length >>> 0;
+                if (typeof callback !== 'function') throw new TypeError(callback + ' is not a function');
+                var T = thisArg, k = 0, A = [];
+                while (k < len) {
+                    if (k in O) {
+                        var kValue = O[k];
+                        if (callback.call(T, kValue, k, O)) {
+                            A.push(kValue);
+                        }
+                    }
+                    k++;
+                }
+                return A;
+            };
+        }
+        
+        // localStorage检测警告
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var test = '__ie_test__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+            }
+        } catch(e) {
+        //    alert('提示：当前浏览器隐私模式可能导致部分功能无法保存设置，建议关闭隐私模式后使用。');
+        }
+    }
+    
+    // classList兼容（针对IE9-10）
+    // 【修复】IE8/IE7 兼容：检测 HTMLElement 和 Element 是否存在，避免 undefined 错误
+    if (!('classList' in document.documentElement)) {
+        var classListTarget = null;
+        // 【修复】IE7 及以下：window.HTMLElement 和 window.Element 可能为 undefined
+        if (typeof window.HTMLElement !== 'undefined' && window.HTMLElement) {
+            classListTarget = HTMLElement.prototype;
+        } else if (typeof window.Element !== 'undefined' && window.Element) {
+            classListTarget = Element.prototype;
+        } else if (typeof window.HTMLDocument !== 'undefined' && window.HTMLDocument) {
+            // IE7 及以下使用 HTMLDocument.prototype
+            classListTarget = HTMLDocument.prototype;
+        } else if (document && document.documentElement) {
+            // 最终回退：使用 document 对象
+            classListTarget = Object.getPrototypeOf ? Object.getPrototypeOf(document.documentElement) : document.documentElement;
+        }
+        if (classListTarget && !classListTarget.classList) {
+            (function(proto) {
+                // 【修复】IE7 不支持 Object.defineProperty，使用 __defineGetter__ 替代
+                if (proto.__defineGetter__) {
+                    proto.__defineGetter__('classList', function() {
+                        var self = this;
+                        function update(fn) {
+                            return function(value) {
+                                var classes = self.className.split(/\s+/);
+                                var index = classes.indexOf(value);
+                                fn(classes, index, value);
+                                self.className = classes.join(' ');
+                            };
+                        }
+                        return {
+                            add: update(function(classes, index, value) {
+                                if (index === -1) classes.push(value);
+                            }),
+                            remove: update(function(classes, index, value) {
+                                if (index !== -1) classes.splice(index, 1);
+                            }),
+                            contains: function(value) {
+                                return self.className.split(/\s+/).indexOf(value) !== -1;
+                            }
+                        };
+                    });
+                } else if (Object.defineProperty) {
+                    Object.defineProperty(proto, 'classList', {
+                        get: function() {
+                            var self = this;
+                            function update(fn) {
+                                return function(value) {
+                                    var classes = self.className.split(/\s+/);
+                                    var index = classes.indexOf(value);
+                                    fn(classes, index, value);
+                                    self.className = classes.join(' ');
+                                };
+                            }
+                            return {
+                                add: update(function(classes, index, value) {
+                                    if (index === -1) classes.push(value);
+                                }),
+                                remove: update(function(classes, index, value) {
+                                    if (index !== -1) classes.splice(index, 1);
+                                }),
+                                contains: function(value) {
+                                    return self.className.split(/\s+/).indexOf(value) !== -1;
+                                }
+                            };
+                        },
+                        configurable: true
+                    });
+                }
+            })(classListTarget);
+        }
+    }
+    
+    // 自定义事件创建兼容
+    if (typeof window.CustomEvent !== 'function') {
+        function CustomEvent(event, params) {
+            params = params || { bubbles: false, cancelable: false, detail: null };
+            var evt = document.createEvent('CustomEvent');
+            evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+            return evt;
+        }
+        window.CustomEvent = CustomEvent;
+    }
+})();
+// ========== IE兼容性补丁结束 ==========
+
+
+// ========== Chrome 5及以下版本兼容性修复 ==========
+(function() {
+    var isOldChrome = false;
+    try {
+        var ua = navigator.userAgent;
+        var chromeMatch = ua.match(/Chrome\/(\d+)/);
+        if (chromeMatch && parseInt(chromeMatch[1], 10) <= 5) {
+            isOldChrome = true;
+        }
+    } catch(e) { isOldChrome = false; }
+    
+    if (isOldChrome) {
+        if (typeof String.prototype.trim !== 'function') {
+            String.prototype.trim = function() {
+                return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+            };
+        }
+        if (typeof Array.prototype.indexOf !== 'function') {
+            Array.prototype.indexOf = function(searchElement, fromIndex) {
+                var k;
+                if (this == null) throw new TypeError('"this" is null or not defined');
+                var O = Object(this);
+                var len = O.length >>> 0;
+                if (len === 0) return -1;
+                var n = fromIndex | 0;
+                if (n >= len) return -1;
+                k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+                while (k < len) {
+                    if (k in O && O[k] === searchElement) return k;
+                    k++;
+                }
+                return -1;
+            };
+        }
+        if (typeof Array.prototype.forEach !== 'function') {
+            Array.prototype.forEach = function(callback, thisArg) {
+                if (this == null) throw new TypeError('this is null or not defined');
+                var O = Object(this);
+                var len = O.length >>> 0;
+                if (typeof callback !== 'function') throw new TypeError(callback + ' is not a function');
+                var T = thisArg || window;
+                var k = 0;
+                while (k < len) {
+                    if (k in O) callback.call(T, O[k], k, O);
+                    k++;
+                }
+            };
+        }
+        if (typeof window.CustomEvent !== 'function') {
+            window.CustomEvent = function(event, params) {
+                params = params || { bubbles: false, cancelable: false, detail: undefined };
+                var evt = document.createEvent('CustomEvent');
+                evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+                return evt;
+            };
+        }
+        var container = document.getElementById('searchContainer');
+        if (container) {
+            container.style.display = 'block';
+            container.style.textAlign = 'center';
+        }
+        var engineSelect = document.getElementById('engineSelect');
+        var urlInput = document.getElementById('urlInput');
+        var submitBtn = document.getElementById('submitBtn');
+        if (engineSelect) engineSelect.style.display = 'inline-block';
+        if (urlInput) {
+            urlInput.style.display = 'inline-block';
+            urlInput.style.width = '60%';
+        }
+        if (submitBtn) submitBtn.style.display = 'inline-block';
+    }
+})();
+// ========== Chrome 5及以下版本兼容性修复结束 ==========
+
+
+// ========== 【修复】全局 addEventListener/removeEventListener 兼容 IE8 ==========
+(function() {
+    if (typeof window.Element !== 'undefined') {
+        if (!Element.prototype.addEventListener) {
+            Element.prototype.addEventListener = function(type, listener, useCapture) {
+                if (this.attachEvent) {
+                    this.attachEvent('on' + type, listener);
+                }
+            };
+            Element.prototype.removeEventListener = function(type, listener, useCapture) {
+                if (this.detachEvent) {
+                    this.detachEvent('on' + type, listener);
+                }
+            };
+        }
+    }
+    
+    if (typeof window.addEventListener === 'undefined') {
+        window.addEventListener = function(type, listener, useCapture) {
+            if (this.attachEvent) {
+                this.attachEvent('on' + type, listener);
+            }
+        };
+        window.removeEventListener = function(type, listener, useCapture) {
+            if (this.detachEvent) {
+                this.detachEvent('on' + type, listener);
+            }
+        };
+    }
+    
+    if (typeof document.addEventListener === 'undefined') {
+        document.addEventListener = function(type, listener, useCapture) {
+            if (this.attachEvent) {
+                this.attachEvent('on' + type, listener);
+            }
+        };
+        document.removeEventListener = function(type, listener, useCapture) {
+            if (this.detachEvent) {
+                this.detachEvent('on' + type, listener);
+            }
+        };
+    }
+})();
+// ========== 全局 addEventListener 兼容结束 ==========
+
+
+// ========== 【修复】全局 appendChild 兼容 IE8/IE7 ==========
+(function() {
+    // 修复 document.head 为 null 的问题
+    if (!document.head) {
+        document.head = document.getElementsByTagName('head')[0];
+    }
+    
+    // 修复 Node 未定义问题（IE8/IE7 不支持 Node 接口）
+    if (typeof window.Node === 'undefined') {
+        window.Node = {
+            ELEMENT_NODE: 1,
+            ATTRIBUTE_NODE: 2,
+            TEXT_NODE: 3,
+            COMMENT_NODE: 8,
+            DOCUMENT_NODE: 9,
+            DOCUMENT_FRAGMENT_NODE: 11
+        };
+    }
+    
+    // 【修复】IE7 兼容：安全检测 HTMLElement 和 Element 是否存在
+    var hasElement = (typeof window.Element !== 'undefined' && window.Element);
+    var hasHTMLElement = (typeof window.HTMLElement !== 'undefined' && window.HTMLElement);
+    
+    // 安全包装 appendChild 方法（使用 Element 替代 Node）
+    var originalAppendChild = null;
+    if (hasElement && Element.prototype && Element.prototype.appendChild) {
+        originalAppendChild = Element.prototype.appendChild;
+    } else if (hasHTMLElement && HTMLElement.prototype && HTMLElement.prototype.appendChild) {
+        originalAppendChild = HTMLElement.prototype.appendChild;
+    } else if (document.body && document.body.appendChild) {
+        // IE7 最终回退：使用 document.body.appendChild 作为参考
+        originalAppendChild = document.body.appendChild;
+    }
+    
+    if (originalAppendChild) {
+        var targetProto = null;
+        if (hasElement && Element.prototype) {
+            targetProto = Element.prototype;
+        } else if (hasHTMLElement && HTMLElement.prototype) {
+            targetProto = HTMLElement.prototype;
+        } else if (document.body && document.body.appendChild) {
+            targetProto = Object.getPrototypeOf ? Object.getPrototypeOf(document.body) : document.body;
+        }
+        if (targetProto && !targetProto.appendChildModified) {
+            targetProto.appendChildModified = true;
+            targetProto.appendChild = function(child) {
+                if (!this) {
+                    return child;
+                }
+                try {
+                    return originalAppendChild.call(this, child);
+                } catch(e) {
+                    if (document.body && this !== document.body) {
+                        try {
+                            return document.body.appendChild(child);
+                        } catch(e2) {}
+                    }
+                    return child;
+                }
+            };
+        }
+    }
+    
+    // 确保每个 appendChild 调用前父元素存在
+    var originalGetElementById = document.getElementById;
+    if (originalGetElementById) {
+        document.getElementById = function(id) {
+            var element = originalGetElementById.call(document, id);
+            if (!element && document.body) {
+                var allElements = document.body.getElementsByTagName('*');
+                for (var i = 0; i < allElements.length; i++) {
+                    if (allElements[i].id === id) {
+                        return allElements[i];
+                    }
+                }
+            }
+            return element;
+        };
+    }
+})();
+// ========== 全局 appendChild 兼容结束 ==========
+
+
+// ========== 【修复】全局 indexOf 兼容 IE8 ==========
+(function() {
+    // 修复 String.prototype.indexOf（IE8 原生支持，但某些情况需要安全调用）
+    if (typeof String.prototype.indexOf !== 'function') {
+        String.prototype.indexOf = function(searchValue, fromIndex) {
+            var len = this.length;
+            var start = fromIndex ? Number(fromIndex) : 0;
+            if (start < 0) start = 0;
+            for (var i = start; i < len; i++) {
+                if (this.charAt(i) === searchValue) return i;
+            }
+            return -1;
+        };
+    }
+    
+    // 修复 Array.prototype.indexOf（IE8 及以下不支持）
+    if (!Array.prototype.indexOf) {
+        Array.prototype.indexOf = function(searchElement, fromIndex) {
+            if (this == null) {
+                throw new TypeError('"this" is null or not defined');
+            }
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (len === 0) return -1;
+            var n = fromIndex | 0;
+            if (n >= len) return -1;
+            var k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+            while (k < len) {
+                if (k in O && O[k] === searchElement) return k;
+                k++;
+            }
+            return -1;
+        };
+    }
+    
+    // 安全调用 indexOf 的包装函数（用于处理 null/undefined 情况）
+    window.safeIndexOf = function(str, searchValue) {
+        if (str == null) return -1;
+        if (typeof str.indexOf === 'function') {
+            return str.indexOf(searchValue);
+        }
+        return -1;
+    };
+})();
+// ========== 全局 indexOf 兼容结束 ==========
+
+
+// ========== IE 跳转兼容补丁 ==========
+(function() {
+    var isIE = false;
+    try {
+        isIE = /*@cc_on!@*/false || !!document.documentMode;
+    } catch(e) {
+        isIE = false;
+    }
+    
+    if (isIE) {
+        // 修复 IE 下 URL 跳转失败问题
+        var originalSubmitBtnClick = null;
+        document.addEventListener('DOMContentLoaded', function() {
+            var submitBtn = document.getElementById('submitBtn');
+            var urlInput = document.getElementById('urlInput');
+            
+            if (submitBtn && urlInput) {
+                // 移除原有事件，使用更可靠的跳转方式
+                var newBtn = submitBtn.cloneNode(true);
+                submitBtn.parentNode.replaceChild(newBtn, submitBtn);
+                submitBtn = newBtn;
+                
+                submitBtn.onclick = function(e) {
+                    e = e || window.event;
+                    var url = urlInput.value;
+                    var engine = document.getElementById('engineSelect').value;
+                    
+                    if (!url || url === 'https://') return false;
+                    
+                    // IE 下直接跳转
+                    try {
+                        if (engine === 'iFrameFree') {
+                            var iframe = document.getElementById('webFrame');
+                            if (iframe) iframe.src = url;
+                            return false;
+                        }
+                        try {
+                            window.location.href = url;
+                        } catch(e) {
+                            window.location = url;
+                        }
+                    } catch(err) {
+                        window.location = url;
+                    }
+                    return false;
+                };
+            }
+        });
+    }
+})();
+// ========== IE 跳转补丁结束 ==========
+
+
+// ========== Opera10以下版本搜索兼容 ==========
+(function() {
+    var isOldOpera = false;
+    try {
+        var ua = navigator.userAgent;
+        if (ua.indexOf('Opera') !== -1) {
+            var operaMatch = ua.match(/Opera[\/ ]([0-9.]+)/);
+            if (operaMatch && parseFloat(operaMatch[1]) < 10) {
+                isOldOpera = true;
+            }
+        }
+    } catch(e) { isOldOpera = false; }
+    
+    if (isOldOpera) {
+        var originalSubmit = document.getElementById('submitBtn').onclick;
+        document.getElementById('submitBtn').onclick = function(e) {
+            e = e || window.event;
+            var urlInput = document.getElementById('urlInput');
+            var engineSelect = document.getElementById('engineSelect');
+            var keyword = urlInput ? urlInput.value.trim() : '';
+            if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                return false;
+            }
+            var engine = engineSelect ? engineSelect.value : 'baidu';
+            var searchUrl = '';
+            if (engine === 'baidu') {
+                searchUrl = 'http://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+            } else if (engine === 'baidu_0') {
+                searchUrl = 'http://www.baidu.com/s?word=' + encodeURIComponent(keyword);
+            } else if (engine === 'google') {
+                searchUrl = 'http://www.google.com/search?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'bing') {
+                searchUrl = 'http://www.bing.com/search?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'sogou') {
+                searchUrl = 'http://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+            } else if (engine === 'so') {
+                searchUrl = 'http://www.so.com/s?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'autofillHttp1') {
+                searchUrl = 'http://' + encodeURIComponent(keyword);
+            } else if (engine === 'autofillHttps') {
+                searchUrl = 'https://' + encodeURIComponent(keyword);
+            } else if (engine === 'baiduTw') {
+                searchUrl = 'http://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(keyword);
+            } else {
+                return false;
+            }
+            window.location.href = searchUrl;
+            return false;
+        };
+    }
+})();
+// ========== Opera10以下版本搜索兼容结束 ==========
+
+
+// ========== Opera10以下版本Enter键提交兼容 ==========
+(function() {
+    var isOldOpera = false;
+    try {
+        var ua = navigator.userAgent;
+        if (ua.indexOf('Opera') !== -1) {
+            var operaMatch = ua.match(/Opera[\/ ]([0-9.]+)/);
+            if (operaMatch && parseFloat(operaMatch[1]) < 10) {
+                isOldOpera = true;
+            }
+        }
+    } catch(e) { isOldOpera = false; }
+    
+    if (isOldOpera) {
+        var urlInput = document.getElementById('urlInput');
+        var submitBtn = document.getElementById('submitBtn');
+        if (urlInput && submitBtn) {
+            urlInput.onkeydown = function(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which;
+                if (keyCode === 13) {
+                    if (e.preventDefault) e.preventDefault();
+                    e.returnValue = false;
+                    if (submitBtn.click) {
+                        submitBtn.click();
+                    } else if (submitBtn.onclick) {
+                        submitBtn.onclick(e);
+                    }
+                    return false;
+                }
+                return true;
+            };
+        }
+    }
+})();
+// ========== Opera10以下版本Enter键提交兼容结束 ==========
+
+
+// ========== Firefox5以下版本专属兼容传统跳转搜索结束 ==========
+(function() {
+    var isOldFirefox = false;
+    var ua = navigator.userAgent;
+    var firefoxMatch = ua.match(/Firefox\/([0-9.]+)/);
+    if (firefoxMatch && parseFloat(firefoxMatch[1]) <= 5) {
+        isOldFirefox = true;
+    }
+    
+    if (isOldFirefox) {
+        var submitBtn = document.getElementById('submitBtn');
+        var urlInput = document.getElementById('urlInput');
+        var engineSelect = document.getElementById('engineSelect');
+        
+        function getSearchUrl(keyword, engine) {
+            if (!keyword) return '';
+            if (keyword.indexOf('://') !== -1) return keyword;
+            if (engine === 'baidu') {
+                return 'http://www.baidu.com/baidu?wd=' + encodeURIComponent(keyword);
+            } else if (engine === 'google') {
+                return 'http://www.google.com/search?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'bing') {
+                return 'http://www.bing.com/search?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'sogou') {
+                return 'http://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+            } else if (engine === 'so') {
+                return 'http://www.so.com/s?q=' + encodeURIComponent(keyword);
+            } else if (engine === 'autofillHttp1') {
+                return 'http://' + encodeURIComponent(keyword);
+            } else if (engine === 'autofillHttps') {
+                return 'https://' + encodeURIComponent(keyword);
+            } else if (engine === 'baiduTw') {
+                return 'http://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(keyword);
+            } else {
+                return 'http://www.baidu.com/baidu?wd=' + encodeURIComponent(keyword);
+            }
+        }
+        
+        if (submitBtn && urlInput) {
+            submitBtn.onclick = function(e) {
+                e = e || window.event;
+                var keyword = urlInput.value;
+                if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                    return false;
+                }
+                var engine = engineSelect ? engineSelect.value : 'baidu';
+                var searchUrl = getSearchUrl(keyword, engine);
+                window.location.href = searchUrl;
+                return false;
+            };
+        }
+        
+        if (urlInput) {
+            urlInput.onkeydown = function(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which;
+                if (keyCode === 13) {
+                    e.returnValue = false;
+                    var keyword = urlInput.value;
+                    if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                        return false;
+                    }
+                    var engine = engineSelect ? engineSelect.value : 'baidu';
+                    var searchUrl = getSearchUrl(keyword, engine);
+                    window.location.href = searchUrl;
+                    return false;
+                }
+                return true;
+            };
+        }
+    }
+})();
+// ========== Firefox5以下版本专属兼容传统跳转搜索 ==========
+
+
+// ========== IE8 布局修复函数 ==========
+(function() {
+    var isIE8 = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (version === 8) isIE8 = true;
+        }
+    } catch(e) { isIE8 = false; }
+    
+    if (isIE8) {
+        // 修复 body 布局
+        if (document.body) {
+            document.body.style.margin = '0';
+            document.body.style.padding = '20px';
+            document.body.style.textAlign = 'center';
+            document.body.style.fontFamily = 'Arial, sans-serif';
+        }
+        
+        // 修复 searchContainer 布局（IE8 使用 table 布局替代 flex）
+        var searchContainer = document.getElementById('searchContainer');
+        if (searchContainer) {
+            searchContainer.style.display = 'table';
+            searchContainer.style.width = '100%';
+            searchContainer.style.maxWidth = '800px';
+            searchContainer.style.margin = '0 auto';
+            searchContainer.style.textAlign = 'center';
+            searchContainer.style.borderCollapse = 'collapse';
+            searchContainer.style.tableLayout = 'fixed';
+        }
+        
+        // 修复 engineSelect 布局
+        var engineSelect = document.getElementById('engineSelect');
+        if (engineSelect) {
+            engineSelect.style.display = 'inline-block';
+            engineSelect.style.width = '90px';
+            engineSelect.style.minWidth = '90px';
+            engineSelect.style.height = '24px';
+            engineSelect.style.verticalAlign = 'middle';
+        }
+        
+        // 修复 urlInput 布局
+        var urlInput = document.getElementById('urlInput');
+        if (urlInput) {
+            urlInput.style.display = 'inline-block';
+            urlInput.style.width = '60%';
+            urlInput.style.minWidth = '100px';
+            urlInput.style.height = '24px';
+            urlInput.style.verticalAlign = 'middle';
+        }
+        
+        // 修复 submitBtn 布局
+        var submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            submitBtn.style.display = 'inline-block';
+            submitBtn.style.height = '24px';
+            submitBtn.style.verticalAlign = 'middle';
+            submitBtn.style.marginLeft = '3px';
+            submitBtn.style.cursor = 'pointer';
+        }
+        
+        // 修复 autoFillhttps 容器布局
+        var autoFillhttps = document.getElementById('showToolPanel');
+        if (autoFillhttps) {
+            autoFillhttps.style.textAlign = 'center';
+            autoFillhttps.style.marginTop = '10px';
+            autoFillhttps.style.maxWidth = '560px';
+            autoFillhttps.style.marginLeft = 'auto';
+            autoFillhttps.style.marginRight = 'auto';
+        }
+        
+        // 修复 autoFillhttps 内部子元素布局
+        if (autoFillhttps) {
+            var children = autoFillhttps.children;
+            for (var i = 0; i < children.length; i++) {
+                if (children[i].tagName === 'DIV') {
+                    children[i].style.display = 'inline-block';
+                    children[i].style.zoom = '1';
+                }
+            }
+        }
+    }
+})();
+// ========== IE8 布局修复函数结束 ==========
+
+
+// ========== Opera10 Presto及以下版本兼容修复 ==========
+(function() {
+    var isOldOpera = false;
+    try {
+        var ua = navigator.userAgent;
+        if (ua.indexOf('Opera') !== -1) {
+            var operaMatch = ua.match(/Opera[\/ ]([0-9.]+)/);
+            if (operaMatch && parseFloat(operaMatch[1]) <= 10) {
+                isOldOpera = true;
+            }
+        }
+    } catch(e) { isOldOpera = false; }
+    
+    if (isOldOpera) {
+        if (typeof String.prototype.trim !== 'function') {
+            String.prototype.trim = function() {
+                return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+            };
+        }
+        if (typeof Array.prototype.indexOf !== 'function') {
+            Array.prototype.indexOf = function(searchElement, fromIndex) {
+                var k;
+                if (this == null) throw new TypeError('"this" is null or not defined');
+                var O = Object(this);
+                var len = O.length >>> 0;
+                if (len === 0) return -1;
+                var n = fromIndex | 0;
+                if (n >= len) return -1;
+                k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+                while (k < len) {
+                    if (k in O && O[k] === searchElement) return k;
+                    k++;
+                }
+                return -1;
+            };
+        }
+        var searchContainer = document.getElementById('searchContainer');
+        var engineSelect = document.getElementById('engineSelect');
+        var urlInput = document.getElementById('urlInput');
+        var submitBtn = document.getElementById('submitBtn');
+        if (searchContainer) {
+            searchContainer.style.display = 'block';
+            searchContainer.style.textAlign = 'center';
+        }
+        if (engineSelect) engineSelect.style.display = 'inline-block';
+        if (urlInput) {
+            urlInput.style.display = 'inline-block';
+            urlInput.style.width = '60%';
+        }
+        if (submitBtn) submitBtn.style.display = 'inline-block';
+        try {
+            if (typeof window.localStorage !== 'undefined' && window.localStorage) {
+                var testKey = '__opera_test__';
+                window.localStorage.setItem(testKey, testKey);
+                window.localStorage.removeItem(testKey);
+            }
+        } catch(e) {
+            var memoryStorage = {};
+            window.localStorage = {
+                setItem: function(k, v) { try { memoryStorage[k] = String(v); } catch(e) {} },
+                getItem: function(k) { try { return memoryStorage[k] !== undefined ? memoryStorage[k] : null; } catch(e) { return null; } },
+                removeItem: function(k) { try { delete memoryStorage[k]; } catch(e) {} }
+            };
+        }
+    }
+})();
+// ========== Opera10 Presto及以下版本兼容修复结束 ==========
+
+
+// ========== IE8及以下版本专属兼容代码（最低IE6） ==========
+(function() {
+    var isIELowVersion = false;
+    var ieVersion = 0;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (ieVersion <= 8) isIELowVersion = true;
+        }
+    } catch(e) { isIELowVersion = false; }
+    
+    if (isIELowVersion) {
+        // 修复 console 对象（IE6-7 不支持 console）
+        if (typeof window.console === 'undefined') {
+            window.console = {
+                log: function() {},
+                error: function() {},
+                warn: function() {},
+                info: function() {}
+            };
+        }
+        
+        // 修复 String.trim（IE6-8 不支持）
+        if (typeof String.prototype.trim !== 'function') {
+            String.prototype.trim = function() {
+                return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+            };
+        }
+        
+        // 修复 Array.prototype.indexOf（IE6-8 不支持）
+        if (typeof Array.prototype.indexOf !== 'function') {
+            Array.prototype.indexOf = function(searchElement, fromIndex) {
+                var k;
+                if (this == null) throw new TypeError('"this" is null or not defined');
+                var O = Object(this);
+                var len = O.length >>> 0;
+                if (len === 0) return -1;
+                var n = fromIndex | 0;
+                if (n >= len) return -1;
+                k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+                while (k < len) {
+                    if (k in O && O[k] === searchElement) return k;
+                    k++;
+                }
+                return -1;
+            };
+        }
+        
+        // 获取元素值辅助函数（兼容IE6-8）
+        function getElementValue(el) {
+            if (!el) return '';
+            if (el.tagName === 'SELECT' && el.selectedIndex >= 0) {
+                var opt = el.options[el.selectedIndex];
+                return opt ? opt.value : '';
+            }
+            return el.value || '';
+        }
+        
+        // 绑定提交事件
+        function bindIESubmitEvent() {
+            var submitBtn = document.getElementById('submitBtn');
+            var urlInput = document.getElementById('urlInput');
+            var engineSelect = document.getElementById('engineSelect');
+            
+            if (!submitBtn || !urlInput) return;
+            
+            // 移除已有事件
+            submitBtn.onclick = null;
+            
+            // 构建搜索URL
+            function buildSearchUrl(keyword, engine) {
+                if (!keyword) return '';
+                if (keyword.indexOf('://') !== -1) return keyword;
+                
+                switch (engine) {
+                    case 'baidu': return 'http://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+                    case 'google': return 'http://www.google.com/search?q=' + encodeURIComponent(keyword);
+                    case 'bing': return 'http://www.bing.com/search?q=' + encodeURIComponent(keyword);
+                    case 'sogou': return 'http://www.sogou.com/web?query=' + encodeURIComponent(keyword);
+                    case 'so': return 'http://www.so.com/s?q=' + encodeURIComponent(keyword);
+                    case 'autofillHttp1': return 'http://' + encodeURIComponent(keyword);
+                    case 'autofillHttps': return 'https://' + encodeURIComponent(keyword);
+                    case 'baiduTw': return 'http://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(keyword);
+                    default: return 'https://www.baidu.com/s?wd=' + encodeURIComponent(keyword);
+                }
+            }
+            
+            // 执行跳转
+            function doNavigate(url) {
+                if (!url) return;
+                try {
+                    window.location.href = url;
+                } catch(e) {
+                    window.location = url;
+                }
+            }
+            
+            // 提交按钮点击事件
+            submitBtn.onclick = function(e) {
+                e = e || window.event;
+                var keyword = urlInput.value;
+                if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                    return false;
+                }
+                
+                var engine = engineSelect ? getElementValue(engineSelect) : 'baidu';
+                try {
+                    if (window.localStorage && localStorage.setItem) {
+                        localStorage.setItem('selectedEngine', engine);
+                    }
+                } catch(err) {}
+                
+                var searchUrl = buildSearchUrl(keyword, engine);
+                doNavigate(searchUrl);
+                return false;
+            };
+            
+            // Enter 键事件（IE6-8 使用 attachEvent）
+            if (urlInput.attachEvent) {
+                urlInput.attachEvent('onkeydown', function(e) {
+                    e = e || window.event;
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode === 13) {
+                        e.returnValue = false;
+                        if (e.cancelBubble !== undefined) e.cancelBubble = true;
+                        if (submitBtn && submitBtn.onclick) {
+                            submitBtn.onclick(e);
+                        } else if (submitBtn && submitBtn.click) {
+                            submitBtn.click();
+                        }
+                        return false;
+                    }
+                });
+            } else if (urlInput.addEventListener) {
+                urlInput.addEventListener('keydown', function(e) {
+                    if (e.keyCode === 13) {
+                        e.preventDefault();
+                        if (submitBtn && submitBtn.onclick) submitBtn.onclick(e);
+                    }
+                });
+            }
+        }
+        
+        // 页面加载完成后绑定（兼容IE6-8的onreadystatechange）
+        if (document.attachEvent) {
+            document.attachEvent('onreadystatechange', function() {
+                if (document.readyState === 'complete') {
+                    bindIESubmitEvent();
+                }
+            });
+        } else if (document.addEventListener) {
+            document.addEventListener('DOMContentLoaded', bindIESubmitEvent);
+        } else {
+            window.onload = bindIESubmitEvent;
+        }
+    }
+})();
+// ========== IE8及以下版本专属兼容代码结束 ==========
+
+
+// ========== 【修复】IE8及以下浏览器搜索引擎保存与加载兼容性补丁 ==========
+(function() {
+    // 检测 IE 浏览器版本（支持 IE6+）
+    var ieVersion = 0;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+    }
+    var isIELowVersion = (ieVersion > 0 && ieVersion <= 8);
+    
+    // 获取保存的搜索引擎值（安全读取）
+    function getSavedEngine() {
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                return localStorage.getItem('selectedEngine');
+            }
+        } catch(e) {}
+        return null;
+    }
+    
+    // 保存搜索引擎值（安全写入）
+    function setSavedEngine(value) {
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                localStorage.setItem('selectedEngine', value);
+            }
+        } catch(e) {}
+    }
+    
+    // 设置下拉框选中项（兼容 IE 低版本）
+    function setSelectValue(selectEl, value) {
+        if (!selectEl) return false;
+        for (var i = 0; i < selectEl.options.length; i++) {
+            if (selectEl.options[i].value === value) {
+                selectEl.selectedIndex = i;
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    var engineSelect = document.getElementById('engineSelect');
+    if (!engineSelect) return;
+    
+    // 页面加载时恢复保存的选择
+    var savedEngine = getSavedEngine();
+    if (savedEngine) {
+        if (setSelectValue(engineSelect, savedEngine)) {
+            // 手动触发 change 事件（兼容 IE 低版本）
+            if (engineSelect.fireEvent) {
+                engineSelect.fireEvent('onchange');
+            } else if (engineSelect.dispatchEvent) {
+                var evt = document.createEvent('HTMLEvents');
+                evt.initEvent('change', true, false);
+                engineSelect.dispatchEvent(evt);
+            }
+        }
+    }
+    
+    // 监听 change 事件保存选择（兼容 IE 低版本）
+    var originalChangeHandler = engineSelect.onchange;
+    engineSelect.onchange = function(e) {
+        var selectedValue = engineSelect.value;
+        if (selectedValue) {
+            setSavedEngine(selectedValue);
+        }
+        if (originalChangeHandler) {
+            originalChangeHandler.call(this, e);
+        }
+    };
+    
+    // 对于 IE8 及以下，使用 attachEvent 确保事件绑定
+    if (isIELowVersion && engineSelect.attachEvent && !engineSelect._patched) {
+        engineSelect._patched = true;
+        engineSelect.attachEvent('onchange', function() {
+            var selectedValue = engineSelect.value;
+            if (selectedValue) {
+                setSavedEngine(selectedValue);
+            }
+        });
+    }
+})();
+// ========== 【修复结束】 ==========
+
+
+// ========== IE 完整兼容补丁 ==========
+(function() {
+    var isIE = false;
+    try {
+        isIE = /*@cc_on!@*/false || !!document.documentMode;
+    } catch(e) { isIE = false; }
+    
+    if (isIE) {
+        // 修复 IE 下 select 元素 value 读取问题
+        // 【修复】IE8 兼容：使用 Object.prototype.hasOwnProperty 替代直接调用
+        if (typeof HTMLSelectElement !== 'undefined' && HTMLSelectElement && HTMLSelectElement.prototype) {
+            var hasValueProp = false;
+            try {
+                hasValueProp = Object.prototype.hasOwnProperty.call(HTMLSelectElement.prototype, 'value');
+            } catch(e) {
+                hasValueProp = false;
+            }
+            if (!hasValueProp) {
+                try {
+                    Object.defineProperty(HTMLSelectElement.prototype, 'value', {
+                        get: function() {
+                            if (this.selectedIndex >= 0 && this.options[this.selectedIndex]) {
+                                return this.options[this.selectedIndex].value;
+                            }
+                            return '';
+                        },
+                        set: function(val) {
+                            for (var i = 0; i < this.options.length; i++) {
+                                if (this.options[i].value == val) {
+                                    this.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                } catch(e) {}
+            }
+        }
+        
+        // 修复 console 对象
+        if (!window.console) {
+            window.console = {
+                log: function() {},
+                error: function() {},
+                warn: function() {},
+                info: function() {}
+            };
+        }
+        
+        // 修复 CustomEvent
+        if (typeof window.CustomEvent !== 'function') {
+            window.CustomEvent = function(event, params) {
+                params = params || { bubbles: false, cancelable: false, detail: undefined };
+                var evt = document.createEvent('CustomEvent');
+                evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+                return evt;
+            };
+        }
+    }
+})();
+// ========== IE 兼容补丁结束 ==========
+
+
+// ========== IE浏览器 attachEvent 兼容性修复 ==========
+(function() {
+    if (typeof window.attachEvent === 'undefined' && typeof window.addEventListener !== 'undefined') {
+        window.attachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.addEventListener(eventName.substring(2), handler, false);
+        };
+        window.detachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.removeEventListener(eventName.substring(2), handler, false);
+        };
+    }
+    if (typeof document.attachEvent === 'undefined' && typeof document.addEventListener !== 'undefined') {
+        document.attachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.addEventListener(eventName.substring(2), handler, false);
+        };
+        document.detachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.removeEventListener(eventName.substring(2), handler, false);
+        };
+    }
+    if (typeof Element !== 'undefined' && Element.prototype && typeof Element.prototype.attachEvent === 'undefined' && typeof Element.prototype.addEventListener !== 'undefined') {
+        Element.prototype.attachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.addEventListener(eventName.substring(2), handler, false);
+        };
+        Element.prototype.detachEvent = function(eventName, handler) {
+            if (eventName.indexOf('on') !== 0) eventName = 'on' + eventName;
+            this.removeEventListener(eventName.substring(2), handler, false);
+        };
+    }
+})();
+// ========== IE浏览器 attachEvent 兼容性修复结束 ==========
+
+
+// ========== 跨浏览器事件绑定辅助函数 ==========
+// 【修复】IE8 兼容：使用 attachEvent 替代 addEventListener
+function addEvent(element, eventName, handler) {
+    if (!element) return;
+    if (element.addEventListener) {
+        element.addEventListener(eventName, handler);
+    } else if (element.attachEvent) {
+        element.attachEvent('on' + eventName, handler);
+    } else {
+        element['on' + eventName] = handler;
+    }
+}
+
+function removeEvent(element, eventName, handler) {
+    if (!element) return;
+    if (element.removeEventListener) {
+        element.removeEventListener(eventName, handler);
+    } else if (element.detachEvent) {
+        element.detachEvent('on' + eventName, handler);
+    } else {
+        element['on' + eventName] = null;
+    }
+}
+
+// DOM 加载完成检测（IE8 兼容）
+function onDomReady(callback) {
+    if (document.readyState === 'complete') {
+        setTimeout(callback, 1);
+        return;
+    }
+    if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', callback);
+    } else if (document.attachEvent) {
+        document.attachEvent('onreadystatechange', function() {
+            if (document.readyState === 'complete') {
+                callback();
+            }
+        });
+        var oldOnLoad = window.onload;
+        window.onload = function() {
+            if (oldOnLoad) oldOnLoad();
+            callback();
+        };
+    } else {
+        window.onload = callback;
+    }
+}
+
+// 【修复】提供全局的 addEventListener 兼容包装函数
+if (!window.addEventListener) {
+    window.addEventListener = function(eventName, handler, useCapture) {
+        if (window.attachEvent) {
+            window.attachEvent('on' + eventName, handler);
+        } else {
+            window['on' + eventName] = handler;
+        }
+    };
+    window.removeEventListener = function(eventName, handler, useCapture) {
+        if (window.detachEvent) {
+            window.detachEvent('on' + eventName, handler);
+        } else {
+            window['on' + eventName] = null;
+        }
+    };
+}
+
+if (!document.addEventListener) {
+    document.addEventListener = function(eventName, handler, useCapture) {
+        if (document.attachEvent) {
+            document.attachEvent('on' + eventName, handler);
+        } else {
+            document['on' + eventName] = handler;
+        }
+    };
+    document.removeEventListener = function(eventName, handler, useCapture) {
+        if (document.detachEvent) {
+            document.detachEvent('on' + eventName, handler);
+        } else {
+            document['on' + eventName] = null;
+        }
+    };
+}
+// ========== 辅助函数结束 ==========
+
+
+// ========== 跨浏览器事件绑定（最低 IE6 兼容） ==========
+function addEvent(element, eventName, handler) {
+    if (!element) return;
+    if (element.addEventListener) {
+        element.addEventListener(eventName, handler);
+    } else if (element.attachEvent) {
+        element.attachEvent('on' + eventName, handler);
+    } else {
+        element['on' + eventName] = handler;
+    }
+}
+
+function removeEvent(element, eventName, handler) {
+    if (!element) return;
+    if (element.removeEventListener) {
+        element.removeEventListener(eventName, handler);
+    } else if (element.detachEvent) {
+        element.detachEvent('on' + eventName, handler);
+    } else {
+        element['on' + eventName] = null;
+    }
+}
+
+// DOM 加载完成检测（最低 IE6 兼容）
+function onDomReady(callback) {
+    if (document.readyState === 'complete') {
+        setTimeout(callback, 1);
+        return;
+    }
+    if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', callback);
+    } else if (document.attachEvent) {
+        document.attachEvent('onreadystatechange', function() {
+            if (document.readyState === 'complete') {
+                callback();
+            }
+        });
+        // 确保 window.onload 也能触发
+        var oldOnLoad = window.onload;
+        window.onload = function() {
+            if (oldOnLoad) oldOnLoad();
+            callback();
+        };
+    } else {
+        window.onload = callback;
+    }
+}
+// ========== 事件辅助函数结束 ==========
+
+// 确保提交按钮的点击事件在 IE 中正常工作
+function bindSubmitButtonEvent() {
+    var submitBtn = document.getElementById('submitBtn');
+    if (!submitBtn) return;
+    
+    // 保存原始点击处理函数
+    var originalOnClick = submitBtn.onclick;
+    
+    // 使用兼容方式绑定
+    if (submitBtn.addEventListener) {
+        submitBtn.addEventListener('click', function(e) {
+            // 原有的提交逻辑会由其他代码处理
+        });
+    } else if (submitBtn.attachEvent) {
+        submitBtn.attachEvent('onclick', function(e) {
+            // 确保事件冒泡
+            return true;
+        });
+    }
+}
+
+// 在 DOM 加载完成后调用
+onDomReady(function() {
+    bindSubmitButtonEvent();
+});
+
+
+// IE 浏览器点击链接时激活为红色状态
+(function() {
+    var isIE = false;
+    try {
+        isIE = /*@cc_on!@*/false || !!document.documentMode;
+    } catch(e) {
+        isIE = false;
+    }
+    
+    if (isIE) {
+        var activeLink = document.getElementById('85727544071588039023');
+        if (activeLink) {
+            activeLink.onmousedown = function() {
+                this.style.color = '#ff0000';
+            };
+            activeLink.onmouseup = function() {
+                var savedColor = '#0066cc';
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
+                        var color = localStorage.getItem('linkColor');
+                        if (color) savedColor = color;
+                    }
+                } catch(e) {}
+                this.style.color = savedColor;
+            };
+            activeLink.onmouseout = function() {
+                var savedColor = '#0066cc';
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
+                        var color = localStorage.getItem('linkColor');
+                        if (color) savedColor = color;
+                    }
+                } catch(e) {}
+                this.style.color = savedColor;
+            };
+        }
+    }
+})();
+
+
+// ========== 全局 Enter 键回退方案（最低 IE6 兼容） ==========
+(function() {
+    // 确保只绑定一次
+    if (window.__enterKeyBound) return;
+    window.__enterKeyBound = true;
+    
+    function globalEnterHandler(e) {
+        e = e || window.event;
+        var target = e.target || e.srcElement;
+        var keyCode = e.keyCode || e.which || e.charCode;
+        
+        if (keyCode !== 13) return true;
+        
+        if (target && (target.id === 'urlInput' || target === document.getElementById('urlInput'))) {
+            var submitBtn = document.getElementById('submitBtn');
+            var urlInput = document.getElementById('urlInput');
+            var engineSelect = document.getElementById('engineSelect');
+            
+            if (submitBtn && urlInput) {
+                var inputValue = urlInput.value;
+                if (inputValue && inputValue !== '' && inputValue !== 'https://') {
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    } else {
+                        e.returnValue = false;
+                    }
+                    
+                    // ========== 【修改位置】回车搜索时设置导航标记 ==========
+                    window._isNavigating = true;
+                    if (window._clearNavigationFlagTimer) {
+                        clearTimeout(window._clearNavigationFlagTimer);
+                    }
+                    window._clearNavigationFlagTimer = setTimeout(function() {
+                        window._isNavigating = false;
+                    }, 3000);
+                    // ========== 【修改结束】 ==========
+                    
+                    // ========== 【修复】iFramePlus 选项下按 Enter 键直接处理，避免触发 submitBtn 导致双窗口 ==========
+                    var engine = engineSelect ? engineSelect.value : 'baidu';
+                    if (engine === 'iFramePlus') {
+                        if (inputValue && (inputValue.indexOf('http://') === 0 || inputValue.indexOf('https://') === 0)) {
+                            if (typeof createIframePlusWindow === 'function') {
+                                createIframePlusWindow(inputValue);
+                            }
+                        } else if (inputValue && inputValue.indexOf('://') === -1) {
+                            var finalUrl = 'https://' + inputValue;
+                            if (typeof createIframePlusWindow === 'function') {
+                                createIframePlusWindow(finalUrl);
+                            }
+                        } else if (inputValue) {
+                            if (typeof createIframePlusWindow === 'function') {
+                                createIframePlusWindow(inputValue);
+                            }
+                        }
+                        return false;
+                    }
+                    // ========== 【修复结束】 ==========
+                    
+                    if (submitBtn.click) {
+                        if (document.getElementById('autoFillAndJumpCheckbox').checked) { if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {} };
+                        try { if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function' && localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
+                        submitBtn.click();
+                    } else if (submitBtn.fireEvent) {
+                        if (document.getElementById('autoFillAndJumpCheckbox').checked) { if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {} };
+                        try { if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function' && localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
+                        submitBtn.fireEvent('onclick');
+                    }
+                    
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    // 绑定到 document 或 window
+    if (document.addEventListener) {
+        document.addEventListener('keydown', globalEnterHandler);
+    } else if (document.attachEvent) {
+        document.attachEvent('onkeydown', globalEnterHandler);
+    } else {
+        document.onkeydown = globalEnterHandler;
+    }
+})();
+
+
+// ========== 【修复】增强页面卸载时的清理 ==========
+(function() {
+    function cleanupBeforeUnload() {
+        // 清理导航标记定时器
+        if (window._clearNavigationFlagTimer) {
+            clearTimeout(window._clearNavigationFlagTimer);
+            window._clearNavigationFlagTimer = null;
+        }
+        window._isNavigating = false;
+        
+        // 清理提交按钮的绑定事件引用
+        var submitBtn = document.getElementById('submitBtn');
+        if (submitBtn && submitBtn._boundClickHandler) {
+            if (submitBtn.removeEventListener) {
+                submitBtn.removeEventListener('click', submitBtn._boundClickHandler);
+            } else if (submitBtn.detachEvent) {
+                submitBtn.detachEvent('onclick', submitBtn._boundClickHandler);
+            }
+            submitBtn._boundClickHandler = null;
+        }
+    }
+    
+    if (window.addEventListener) {
+        window.addEventListener('beforeunload', cleanupBeforeUnload);
+        window.addEventListener('unload', cleanupBeforeUnload);
+    } else if (window.attachEvent) {
+        window.attachEvent('onbeforeunload', cleanupBeforeUnload);
+        window.attachEvent('onunload', cleanupBeforeUnload);
+    }
+})();
+
+
+// ========== IE9/10 完整兼容补丁 ==========
+(function() {
+    // 检测 IE 版本
+    var isIE9 = false, isIE10 = false, isIE = false;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        isIE = true;
+        var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        if (version === 9) isIE9 = true;
+        if (version === 10) isIE10 = true;
+    }
+    
+    // 检测 Trident 内核 (IE11+)
+    var trident = ua.indexOf('Trident/');
+    if (trident > 0) {
+        isIE = true;
+        var rv = ua.indexOf('rv:');
+        if (rv > 0) {
+            var version = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+            if (version <= 11) isIE = true;
+        }
+    }
+    
+    if (isIE9 || isIE10) {
+        bindSubmitEvent();
+    }
+    
+    // IE9/10 专属：submitBtn 点击事件兼容修复
+    if (isIE9 || isIE10) {
+        var submitBtnFix = document.getElementById('submitBtn');
+        var urlInputFix = document.getElementById('urlInput');
+        if (submitBtnFix && urlInputFix) {
+            if (submitBtnFix.addEventListener) {
+                submitBtnFix.addEventListener('click', function(e) {
+                    if (typeof bindSubmitEvent === 'function') {
+                        bindSubmitEvent();
+                    }
+                });
+            } else if (submitBtnFix.attachEvent) {
+                submitBtnFix.attachEvent('onclick', function(e) {
+                    if (typeof bindSubmitEvent === 'function') {
+                        bindSubmitEvent();
+                    }
+                });
+            }
+        }
+    }
+    
+    // IE9/10 专属：Enter键事件兼容修复
+    if (isIE9 || isIE10) {
+        var urlInputFix = document.getElementById('urlInput');
+        if (urlInputFix) {
+            var enterHandler = function(e) {
+                e = e || window.event;
+                var keyCode = e.keyCode || e.which;
+                if (keyCode === 13) {
+                    if (e.preventDefault) e.preventDefault();
+                    e.returnValue = false;
+                    if (typeof bindSubmitEvent === 'function') {
+                        bindSubmitEvent();
+                    }
+                    var submitBtn = document.getElementById('submitBtn');
+                    if (submitBtn && submitBtn.click) {
+                        submitBtn.click();
+                    } else if (submitBtn && submitBtn.fireEvent) {
+                        submitBtn.fireEvent('onclick');
+                    }
+                    return false;
+                }
+                return true;
+            };
+            if (urlInputFix.addEventListener) {
+                urlInputFix.addEventListener('keydown', enterHandler);
+            } else if (urlInputFix.attachEvent) {
+                urlInputFix.attachEvent('onkeydown', enterHandler);
+            }
+        }
+    }
+    
+    if (isIE9 || isIE10) {
+        // 1. 添加 IE 专用 CSS 类到 body
+        document.body.className += ' ie-legacy';
+        if (isIE9) document.body.className += ' ie9-legacy';
+        if (isIE10) document.body.className += ' ie10-legacy';
+        
+        // 2. 修复搜索容器布局（使用表格布局替代 flex）
+        var searchContainer = document.getElementById('searchContainer');
+        if (searchContainer) {
+            searchContainer.style.display = 'table';
+            searchContainer.style.width = '100%';
+            searchContainer.style.textAlign = 'center';
+            searchContainer.style.tableLayout = 'fixed';
+        }
+        
+        // 3. 修复下拉框、输入框、按钮布局
+        var engineSelect = document.getElementById('engineSelect');
+        var urlInput = document.getElementById('urlInput');
+        var submitBtn = document.getElementById('submitBtn');
+        
+        if (engineSelect) {
+            engineSelect.style.display = 'inline-block';
+            engineSelect.style.width = '90px';
+            engineSelect.style.minWidth = '90px';
+            engineSelect.style.verticalAlign = 'middle';
+            if (isIE9) engineSelect.style.height = '26px';
+        }
+        
+        if (urlInput) {
+            urlInput.style.display = 'inline-block';
+            urlInput.style.width = '60%';
+            urlInput.style.minWidth = '100px';
+            urlInput.style.verticalAlign = 'middle';
+            if (isIE9) urlInput.style.height = '26px';
+        }
+        
+        if (submitBtn) {
+            submitBtn.style.display = 'inline-block';
+            submitBtn.style.verticalAlign = 'middle';
+            submitBtn.style.minWidth = '50px';
+            if (isIE9) submitBtn.style.height = '26px';
+        }
+        
+        // 4. 窗口大小改变时重新调整输入框宽度
+        function fixInputWidth() {
+            if (urlInput && searchContainer) {
+                var containerWidth = searchContainer.offsetWidth;
+                if (containerWidth > 200) {
+                    var otherWidth = 150; // 下拉框90px + 按钮50px + 间距
+                    var inputWidth = containerWidth - otherWidth;
+                    if (inputWidth > 100) {
+                        urlInput.style.width = inputWidth + 'px';
+                    }
+                }
+            }
+        }
+        
+        if (window.addEventListener) {
+            window.addEventListener('resize', fixInputWidth);
+        } else if (window.attachEvent) {
+            window.attachEvent('onresize', fixInputWidth);
+        }
+        setTimeout(fixInputWidth, 100);
+    }
+    
+    // 5. String.trim polyfill
+    if (!String.prototype.trim) {
+        String.prototype.trim = function() {
+            return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+        };
+    }
+    
+    // 6. Array.prototype.indexOf polyfill
+    if (!Array.prototype.indexOf) {
+        Array.prototype.indexOf = function(searchElement, fromIndex) {
+            var k;
+            if (this == null) throw new TypeError('"this" is null or not defined');
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (len === 0) return -1;
+            var n = fromIndex | 0;
+            if (n >= len) return -1;
+            k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+            while (k < len) {
+                if (k in O && O[k] === searchElement) return k;
+                k++;
+            }
+            return -1;
+        };
+    }
+    
+    // 7. Array.prototype.forEach polyfill
+    if (!Array.prototype.forEach) {
+        Array.prototype.forEach = function(callback, thisArg) {
+            if (this == null) throw new TypeError('this is null or not defined');
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (typeof callback !== 'function') throw new TypeError(callback + ' is not a function');
+            var T = thisArg || window;
+            var k = 0;
+            while (k < len) {
+                if (k in O) callback.call(T, O[k], k, O);
+                k++;
+            }
+        };
+    }
+    
+    // 8. Array.prototype.filter polyfill
+    if (!Array.prototype.filter) {
+        Array.prototype.filter = function(callback, thisArg) {
+            if (this == null) throw new TypeError('this is null or not defined');
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (typeof callback !== 'function') throw new TypeError(callback + ' is not a function');
+            var T = thisArg, k = 0, A = [];
+            while (k < len) {
+                if (k in O) {
+                    var kValue = O[k];
+                    if (callback.call(T, kValue, k, O)) A.push(kValue);
+                }
+                k++;
+            }
+            return A;
+        };
+    }
+    
+    // 9. classList polyfill (用于 IE9)
+    if (window.document && !('classList' in document.documentElement)) {
+        (function() {
+            var proto = window.HTMLElement ? HTMLElement.prototype : (window.Element ? Element.prototype : null);
+            if (proto && !proto.classList) {
+                Object.defineProperty(proto, 'classList', {
+                    get: function() {
+                        var self = this;
+                        function update(fn) {
+                            return function(value) {
+                                var classes = self.className.split(/\s+/);
+                                var index = classes.indexOf(value);
+                                fn(classes, index, value);
+                                self.className = classes.join(' ');
+                            };
+                        }
+                        return {
+                            add: update(function(classes, index, value) {
+                                if (index === -1) classes.push(value);
+                            }),
+                            remove: update(function(classes, index, value) {
+                                if (index !== -1) classes.splice(index, 1);
+                            }),
+                            contains: function(value) {
+                                return self.className.split(/\s+/).indexOf(value) !== -1;
+                            },
+                            toggle: function(value, force) {
+                                var classes = self.className.split(/\s+/);
+                                var index = classes.indexOf(value);
+                                var has = index !== -1;
+                                var shouldAdd = force !== undefined ? force : !has;
+                                if (shouldAdd && !has) {
+                                    classes.push(value);
+                                } else if (!shouldAdd && has) {
+                                    classes.splice(index, 1);
+                                }
+                                self.className = classes.join(' ');
+                                return shouldAdd;
+                            }
+                        };
+                    }
+                });
+            }
+        })();
+    }
+    
+    // 10. localStorage 安全包装
+    var localStorageAvailable = true;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var testKey = '__test__' + Date.now();
+            localStorage.setItem(testKey, testKey);
+            localStorage.removeItem(testKey);
+        } else {
+            throw new Error('localStorage not available');
+        }
+    } catch(e) {
+        localStorageAvailable = false;
+        // 创建内存存储替代
+        var memoryStorage = {};
+        window.localStorage = {
+            setItem: function(key, value) { try { memoryStorage[key] = String(value); } catch(e) {} },
+            getItem: function(key) { try { return memoryStorage[key] !== undefined ? memoryStorage[key] : null; } catch(e) { return null; } },
+            removeItem: function(key) { try { delete memoryStorage[key]; } catch(e) {} },
+            clear: function() { try { memoryStorage = {}; } catch(e) {} },
+            "length": function() { try { var count = 0; for (var k in memoryStorage) { if (memoryStorage.hasOwnProperty(k)) count++; } return count; } catch(e) { return 0; } },
+            key: function(index) { try { var keys = []; for (var k in memoryStorage) { if (memoryStorage.hasOwnProperty(k)) keys.push(k); } return keys[index] || null; } catch(e) { return null; } }
+        };
+    }
+    
+    // 11. console 安全包装
+    if (!window.console) {
+        window.console = {
+            log: function() {},
+            error: function() {},
+            warn: function() {},
+            info: function() {},
+            debug: function() {}
+        };
+    }
+    
+    // 12. CustomEvent polyfill
+    if (typeof window.CustomEvent !== 'function') {
+        window.CustomEvent = function(event, params) {
+            params = params || { bubbles: false, cancelable: false, detail: undefined };
+            var evt = document.createEvent('CustomEvent');
+            evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+            return evt;
+        };
+        window.CustomEvent.prototype = window.Event.prototype;
+    }
+    
+    // 13. requestAnimationFrame polyfill
+    if (!window.requestAnimationFrame) {
+        window.requestAnimationFrame = function(callback) {
+            return setTimeout(callback, 16);
+        };
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+    }
+    
+    // 14. 为 IE9/10 修复 querySelectorAll 返回的 Node< 不支持 forEach
+    if (isIE9 || isIE10) {
+        if (window.NodeList && !NodeList.prototype.forEach) {
+            NodeList.prototype.forEach = Array.prototype.forEach;
+        }
+        if (window.HTMLCollection && !HTMLCollection.prototype.forEach) {
+            HTMLCollection.prototype.forEach = Array.prototype.forEach;
+        }
+    }
+    
+    // 检测 IE8 并添加专用类
+    var isIE8 = false;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+            if (version === 8) isIE8 = true;
+        }
+    } catch(e) { isIE8 = false; }
+    
+    if (isIE8) {
+        if (document.body) {
+            document.body.className += ' ie8-legacy';
+        }
+        if (document.documentElement) {
+            document.documentElement.className += ' ie8-legacy';
+        }
+    }
+})();
+// ========== IE9/10 兼容补丁结束 ==========
+
+
+// IE 版本检测（放在 body 最开头）
+(function() {
+    var isIE9 = false, isIE10 = false;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        if (version === 9) isIE9 = true;
+        if (version === 10) isIE10 = true;
+    }
+    if (isIE9 || isIE10) {
+        document.documentElement.className += ' ie-legacy';
+        if (isIE9) document.documentElement.className += ' ie9-legacy';
+        if (isIE10) document.documentElement.className += ' ie10-legacy';
+    }
+})();
+
+
+// ========== IE9/10 搜索建议专用补丁 ==========
+(function() {
+    // 检测 IE9/10
+    var isIE9 = false, isIE10 = false;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        var version = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        if (version === 9) isIE9 = true;
+        if (version === 10) isIE10 = true;
+    }
+    
+    if (isIE9 || isIE10) {
+        // 1. 修复 input 事件：IE9/10 不支持 input 事件，使用 propertychange 替代
+        var urlInput = document.getElementById('urlInput');
+        if (urlInput) {
+            // 保存原始事件处理函数
+            var originalInputHandler = null;
+            
+            // 移除可能已绑定的 input 事件
+            if (urlInput.removeEventListener) {
+                urlInput.removeEventListener('input', urlInput._inputHandler);
+            }
+            
+            // 添加 propertychange 事件监听
+            urlInput.attachEvent('onpropertychange', function(e) {
+                e = e || window.event;
+                if (e.propertyName === 'value') {
+                    // 触发搜索建议更新
+                    if (typeof fetchSearchSuggestions === 'function') {
+                        var query = urlInput.value;
+                        fetchSearchSuggestions(query);
+                    }
+                    // 触发输入框的 oninput 回调（如果有）
+                    if (urlInput.oninput) {
+                        urlInput.oninput({ target: urlInput });
+                    }
+                }
+            });
+            
+            // 同时保留 keyup 事件作为备份
+            urlInput.attachEvent('onkeyup', function() {
+                if (typeof fetchSearchSuggestions === 'function') {
+                    fetchSearchSuggestions(urlInput.value);
+                }
+            });
+        }
+        
+        // 2. 修复 textContent 为 innerText
+        if (!('textContent' in document.documentElement)) {
+            Object.defineProperty(HTMLElement.prototype, 'textContent', {
+                get: function() {
+                    return this.innerText;
+                },
+                set: function(value) {
+                    this.innerText = value;
+                }
+            });
+        }
+        
+        // 3. 修复 NodeList forEach
+        if (window.NodeList && !NodeList.prototype.forEach) {
+            NodeList.prototype.forEach = Array.prototype.forEach;
+        }
+        if (window.HTMLCollection && !HTMLCollection.prototype.forEach) {
+            HTMLCollection.prototype.forEach = Array.prototype.forEach;
+        }
+        
+        // 4. 修复 getComputedStyle 对伪元素的支持
+        if (window.getComputedStyle) {
+            var originalGetComputedStyle = window.getComputedStyle;
+            window.getComputedStyle = function(element, pseudo) {
+                try {
+                    return originalGetComputedStyle(element, pseudo);
+                } catch(e) {
+                    return {
+                        getPropertyValue: function() { return ''; },
+                        font: '',
+                        fontSize: ''
+                    };
+                }
+            };
+        }
+    }
+    
+    // 通用修复：确保搜索建议框位置正确
+    function fixSuggestionsPosition() {
+        var searchSuggestions = document.getElementById('searchSuggestions');
+        var urlInput = document.getElementById('urlInput');
+        if (!searchSuggestions || !urlInput) return;
+        
+        var inputRect = urlInput.getBoundingClientRect();
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop || 0;
+        var scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft || 0;
+        
+        searchSuggestions.style.top = (inputRect.bottom + scrollTop) + 'px';
+        searchSuggestions.style.left = (inputRect.left + scrollLeft) + 'px';
+        searchSuggestions.style.width = (inputRect.width - 2) + 'px';
+    }
+    
+    // 导出修复函数供全局使用
+    window._fixSuggestionsPosition = fixSuggestionsPosition;
+    
+    // 监听滚动和窗口变化重新定位
+    if (window.attachEvent) {
+        window.attachEvent('onscroll', fixSuggestionsPosition);
+        window.attachEvent('onresize', function() {
+            setTimeout(fixSuggestionsPosition, 100);
+        });
+    }
+})();
+// ========== IE9/10 搜索建议补丁结束 ==========
+
+
+// ========== 内存泄漏防护 - 资源管理器 ==========
+var ResourceManager = (function() {
+    var eventListeners = [];
+    var timers = [];
+    var intervals = [];
+    var dynamicElements = [];
+    var xhrRequests = [];
+    
+    // ========== 【新增】注册普通定时器（用于清理） ==========
+    function registerTimeout(id) {
+        if (id && timers.indexOf(id) === -1) {
+            timers.push(id);
+        }
+        return id;
+    }
+    
+    // ========== 【新增】注册间隔定时器 ==========
+    function registerInterval(id) {
+        if (id && intervals.indexOf(id) === -1) {
+            intervals.push(id);
+        }
+        return id;
+    }
+    
+    return {
+        // 添加事件监听（自动记录）
+        addEvent: function(element, eventName, handler, useCapture) {
+            useCapture = useCapture || false;
+            if (element && element.addEventListener) {
+                element.addEventListener(eventName, handler, useCapture);
+                eventListeners.push({ element: element, eventName: eventName, handler: handler, useCapture: useCapture });
+            } else if (element && element.attachEvent) {
+                element.attachEvent('on' + eventName, handler);
+                eventListeners.push({ element: element, eventName: eventName, handler: handler, isAttachEvent: true });
+            }
+        },
+        
+        // 移除所有事件监听
+        removeAllEvents: function() {
+            for (var i = 0; i < eventListeners.length; i++) {
+                var item = eventListeners[i];
+                if (item.isAttachEvent && item.element.detachEvent) {
+                    item.element.detachEvent('on' + item.eventName, item.handler);
+                } else if (item.element.removeEventListener) {
+                    item.element.removeEventListener(item.eventName, item.handler, item.useCapture);
+                }
+            }
+            eventListeners = [];
+        },
+        
+        // 添加定时器
+        setTimeout: function(callback, delay) {
+            var id = setTimeout(callback, delay);
+            timers.push(id);
+            return id;
+        },
+        
+        // 添加间隔定时器
+        setInterval: function(callback, interval) {
+            var id = setInterval(callback, interval);
+            intervals.push(id);
+            return id;
+        },
+        
+        // 清除所有定时器
+        clearAllTimeouts: function() {
+            for (var i = 0; i < timers.length; i++) {
+                clearTimeout(timers[i]);
+            }
+            timers = [];
+        },
+        
+        // 清除所有间隔定时器
+        clearAllIntervals: function() {
+            for (var i = 0; i < intervals.length; i++) {
+                clearInterval(intervals[i]);
+            }
+            intervals = [];
+        },
+        
+        // 注册动态元素
+        registerElement: function(element) {
+            if (element && dynamicElements.indexOf(element) === -1) {
+                dynamicElements.push(element);
+            }
+        },
+        
+        // 清理动态元素
+        cleanupElements: function() {
+            for (var i = 0; i < dynamicElements.length; i++) {
+                var el = dynamicElements[i];
+                if (el && el.parentNode) {
+                    // 清理元素内的事件
+                    var allElements = el.getElementsByTagName ? el.getElementsByTagName('*') : [];
+                    for (var j = 0; j < allElements.length; j++) {
+                        var subEl = allElements[j];
+                        if (subEl.onclick) subEl.onclick = null;
+                        if (subEl.onmouseover) subEl.onmouseover = null;
+                        if (subEl.onmouseout) subEl.onmouseout = null;
+                        if (subEl.onchange) subEl.onchange = null;
+                    }
+                    if (el.onclick) el.onclick = null;
+                    if (el.parentNode) el.parentNode.removeChild(el);
+                }
+            }
+            dynamicElements = [];
+        },
+        
+        // 注册 XHR 请求
+        registerXHR: function(xhr) {
+            xhrRequests.push(xhr);
+        },
+        
+        // 中止所有 XHR 请求
+        abortAllXHR: function() {
+            for (var i = 0; i < xhrRequests.length; i++) {
+                if (xhrRequests[i] && xhrRequests[i].abort) {
+                    try { xhrRequests[i].abort(); } catch(e) {}
+                }
+            }
+            xhrRequests = [];
+        },
+        
+        // ========== 【新增】注册定时器方法 ==========
+        setTimeout: function(callback, delay) {
+            var id = setTimeout(callback, delay);
+            timers.push(id);
+            return id;
+        },
+        
+        setInterval: function(callback, interval) {
+            var id = setInterval(callback, interval);
+            intervals.push(id);
+            return id;
+        },
+        
+        // ========== 【新增】注册全局标记清理方法 ==========
+        registerGlobalFlag: function(name, value) {
+            if (typeof window[name] !== 'undefined') {
+                // 如果已存在，先清理旧值
+                if (name === '_clearNavigationFlagTimer' && window[name]) {
+                    clearTimeout(window[name]);
+                }
+            }
+            window[name] = value;
+        },
+        
+        // ========== 【新增】清理导航标记 ==========
+        cleanupNavigationFlags: function() {
+            if (window._clearNavigationFlagTimer) {
+                clearTimeout(window._clearNavigationFlagTimer);
+                window._clearNavigationFlagTimer = null;
+            }
+            window._isNavigating = false;
+        },
+        
+        // 修改原有 cleanupAll 方法
+        cleanupAll: function() {
+            this.removeAllEvents();
+            this.clearAllTimeouts();
+            this.clearAllIntervals();
+            this.cleanupElements();
+            this.abortAllXHR();
+            this.cleanupNavigationFlags();  // ========== 【新增】清理导航标记 ==========
+        }
+    };
+})();
+
+// 页面卸载时清理所有资源
+if (window.addEventListener) {
+    window.addEventListener('beforeunload', function() {
+        ResourceManager.cleanupAll();
+    });
+} else if (window.attachEvent) {
+    window.attachEvent('onbeforeunload', function() {
+        ResourceManager.cleanupAll();
+    });
+}
+// ========== 资源管理器结束 ==========
+
+
+// 页面可见性检测 - 优化资源使用
+(function() {
+    var hiddenProperty = 'hidden' in document ? 'hidden' : 
+                         'webkitHidden' in document ? 'webkitHidden' : 
+                         'mozHidden' in document ? 'mozHidden' : null;
+    var visibilityChangeEvent = 'visibilitychange';
+    
+    if (hiddenProperty) {
+        function handleVisibilityChange() {
+            var isHidden = document[hiddenProperty];
+            if (isHidden) {
+                // 页面隐藏时，停止时间链接更新
+                if (window.timeLinkInterval) {
+                    clearInterval(window.timeLinkInterval);
+                }
+                if (window.colonBlinkInterval) {
+                    clearInterval(window.colonBlinkInterval);
+                }
+            } else {
+                // 页面重新显示时，恢复时间链接更新
+                var showTimeChecked = false;
+                try {
+                    var timeCheckbox = document.getElementById('showTimeCheckbox');
+                    showTimeChecked = timeCheckbox && timeCheckbox.checked;
+                } catch(e) {}
+                if (showTimeChecked) {
+                    if (typeof updateTimeDisplay === 'function') {
+                        updateTimeDisplay();
+                    }
+                    var colonBlinkCheckbox = document.getElementById('colonBlinkCheckbox');
+                    if (colonBlinkCheckbox && colonBlinkCheckbox.checked && typeof startColonBlink === 'function') {
+                        startColonBlink();
+                    }
+                }
+            }
+        }
+        
+        if (document.addEventListener) {
+            document.addEventListener(visibilityChangeEvent, handleVisibilityChange);
+        } else if (document.attachEvent) {
+            document.attachEvent('on' + visibilityChangeEvent, handleVisibilityChange);
+        }
+    }
+})();
+
+
+// ========== 页面卸载时清理所有定时器（修复内存泄漏） ==========
+(function() {
+    // 页面卸载前清理定时器
+    function cleanupTimeIntervals() {
+        if (timeLinkInterval) {
+            clearInterval(timeLinkInterval);
+            timeLinkInterval = null;
+        }
+        if (colonBlinkInterval) {
+            clearInterval(colonBlinkInterval);
+            colonBlinkInterval = null;
+        }
+    }
+    
+    // 页面可见性变化时暂停/恢复定时器（优化性能）
+    var hiddenProperty = null;
+    if (typeof document.hidden !== 'undefined') {
+        hiddenProperty = 'hidden';
+    } else if (typeof document.webkitHidden !== 'undefined') {
+        hiddenProperty = 'webkitHidden';
+    } else if (typeof document.mozHidden !== 'undefined') {
+        hiddenProperty = 'mozHidden';
+    }
+    
+    if (hiddenProperty) {
+        var visibilityChangeEvent = hiddenProperty.replace(/hidden/i, 'visibilitychange');
+        
+        function handleVisibilityChange() {
+            var isHidden = document[hiddenProperty];
+            var showTimeCheckbox = document.getElementById('showTimeCheckbox');
+            var isTimeEnabled = showTimeCheckbox ? showTimeCheckbox.checked : false;
+            
+            if (isHidden) {
+                // 页面隐藏时停止定时器
+                if (timeLinkInterval && isTimeEnabled) {
+                    clearInterval(timeLinkInterval);
+                    timeLinkInterval = null;
+                }
+                if (colonBlinkInterval && isTimeEnabled) {
+                    clearInterval(colonBlinkInterval);
+                    colonBlinkInterval = null;
+                }
+            } else {
+                // 页面恢复时重新启动定时器
+                if (isTimeEnabled) {
+                    if (!timeLinkInterval) {
+                        timeLinkInterval = setInterval(function() {
+                            updateTimeDisplay();
+                        }, 1000);
+                    }
+                    var colonBlinkCheckbox = document.getElementById('colonBlinkCheckbox');
+                    if (colonBlinkCheckbox && colonBlinkCheckbox.checked && !colonBlinkInterval) {
+                        colonVisible = true;
+                        colonBlinkInterval = setInterval(function() {
+                            try {
+                                colonVisible = !colonVisible;
+                                updateTimeDisplayWithBlink();
+                            } catch(e) {}
+                        }, 1000);
+                    }
+                    updateTimeDisplay();
+                }
+            }
+        }
+        
+        if (document.addEventListener) {
+            document.addEventListener(visibilityChangeEvent, handleVisibilityChange);
+        }
+    }
+    
+    // 页面卸载时清理
+    if (window.addEventListener) {
+        window.addEventListener('beforeunload', cleanupTimeIntervals);
+        window.addEventListener('unload', cleanupTimeIntervals);
+    } else if (window.attachEvent) {
+        window.attachEvent('onbeforeunload', cleanupTimeIntervals);
+        window.attachEvent('onunload', cleanupTimeIntervals);
+    }
+})();
+// ========== 定时器清理结束 ==========
+
+
+// ========== IE兼容性补丁-添加结束 ==========
+//
+
+
 // 检测是否为电脑端
 function isDesktop() {
     return !/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -21,13 +2264,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (isMobileAndroidApple()) {
         if (savedEngine === 'baiduTw' ||
-            savedEngine === 'quarkpcAI' || savedEngine === 'transmartQQTs' || savedEngine === 'dyIsWindows' || savedEngine === 'showCheckbox') {
+            savedEngine === 'quarkpcAI' || savedEngine === '360namisoAI' || savedEngine === 'transmartQQTs' || savedEngine === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || savedEngine === 'showCheckbox') {
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('urlInput').disabled = true;
         }
     }
     if (isDesktop()) {
-        if (savedEngine === 'sodouyinM' || savedEngine === 'yzmsmM' || savedEngine === 'sotoutiaoM' || savedEngine === 'qksmSearch' || savedEngine === 'baiduMEasy' || savedEngine === 'oldBaiduFanyi' || savedEngine === 'quarkTranslateTools' || savedEngine === 'showCheckbox') {
+        if (savedEngine === 'yzmsmM' || savedEngine === 'qksmSearch' || savedEngine === 'pddWebPage' || savedEngine === 'baiduMEasy' || savedEngine === 'quarkTranslateTools' || savedEngine === 'showCheckbox') {
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('urlInput').disabled = true;
         }
@@ -67,7 +2310,248 @@ document.addEventListener('DOMContentLoaded', function() {
         var sizeBtn = document.getElementById('iframePlusSizeBtn');
         if (sizeBtn) sizeBtn.style.display = 'block';
     }
+    // 根据一言显示状态初始化相关按钮的禁用状态
+    var savedHitokotoState = localStorage.getItem('hitokotoChecked');
+    var hitokotoColorBtn = document.getElementById('hitokotoColorBtn');
+    var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
+    var hitokotoSizeLabel = document.querySelector('label[for="hitokotoSizePicker"]');
+    if (savedHitokotoState !== 'true') {
+        if (hitokotoColorBtn) {
+            hitokotoColorBtn.style.opacity = '0.7';
+            hitokotoColorBtn.style.cursor = 'not-allowed';
+            hitokotoColorBtn.style.pointerEvents = 'none';
+        }
+        if (hitokotoStyleBtn) {
+            hitokotoStyleBtn.style.opacity = '0.7';
+            hitokotoStyleBtn.style.cursor = 'not-allowed';
+            hitokotoStyleBtn.style.pointerEvents = 'none';
+        }
+        if (hitokotoSizeLabel) {
+            hitokotoSizeLabel.style.opacity = '0.7';
+            hitokotoSizeLabel.style.cursor = 'not-allowed';
+            hitokotoSizeLabel.style.pointerEvents = 'none';
+        }
+    } else {
+        if (hitokotoColorBtn) {
+            hitokotoColorBtn.style.opacity = '1';
+            hitokotoColorBtn.style.cursor = 'pointer';
+            hitokotoColorBtn.style.pointerEvents = 'auto';
+        }
+        if (hitokotoStyleBtn) {
+            hitokotoStyleBtn.style.opacity = '1';
+            hitokotoStyleBtn.style.cursor = 'pointer';
+            hitokotoStyleBtn.style.pointerEvents = 'auto';
+        }
+        if (hitokotoSizeLabel) {
+            hitokotoSizeLabel.style.opacity = '1';
+            hitokotoSizeLabel.style.cursor = 'pointer';
+            hitokotoSizeLabel.style.pointerEvents = 'auto';
+        }
+    }
+    // 初始化 heightAdjustBtn、renameLinkBtn、renameSubmitBtn 的禁用状态和鼠标样式
+    function initLabelDisabledState() {
+        var heightAdjustBtn = document.querySelector('label[for="heightAdjustBtn"]');
+        var linkColorPicker = document.querySelector('label[for="linkColorPicker"]');
+        var renameLinkBtn = document.querySelector('label[for="renameLinkBtn"]');
+        var renameSubmitBtn = document.querySelector('label[for="renameSubmitBtn"]');
+        var linkSizePicker = document.querySelector('label[for="linkSizePicker"]');
+        var showLinkChecked = document.getElementById('showLinkCheckbox') ? document.getElementById('showLinkCheckbox').checked : true;
+        var showSendChecked = document.getElementById('showSendCheckbox') ? document.getElementById('showSendCheckbox').checked : true;
+        var layoutChecked = document.getElementById('layoutCheckbox') ? document.getElementById('layoutCheckbox').checked : false;
+        
+        // heightAdjustBtn 依赖于 layoutCheckbox
+        if (heightAdjustBtn) {
+            if (!layoutChecked) {
+                heightAdjustBtn.style.opacity = '0.7';
+                heightAdjustBtn.style.cursor = 'not-allowed';
+                heightAdjustBtn.style.pointerEvents = 'none';
+            } else {
+                heightAdjustBtn.style.opacity = '1';
+                heightAdjustBtn.style.cursor = 'pointer';
+                heightAdjustBtn.style.pointerEvents = 'auto';
+            }
+        }
+        
+        // renameLinkBtn 依赖于 showLinkCheckbox
+        if (renameLinkBtn) {
+            if (!showLinkChecked) {
+                renameLinkBtn.style.opacity = '0.7';
+                renameLinkBtn.style.cursor = 'not-allowed';
+                renameLinkBtn.style.pointerEvents = 'none';
+            } else {
+                renameLinkBtn.style.opacity = '1';
+                renameLinkBtn.style.cursor = 'pointer';
+                renameLinkBtn.style.pointerEvents = 'auto';
+            }
+        }
+        
+        // linkColorPicker 依赖于 showLinkCheckbox
+        if (linkColorPicker) {
+            if (!showLinkChecked) {
+                linkColorPicker.style.opacity = '0.7';
+                linkColorPicker.style.cursor = 'not-allowed';
+                linkColorPicker.style.pointerEvents = 'none';
+            } else {
+                linkColorPicker.style.opacity = '1';
+                linkColorPicker.style.cursor = 'pointer';
+                linkColorPicker.style.pointerEvents = 'auto';
+            }
+        }
+        
+        // renameSubmitBtn 依赖于 showSendCheckbox
+        if (renameSubmitBtn) {
+            if (!showSendChecked) {
+                renameSubmitBtn.style.opacity = '0.7';
+                renameSubmitBtn.style.cursor = 'not-allowed';
+                renameSubmitBtn.style.pointerEvents = 'none';
+            } else {
+                renameSubmitBtn.style.opacity = '1';
+                renameSubmitBtn.style.cursor = 'pointer';
+                renameSubmitBtn.style.pointerEvents = 'auto';
+            }
+        }
+        
+        // linkSizePicker 依赖于 showLinkCheckbox
+        if (linkSizePicker) {
+            if (!showLinkChecked) {
+                linkSizePicker.style.opacity = '0.7';
+                linkSizePicker.style.cursor = 'not-allowed';
+                linkSizePicker.style.pointerEvents = 'none';
+            } else {
+                linkSizePicker.style.opacity = '1';
+                linkSizePicker.style.cursor = 'pointer';
+                linkSizePicker.style.pointerEvents = 'auto';
+            }
+        }
+    }
     
+    // 调用初始化函数
+    initLabelDisabledState();
+    
+    // 监听相关复选框变化以更新状态
+    if (document.getElementById('showLinkCheckbox')) {
+        document.getElementById('showLinkCheckbox').addEventListener('change', function() {
+            initLabelDisabledState();
+        });
+    }
+    if (document.getElementById('showSendCheckbox')) {
+        document.getElementById('showSendCheckbox').addEventListener('change', function() {
+            initLabelDisabledState();
+        });
+    }
+    if (document.getElementById('layoutCheckbox')) {
+        document.getElementById('layoutCheckbox').addEventListener('change', function() {
+            initLabelDisabledState();
+        });
+    }
+    // engineSelect 鼠标滚轮切换搜索引擎（兼容所有浏览器版本）
+    (function() {
+        var engineSelect = document.getElementById('engineSelect');
+        if (!engineSelect) return;
+        
+        // 滚动累加值（用于累积滚动长度）
+        var scrollDeltaAccumulator = 0;
+        // 滚动阈值（累积超过此值才触发切换）
+        var SCROLL_THRESHOLD = 120;
+        
+        // 获取下一个可用选项（非隐藏、非禁用）
+        function getNextEnabledOption(currentIndex, step) {
+            var options = engineSelect.options;
+            var newIndex = currentIndex + step;
+            while (newIndex >= 0 && newIndex < options.length) {
+                var opt = options[newIndex];
+                var isHidden = opt.style.display === 'none';
+                var isDisabled = opt.disabled === true;
+                if (!isHidden && !isDisabled) {
+                    return newIndex;
+                }
+                newIndex += step;
+            }
+            return currentIndex;
+        }
+        
+        // 执行切换
+        function performSwitch(step) {
+            var currentIndex = engineSelect.selectedIndex;
+            var newIndex = getNextEnabledOption(currentIndex, step);
+            if (newIndex !== currentIndex) {
+                engineSelect.selectedIndex = newIndex;
+                if (document.createEvent) {
+                    var evt = document.createEvent('HTMLEvents');
+                    evt.initEvent('change', true, false);
+                    engineSelect.dispatchEvent(evt);
+                } else if (engineSelect.fireEvent) {
+                    engineSelect.fireEvent('onchange');
+                }
+            }
+        }
+        
+        // 滚轮事件处理函数
+        function handleWheel(e) {
+            e = e || window.event;
+            // 防止页面滚动
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+            }
+            
+            var delta = 0;
+            if (e.wheelDelta) {
+                delta = e.wheelDelta;
+            } else if (e.detail) {
+                delta = -e.detail;
+            }
+            
+            // 累积滚动值
+            scrollDeltaAccumulator += delta;
+            
+            // 判断是否达到切换阈值
+            if (scrollDeltaAccumulator >= SCROLL_THRESHOLD) {
+                scrollDeltaAccumulator = 0;
+                performSwitch(-1);  // 向上滚动，切换上一个
+            } else if (scrollDeltaAccumulator <= -SCROLL_THRESHOLD) {
+                scrollDeltaAccumulator = 0;
+                performSwitch(1);   // 向下滚动，切换下一个
+            }
+            
+            return false;
+        }
+        
+        // 添加滚轮事件监听（兼容所有浏览器）
+        if (engineSelect.addEventListener) {
+            engineSelect.addEventListener('wheel', handleWheel);
+            engineSelect.addEventListener('mousewheel', handleWheel);
+            engineSelect.addEventListener('DOMMouseScroll', handleWheel);
+        } else if (engineSelect.attachEvent) {
+            engineSelect.attachEvent('onmousewheel', handleWheel);
+        }
+    })();
+    var savedSearchHistoryInSuggestState = localStorage.getItem('searchHistoryInSuggestChecked');
+    // 获取两个依赖开关的状态 ===
+    var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
+    var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+    
+    if (savedSearchHistoryInSuggestState === 'true') {
+        // === 只有两个依赖开关都勾选时才能恢复勾选状态 ===
+        if (historyChecked && suggestionsChecked) {
+            document.getElementById('searchHistoryInSuggestCheckbox').checked = true;
+            var searchHistoryDiv = document.getElementById('searchHistory');
+            var clearHistoryBtn = document.getElementById('clearHistoryBtn');
+            if (searchHistoryDiv) {
+                searchHistoryDiv.style.display = 'none';
+            }
+            if (clearHistoryBtn) {
+                clearHistoryBtn.style.display = 'none';
+            }
+        } else {
+            // 依赖开关未勾选，清除保存的状态
+            localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+        }
+    }
+    
+    // 初始化禁用状态
+    updateHistoryInSuggestDisabled();
     // 修复 Chrome 21 以下版本输入框长度和居中问题
     (function fixOldBrowserLayout() {
         var isOldChrome = false;
@@ -179,9 +2663,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     })();
-    // 如果保存的选择是showCheckbox，则显示autoFillhttps div
+    // 如果保存的选择是showCheckbox，则显示showToolPanel div
     if (savedEngine === 'showCheckbox') {
-        document.getElementById('autoFillhttps').style.display = 'block';
+        document.getElementById('showToolPanel').style.display = 'block';
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('urlInput').disabled = true;
         
@@ -192,8 +2676,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     // 初始化用户输入状态
-    if (document.getElementById('urlInput').value !== 'https://') {
-        document.getElementById('urlInput').dataset.userInput = 'true';
+    // 【修复】兼容 IE 等旧浏览器中 dataset 属性可能为 undefined 的问题
+    var initUrlInput = document.getElementById('urlInput');
+    if (initUrlInput) {
+        if (initUrlInput.value !== 'https://') {
+            if (initUrlInput.dataset) {
+                initUrlInput.dataset.userInput = 'true';
+            } else {
+                initUrlInput.setAttribute('data-user-input', 'true');
+            }
+        }
     }
     var iframe = document.getElementById('webFrame');
     var container = document.getElementById('iframeContainer');
@@ -212,7 +2704,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(applyLinkSpacing, 100);
     
     // 窗口大小改变时调整
-    window.addEventListener('resize', resizeIframe);
+    ResourceManager.addEvent(window, 'resize', resizeIframe);
     
     var showLinkChecked = document.getElementById('showLinkCheckbox').checked;
     var showTimeChecked = document.getElementById('showTimeCheckbox').checked;
@@ -285,622 +2777,825 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('colonBlinkCheckbox').disabled = false;
         document.getElementById('timeFormatSelect').disabled = false;
     }
+    
+    // 加载保存的新版历史记录开关状态
+    var savedSearchHistoryInSuggestState = localStorage.getItem('searchHistoryInSuggestChecked');
+    if (savedSearchHistoryInSuggestState === 'true') {
+        document.getElementById('searchHistoryInSuggestCheckbox').checked = true;
+    }
+    
+    // 监听新版历史记录开关变化
+    var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
+    if (historyInSuggestCheckbox) {
+        historyInSuggestCheckbox.addEventListener('change', function() {
+            if (this.disabled) {
+                this.checked = false;
+                return;
+            }
+            
+            if (this.checked) {
+                var searchHistoryDiv = document.getElementById('searchHistory');
+                var clearHistoryBtn = document.getElementById('clearHistoryBtn');
+                if (searchHistoryDiv) {
+                    searchHistoryDiv.style.display = 'none';
+                }
+                if (clearHistoryBtn) {
+                    clearHistoryBtn.style.display = 'none';
+                }
+                
+                localStorage.setItem('searchHistoryInSuggestChecked', 'true');
+            } else {
+                var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
+                if (historyChecked) {
+                    var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                    if (history.length > 0) {
+                        var searchHistoryDiv = document.getElementById('searchHistory');
+                        var clearHistoryBtn = document.getElementById('clearHistoryBtn');
+                        if (searchHistoryDiv) {
+                            searchHistoryDiv.style.display = 'block';
+                        }
+                        if (clearHistoryBtn) {
+                            clearHistoryBtn.style.display = 'block';
+                        }
+                        updateSearchHistory();
+                    }
+                }
+                
+                localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+            }
+            
+            // === 更新历史记录大小和颜色选择器的禁用状态 ===
+            updateHistoryInSuggestDisabled();
+        });
+    }
+    
+    // 控制历史记录在建议中显示开关的可用性
+    function updateHistoryInSuggestDisabled() {
+        var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
+        var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+        var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
+        // === 获取历史记录大小和颜色选择器 ===
+        var historyLinksSizeLabel = document.querySelector('label[for="historyLinksSizePicker"]');
+        var historyLinksColorLabel = document.querySelector('label[for="historyLinksColorPicker"]');
+        
+        if (historyInSuggestCheckbox) {
+            if (historyChecked && suggestionsChecked) {
+                historyInSuggestCheckbox.disabled = false;
+            } else {
+                historyInSuggestCheckbox.disabled = true;
+                if (historyInSuggestCheckbox.checked) {
+                    historyInSuggestCheckbox.checked = false;
+                    localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+                    if (historyChecked) {
+                        var searchHistoryDiv = document.getElementById('searchHistory');
+                        var clearHistoryBtn = document.getElementById('clearHistoryBtn');
+                        if (searchHistoryDiv) {
+                            var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                            if (history.length > 0) {
+                                searchHistoryDiv.style.display = 'block';
+                                if (clearHistoryBtn) clearHistoryBtn.style.display = 'block';
+                                updateSearchHistory();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // === 控制历史记录大小和颜色选择器的禁用状态 ===
+        // 条件：勾选 searchHistoryCheckbox 且 不勾选 searchHistoryInSuggestCheckbox 时解除禁用
+        var shouldEnable = historyChecked && (!historyInSuggestCheckbox || !historyInSuggestCheckbox.checked);
+        
+        if (historyLinksSizeLabel) {
+            if (shouldEnable) {
+                historyLinksSizeLabel.style.opacity = '1';
+                historyLinksSizeLabel.style.cursor = 'pointer';
+                historyLinksSizeLabel.style.pointerEvents = 'auto';
+            } else {
+                historyLinksSizeLabel.style.opacity = '0.7';
+                historyLinksSizeLabel.style.cursor = 'not-allowed';
+                historyLinksSizeLabel.style.pointerEvents = 'none';
+            }
+        }
+        
+        if (historyLinksColorLabel) {
+            if (shouldEnable) {
+                historyLinksColorLabel.style.opacity = '1';
+                historyLinksColorLabel.style.cursor = 'pointer';
+                historyLinksColorLabel.style.pointerEvents = 'auto';
+            } else {
+                historyLinksColorLabel.style.opacity = '0.7';
+                historyLinksColorLabel.style.cursor = 'not-allowed';
+                historyLinksColorLabel.style.pointerEvents = 'none';
+            }
+        }
+    }
+    
+    // 监听相关开关变化
+    var searchHistoryCheckbox = document.getElementById('searchHistoryCheckbox');
+    if (searchHistoryCheckbox) {
+        var originalSearchHistoryChange = searchHistoryCheckbox.onchange || function() {};
+        searchHistoryCheckbox.addEventListener('change', function() {
+            updateHistoryInSuggestDisabled();
+        });
+    }
+    
+    var searchSuggestionsCheckbox = document.getElementById('searchSuggestionsCheckbox');
+    if (searchSuggestionsCheckbox) {
+        searchSuggestionsCheckbox.addEventListener('change', function() {
+            updateHistoryInSuggestDisabled();
+        });
+    }
+    
+    // 初始化禁用状态
+    updateHistoryInSuggestDisabled();
 });
 
 // 如果是电脑端，禁用移动搜索选项
 if (isDesktop()) {
-    document.getElementById('douyinOption').disabled = true;
     document.getElementById('shenmaOption').disabled = true;
-    document.getElementById('toutiaoOption').disabled = true;
     document.getElementById('quarksoOption').disabled = true;
     document.getElementById('baidueasyOption').disabled = true;
-    document.getElementById('baiduFanyiOption').disabled = true;
     document.getElementById('quarkFanyiOption').disabled = true;
+    document.getElementById('pinduoduoOption').disabled = true;
 }
 
 if (isMobileAndroidApple()) {
+    document.getElementById('namiAiDisabledOption').disabled = true;
     document.getElementById('quarkaiOption').disabled = true;
     document.getElementById('baidutwOption').disabled = true;
     document.getElementById('douyinpcOption').disabled = true;
+    document.getElementById('kuaiHandOption').disabled = true;
+    document.getElementById('kuaiHandOption').style.display = 'none';
+    document.getElementById('xHongshuOption').disabled = true;
+    document.getElementById('xHongshuOption').style.display = 'none';
+    document.getElementById('tencentFanyi2').disabled = true;
     document.getElementById('tencentFanyi2').style.display = 'none';
 }
 
-document.getElementById('submitBtn').addEventListener('click', function() {
-    var url = document.getElementById('urlInput').value.trim();
-    var engine = document.getElementById('engineSelect').value;
+// ========== 修复 IE 浏览器下搜索引擎下拉框读取问题 ==========
+// 获取当前选中的搜索引擎值（兼容 IE）
+function getSelectedEngineValue() {
+    var engineSelect = document.getElementById('engineSelect');
+    if (!engineSelect) return 'baidu';
     
-    // 保存当前选择
-    localStorage.setItem('selectedEngine', engine);
+    // IE 兼容：优先使用 selectedIndex 获取选中项的值
+    var selectedIndex = engineSelect.selectedIndex;
+    if (selectedIndex >= 0 && engineSelect.options[selectedIndex]) {
+        var optionValue = engineSelect.options[selectedIndex].value;
+        if (optionValue && optionValue !== '') {
+            return optionValue;
+        }
+    }
     
-    // 检测是否启用直接跳转网址功能且输入符合网址格式
-    if (document.getElementById('directUrlJumpCheckbox').checked) {
-        var inputText = url;
-        var isUrlPattern = false;
-        
-        // 排除纯数字、小数、负数等非网址格式
-        var isNumberPattern = /^[+-]?\d+(\.\d+)?$/;
-        if (isNumberPattern.test(inputText)) {
-            isUrlPattern = false;
-        } else {
-            // 检测网址格式：要求域名后缀至少为2个字母，且域名部分不全是数字
-            var urlPatterns = [
-                /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(?:\/|$)/,
-                /^https?:\/\//,
-                /^www\.[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/,
-                /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}\.[a-zA-Z]{2,}/,
-                /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?::\d+)?(?:\/|$)/
-            ];
-            
-            for (var i = 0; i < urlPatterns.length; i++) {
-                if (urlPatterns[i].test(inputText)) {
-                    isUrlPattern = true;
-                    break;
-                }
-            }
+    // 备用方案：直接读取 value 属性
+    var value = engineSelect.value;
+    if (value && value !== '') return value;
+    
+    return 'baidu';
+}
+
+// 获取当前选中的搜索引擎显示文本（用于调试）
+function getSelectedEngineText() {
+    var engineSelect = document.getElementById('engineSelect');
+    if (!engineSelect) return '';
+    var selectedIndex = engineSelect.selectedIndex;
+    if (selectedIndex >= 0 && engineSelect.options[selectedIndex]) {
+        return engineSelect.options[selectedIndex].text;
+    }
+    return '';
+}
+
+// 重新绑定提交按钮事件（确保 IE 兼容）
+function bindSubmitEvent() {
+    var submitBtn = document.getElementById('submitBtn');
+    var urlInput = document.getElementById('urlInput');
+    
+    if (!submitBtn) return;
+    
+    // ========== 【修复】使用更安全的事件绑定方式，避免 cloneNode 导致内存泄漏 ==========
+    // 先移除旧事件（如果存在）
+    if (submitBtn._boundClickHandler) {
+        if (submitBtn.removeEventListener) {
+            submitBtn.removeEventListener('click', submitBtn._boundClickHandler);
+        } else if (submitBtn.detachEvent) {
+            submitBtn.detachEvent('onclick', submitBtn._boundClickHandler);
         }
-            
-        // 额外检测包含斜杠的网址格式（如 m.baidu.com/xxx）
-        if (!isUrlPattern && inputText.indexOf('/') !== -1) {
-            var slashIndex = inputText.indexOf('/');
-            var beforeSlash = inputText.substring(0, slashIndex);
+    }
+    
+    // 移除所有现有事件（避免重复绑定）
+    var newSubmitBtn = submitBtn.cloneNode(true);
+    submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+    submitBtn = newSubmitBtn;
+    
+    submitBtn.onclick = function(e) {
+        e = e || window.event;
         
-            // 检查斜杠前的内容是否符合网址格式
-            for (var i = 0; i < urlPatterns.length; i++) {
-                if (urlPatterns[i].test(beforeSlash)) {
-                    isUrlPattern = true;
-                    break;
-                }
-            }
+        var url = urlInput ? urlInput.value.trim() : '';
+        var engine = getSelectedEngineValue();
+        
+        // 保存当前选择
+        try {
+            localStorage.setItem('selectedEngine', engine);
+        } catch(err) {}
+        
+        // ========== 【修改位置】跳转/搜索前，记录即将失焦状态 ==========
+        // 设置一个标记，表示即将进行跳转
+        window._isNavigating = true;
+        
+        // 清除之前的定时器
+        if (window._clearNavigationFlagTimer) {
+            clearTimeout(window._clearNavigationFlagTimer);
         }
+        // 3秒后清除标记（防止标记残留）
+        window._clearNavigationFlagTimer = setTimeout(function() {
+            window._isNavigating = false;
+        }, 3000);
+        // ========== 【修改结束】 ==========
         
-        // 如果检测到非英文字符（除了在/或=之后的英文），则不视为网址格式
-        if (isUrlPattern) {
-            // 检查整个字符串中是否包含非ASCII字符（中文字符等）
-            var hasNonAscii = /[^\x00-\x7F]/.test(inputText);
+        // 检测是否启用直接跳转网址功能且输入符合网址格式
+        var directUrlJumpCheckbox = document.getElementById('directUrlJumpCheckbox');
+        if (directUrlJumpCheckbox && directUrlJumpCheckbox.checked) {
+            var inputText = url;
+            var isUrlPattern = false;
             
-            if (hasNonAscii) {
-                // 如果包含非ASCII字符，进一步检查是否在路径或查询参数中
-                // 检查是否有协议部分
-                var protocolIndex = inputText.indexOf('://');
-                    var checkText = inputText;
+            // 排除纯数字、小数、负数等非网址格式
+            var isNumberPattern = /^[+-]?\d+(\.\d+)?$/;
+            if (isNumberPattern.test(inputText)) {
+                isUrlPattern = false;
+            } else {
+                // 检测网址格式
+                var urlPatterns = [
+                    /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(?:\/|$)/,
+                    /^https?:\/\//,
+                    /^www\.[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/,
+                    /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}\.[a-zA-Z]{2,}/,
+                    /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?::\d+)?(?:\/|$)/
+                ];
                 
+                for (var i = 0; i < urlPatterns.length; i++) {
+                    if (urlPatterns[i].test(inputText)) {
+                        isUrlPattern = true;
+                        break;
+                    }
+                }
+            }
+            
+            // 额外检测包含斜杠的网址格式
+            if (!isUrlPattern && inputText.indexOf('/') !== -1) {
+                var slashIndex = inputText.indexOf('/');
+                var beforeSlash = inputText.substring(0, slashIndex);
+                for (var i = 0; i < urlPatterns.length; i++) {
+                    if (urlPatterns[i].test(beforeSlash)) {
+                        isUrlPattern = true;
+                        break;
+                    }
+                }
+            }
+            
+            // 如果检测到非英文字符，不视为网址格式
+            if (isUrlPattern && /[^\x00-\x7F]/.test(inputText)) {
+                var protocolIndex = inputText.indexOf('://');
                 if (protocolIndex !== -1) {
-                    // 如果有协议，检查协议后面的部分
                     var afterProtocol = inputText.substring(protocolIndex + 3);
                     var firstSlashIndex = afterProtocol.indexOf('/');
-                    
                     if (firstSlashIndex !== -1) {
-                        // 检查域名部分（协议后到第一个斜杠之间）
                         var domainPart = afterProtocol.substring(0, firstSlashIndex);
-                        var pathPart = afterProtocol.substring(firstSlashIndex);
-                        
-                        // 如果域名部分包含非ASCII字符，则不是有效网址
-                        if (/[^\x00-\x7F]/.test(domainPart)) {
-                            isUrlPattern = false;
-                        }
-                        // 路径部分可以包含非ASCII字符，所以不做检查
+                        if (/[^\x00-\x7F]/.test(domainPart)) isUrlPattern = false;
                     } else {
-                        // 没有路径，整个协议后面的部分都是域名
-                        if (/[^\x00-\x7F]/.test(afterProtocol)) {
-                            isUrlPattern = false;
-                        }
+                        if (/[^\x00-\x7F]/.test(afterProtocol)) isUrlPattern = false;
                     }
                 } else {
-                    // 没有协议，检查是否有斜杠
-                    var slashIndex = inputText.indexOf('/');
-                    if (slashIndex !== -1) {
-                        // 检查斜杠前的部分（可能是域名）
-                        var beforeSlash = inputText.substring(0, slashIndex);
-                        if (/[^\x00-\x7F]/.test(beforeSlash)) {
-                            isUrlPattern = false;
-                        }
+                    var slashIdx = inputText.indexOf('/');
+                    if (slashIdx !== -1) {
+                        var beforeSlashUrl = inputText.substring(0, slashIdx);
+                        if (/[^\x00-\x7F]/.test(beforeSlashUrl)) isUrlPattern = false;
                     } else {
-                        // 没有斜杠，整个字符串应该是域名
-                        if (/[^\x00-\x7F]/.test(inputText)) {
-                            isUrlPattern = false;
-                        }
+                        if (/[^\x00-\x7F]/.test(inputText)) isUrlPattern = false;
                     }
                 }
             }
-        }
-        
-        // 保存历史记录
-        if (inputText && document.getElementById('searchHistoryCheckbox').checked) {
-            var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-            if (inputText === 'https://' || inputText === 'http://') {
-                return;
-            }
-            // 移除重复项
-            var filteredHistory = history.filter(function(item) {
-                return item.text !== inputText;
-            });
-            // 添加到开头
-            filteredHistory.unshift({ text: inputText });
-            // 限制最多10条记录
-            var limitedHistory = filteredHistory.slice(0, 10);
-            localStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
-            updateSearchHistory();
-        }
-        
-        // 如果符合网址格式且不包含://，则直接跳转
-        if (isUrlPattern && inputText.indexOf('://') === -1 && inputText.indexOf('/') !== 0) {
-            var finalUrl = inputText;
-            var hasProtocol = finalUrl.indexOf('://') !== -1;
-            var isRelativePath = finalUrl.indexOf('/') === 0;
             
-            // 根据选择的引擎处理URL
-            if (!hasProtocol && !isRelativePath) {
-                // 如果没有协议前缀且不是相对路径，根据选择的引擎添加
-                if (engine === 'autofillHttp1') {
-                    finalUrl = 'http://' + finalUrl;
-                } else if (engine === 'autofillHttps') {
-                    finalUrl = 'https://' + finalUrl;
-                } else if (engine === 'iFrameFree') {
-                finalUrl = 'https://' + finalUrl;
-                document.getElementById('webFrame').src = finalUrl;
-                document.getElementById('iframeContainer').style.display = 'block';
-                return;
-            } else if (engine === 'iFramePlus') {
-                finalUrl = 'https://' + finalUrl;
-                createIframePlusWindow(finalUrl);
-                // 切换到 iFramePlus 选项以显示容器
-                document.getElementById('engineSelect').value = 'iFramePlus';
-                localStorage.setItem('selectedEngine', 'iFramePlus');
-                return;
-                } else {
-                    // 默认添加https://
-                    finalUrl = 'https://' + finalUrl;
+            // 保存历史记录
+            if (inputText) {
+                var searchHistoryCheckbox = document.getElementById('searchHistoryCheckbox');
+                if (searchHistoryCheckbox && searchHistoryCheckbox.checked) {
+                    try {
+                        var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                        if (inputText !== 'https://' && inputText !== 'http://') {
+                            var filteredHistory = [];
+                            for (var h = 0; h < history.length; h++) {
+                                if (history[h].text !== inputText) {
+                                    filteredHistory.push(history[h]);
+                                }
+                            }
+                            filteredHistory.unshift({ text: inputText });
+                            var limitedHistory = filteredHistory.slice(0, 10);
+                            localStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
+                            if (typeof updateSearchHistory === 'function') updateSearchHistory();
+                        }
+                    } catch(err) {}
                 }
             }
             
-            // 搜索后清空输入功能
-            if (document.getElementById('clearOnSearchCheckbox').checked && engine !== 'iFrameFree') {
-                setTimeout(function() {
-                    document.getElementById('urlInput').value = '';
-                    // 如果保存输入文本复选框被勾选，同时清空保存的文本
-                    if (document.getElementById('saveInputCheckbox').checked) {
-                        localStorage.removeItem('savedInputText');
+            // 如果符合网址格式且不包含://，则直接跳转
+            if (isUrlPattern && inputText.indexOf('://') === -1 && inputText.indexOf('/') !== 0) {
+                var finalUrl = inputText;
+                var hasProtocol = finalUrl.indexOf('://') !== -1;
+                var isRelativePath = finalUrl.indexOf('/') === 0;
+                
+                if (!hasProtocol && !isRelativePath) {
+                    if (engine === 'autofillHttp1') {
+                        finalUrl = 'http://' + finalUrl;
+                    } else if (engine === 'autofillHttps') {
+                        finalUrl = 'https://' + finalUrl;
+                    } else if (engine === 'iFrameFree') {
+                        finalUrl = 'https://' + finalUrl;
+                        var webFrame = document.getElementById('webFrame');
+                        if (webFrame) webFrame.src = finalUrl;
+                        var iframeContainer = document.getElementById('iframeContainer');
+                        if (iframeContainer) iframeContainer.style.display = 'block';
+                        return;
+                    } else if (engine === 'iFramePlus') {
+                        finalUrl = 'https://' + finalUrl;
+                        if (typeof createIframePlusWindow === 'function') {
+                            createIframePlusWindow(finalUrl);
+                        }
+                        var engineSelectDom = document.getElementById('engineSelect');
+                        if (engineSelectDom) {
+                            engineSelectDom.value = 'iFramePlus';
+                        }
+                        try { localStorage.setItem('selectedEngine', 'iFramePlus'); } catch(err) {}
+                        return;
+                    } else {
+                        finalUrl = 'https://' + finalUrl;
                     }
-                }, 0);
+                }
+                
+                // 搜索后清空输入功能
+                var clearOnSearchCheckbox = document.getElementById('clearOnSearchCheckbox');
+                if (clearOnSearchCheckbox && clearOnSearchCheckbox.checked && engine !== 'iFrameFree') {
+                    setTimeout(function() {
+                        if (urlInput && urlInput.value !== 'https://') urlInput.value = '';
+                        var saveInputCheckbox = document.getElementById('saveInputCheckbox');
+                        if (saveInputCheckbox && saveInputCheckbox.checked) {
+                            try { localStorage.removeItem('savedInputText'); } catch(err) {}
+                        }
+                    }, 0);
+                }
+                
+                if (engine === 'newtabpageHttp1' || engine === 'newtabpageHttps') {
+                    window.open(finalUrl, '_blank');
+                    return;
+                }
+                
+                var autoNewTabCheckbox = document.getElementById('autoNewTabCheckbox');
+                var isAutoNewTabChecked = autoNewTabCheckbox ? autoNewTabCheckbox.checked : false;
+                var excludedEngines = ['autofillHttp1', 'autofillHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
+                var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
+                
+                if (shouldOpenNewTab) {
+                    window.open(finalUrl, '_blank');
+                } else if (engine === 'httpsAutoFill' && finalUrl) {
+                    try {
+                        var form = document.createElement('form');
+                        form.action = finalUrl;
+                        form.target = '_self';
+                        form.method = 'post';
+                        form.style.display = 'none';
+                        var submitButton = document.createElement('button');
+                        submitButton.type = 'submit';
+                        form.appendChild(submitButton);
+                        document.body.appendChild(form);
+                        form.submit();
+                        document.body.removeChild(form);
+                    } catch(err) {
+                        window.location.href = finalUrl;
+                    }
+                    return;
+                } else {
+                    window.location.href = finalUrl;
+                }
+                return;
             }
-            
-            // 在submitBtn点击事件开始处添加：
-            var isAutoNewTabChecked = document.getElementById('autoNewTabCheckbox').checked;
+        }
+        
+        // 搜索后清空输入功能
+        var clearOnSearchCheckbox = document.getElementById('clearOnSearchCheckbox');
+        if (clearOnSearchCheckbox && clearOnSearchCheckbox.checked && engine !== 'iFrameFree') {
+            setTimeout(function() {
+                if (urlInput && urlInput.value !== 'https://') urlInput.value = '';
+                var saveInputCheckbox = document.getElementById('saveInputCheckbox');
+                if (saveInputCheckbox && saveInputCheckbox.checked) {
+                    try { localStorage.removeItem('savedInputText'); } catch(err) {}
+                }
+            }, 0);
+        }
+        
+        // 如果选择iFrameFree且输入了完整URL，直接在iframe中加载
+        if (engine === 'iFrameFree' && url.indexOf('://') !== -1) {
+            var webFrame = document.getElementById('webFrame');
+            if (webFrame) webFrame.src = url;
+            var iframeContainer = document.getElementById('iframeContainer');
+            if (iframeContainer) iframeContainer.style.display = 'block';
+            return;
+        }
+        
+        if (engine === 'iFramePlus') {
+            var urlToLoad = url;
+            if (urlToLoad && (urlToLoad.indexOf('http://') === 0 || urlToLoad.indexOf('https://') === 0)) {
+                if (typeof createIframePlusWindow === 'function') {
+                    createIframePlusWindow(urlToLoad);
+                }
+                return;
+            }
+        }
+        
+        var searchText = url;
+        if (searchText) {
+            var searchHistoryCheckbox = document.getElementById('searchHistoryCheckbox');
+            if (searchHistoryCheckbox && searchHistoryCheckbox.checked) {
+                try {
+                    var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                    if (searchText !== 'https://' && searchText !== 'http://') {
+                        var filteredHistory = [];
+                        for (var h = 0; h < history.length; h++) {
+                            if (history[h].text !== searchText) {
+                                filteredHistory.push(history[h]);
+                            }
+                        }
+                        filteredHistory.unshift({ text: searchText });
+                        var limitedHistory = filteredHistory.slice(0, 10);
+                        localStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
+                        if (typeof updateSearchHistory === 'function') updateSearchHistory();
+                    }
+                } catch(err) {}
+            }
+        }
+        
+        // 如果保存输入文本复选框被勾选，保存当前输入
+        var saveInputCheckbox = document.getElementById('saveInputCheckbox');
+        if (saveInputCheckbox && saveInputCheckbox.checked) {
+            try {
+                localStorage.setItem('savedInputText', url);
+            } catch(err) {}
+        }
+        
+        // 构建搜索URL
+        var searchUrl = url;
+        if (searchUrl && searchUrl.indexOf('://') === -1) {
+            // 根据选择的搜索引擎构建搜索URL
+            switch (engine) {
+                case 'baidu':
+                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'google':
+                    searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'bing':
+                    searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'sogou':
+                    searchUrl = 'https://www.sogou.com/web?query=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'so':
+                    searchUrl = 'https://www.so.com/s?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'yandex':
+                    searchUrl = 'https://yandex.com/search/?text=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'braveSearch':
+                    searchUrl = 'https://search.brave.com/search?q=' + encodeURIComponent(searchUrl) + '&source=web';
+                    break;
+                case 'yahooSearch':
+                    searchUrl = 'https://sg.search.yahoo.com/search?p=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'autofillHttp1':
+                    searchUrl = 'http://' + searchUrl;
+                    break;
+                case 'autofillHttps':
+                    searchUrl = 'https://' + searchUrl;
+                    break;
+                case 'newtabpageHttp1':
+                    if (searchUrl) {
+                        if (searchUrl.indexOf('://') === -1) searchUrl = 'http://' + searchUrl;
+                        window.open(searchUrl, '_blank');
+                        return;
+                    }
+                    break;
+                case 'newtabpageHttps':
+                    if (searchUrl) {
+                        if (searchUrl.indexOf('://') === -1) searchUrl = 'https://' + searchUrl;
+                        window.open(searchUrl, '_blank');
+                        return;
+                    }
+                    break;
+                case 'httpsAutoFill':
+                    try {
+                        var form = document.createElement('form');
+                        form.action = searchUrl.indexOf('https://') === 0 ? searchUrl : 'https://' + searchUrl;
+                        form.target = '_self';
+                        form.method = 'post';
+                        form.style.display = 'none';
+                        var submitButton = document.createElement('button');
+                        submitButton.type = 'submit';
+                        form.appendChild(submitButton);
+                        document.body.appendChild(form);
+                        form.submit();
+                        document.body.removeChild(form);
+                    } catch(err) {
+                        window.location.href = searchUrl;
+                    }
+                    return;
+                case 'duckduckgo':
+                    searchUrl = 'https://duckduckgo.com/?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'sodouyinM':
+                    searchUrl = 'https://so.douyin.com/s?keyword=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'yzmsmM':
+                    searchUrl = 'https://yz.m.sm.cn/s?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'sotoutiaoM':
+                    if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
+                        searchUrl = 'https://so.toutiao.com/search?keyword=' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://so.toutiao.com/search?dvpf=pc&source=input&keyword=' + encodeURIComponent(searchUrl) + '&lang=en2zh';
+                    }
+                    break;
+                case 'qksmSearch':
+                    searchUrl = 'https://quark.sm.cn/s?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'baiduMEasy':
+                    searchUrl = 'https://m.baidu.com/from=1030335w/pu=sz%401321_1001/s?word=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'metasosuoAI':
+                    searchUrl = 'https://metaso.cn/?s=nyzav&referrer_s=nyzav&q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'baiduAI':
+                    searchUrl = 'https://chat.baidu.com/search?word=' + encodeURIComponent(searchUrl);
+                    break;
+                case '360namisoAI':
+                    searchUrl = 'https://www.n.cn/?src=360ai_so&q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'zhihuZhiDaAI':
+                    searchUrl = 'https://zhida.zhihu.com/search?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'quarkpcAI':
+                    searchUrl = 'https://ai.quark.cn/s?ch=pcquark%40homepage_quarkweb&q=' + encodeURIComponent(searchUrl) + '&frame_scene=deep_think_light_r1lite&by=deepthink_light';
+                    break;
+                case 'cKnowOfCsdn':
+                    searchUrl = 'https://ai.csdn.net/chat/?utm_source=cknow_pc_ntoolbar&q=' + encodeURIComponent(searchUrl) + '&submit=1';
+                    break;
+                case 'googleTranslate':
+                    searchUrl = 'https://translate.google.com/?sl=auto&tl=zh-CN&text=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'mcTranslator':
+                    searchUrl = 'https://cn.bing.com/translator?text=' + encodeURIComponent(searchUrl) + '&from=en&to=zh-Hans';
+                    break;
+                case 'yandexTranslate':
+                    searchUrl = 'https://translate.yandex.com/?source_lang=en&target_lang=zh&text=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'sogouFanyi':
+                    searchUrl = 'https://fanyi.sogou.com/text?fr=default&keyword=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'oldBaiduFanyi':
+                    if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
+                        searchUrl = 'https://fanyi.baidu.com/translate#auto/zh/' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://fanyi.baidu.com/mtpe-individual/transText?query=' + encodeURIComponent(searchUrl) + '&lang=en2zh';
+                    }
+                    break;
+                case 'fanyiSo':
+                    searchUrl = 'https://fanyi.so.com/#' + encodeURIComponent(searchUrl);
+                    break;
+                case 'quarkTranslateTools':
+                    searchUrl = 'https://vt.quark.cn/blm/translation-486/translate?query=' + encodeURIComponent(searchUrl) + '&source_language=detect&target_language=zh&from=douyin';
+                    break;
+                case 'transmartQQTs':
+                    searchUrl = 'https://transmart.qq.com/zh-CN/index?sourcelang=auto&targetlang=zh&source=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'taobaoWeb':
+                    if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
+                        searchUrl = 'https://main.m.taobao.com/search/index.html?q=' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://s.taobao.com/search?q=' + encodeURIComponent(searchUrl);
+                    }
+                    break;
+                case 'jdWebPage':
+                    if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
+                        searchUrl = 'https://so.m.jd.com/ware/search.action?keyword=' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://search.jd.com/Search?keyword=' + encodeURIComponent(searchUrl);
+                    }
+                    break;
+                case 'pddWebPage':
+                    searchUrl = 'https://mobile.yangkeduo.com/search_result.html?search_key=' + encodeURIComponent(searchUrl) + '&search_type=goods&options=1&search_met_track=manual&refer_page_name=search_result';
+                    break;
+                case 'githubCode':
+                    searchUrl = 'https://github.com/search?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'gitCodeRepo':
+                    searchUrl = 'https://gitcode.com/search?q=' + encodeURIComponent(searchUrl) + '&type=repo';
+                    break;
+                case 'giteeCode':
+                    searchUrl = 'https://so.gitee.com/?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'baiduTw':
+                    searchUrl = 'https://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'biliTv':
+                    searchUrl = 'http://search.bilibili.com/all?keyword=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'dyIsWindows':
+                    searchUrl = 'https://www.douyin.com/root/search/' + encodeURIComponent(searchUrl);
+                    break;
+                case 'haokanVideo':
+                    if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
+                        searchUrl = 'https://haokan.baidu.com/videoui/page/search/result?searchword=' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://haokan.baidu.com/web/search/page?query=' + encodeURIComponent(searchUrl);
+                    }
+                    break;
+                case 'fastHandVideo':
+                    searchUrl = 'https://www.kuaishou.com/search/' + encodeURIComponent(searchUrl);
+                    break;
+                case 'hongshuVideo':
+                    searchUrl = 'https://www.xiaohongshu.com/search_result?keyword=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'enUsYoutubeVideo':
+                    searchUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'soHuVideo':
+                    if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
+                        searchUrl = 'https://m.tv.sohu.com/upload/h5/m/mso.html?key=' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://tv.sohu.com/mts/?key=' + encodeURIComponent(searchUrl);
+                    }
+                    break;
+                case 'tencentTv':
+                    if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
+                        searchUrl = 'https://m.v.qq.com/hippysearch/index.html#/result?query=' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://v.qq.com/x/search/?q=' + encodeURIComponent(searchUrl) + '&lang=en2zh';
+                    }
+                    break;
+                case 'zhihuFriends':
+                    searchUrl = 'https://www.zhihu.com/search?type=content&q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'csdnWebPage':
+                    if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
+                        searchUrl = 'https://so.csdn.net/so/search?q=' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://so.csdn.net/so/search?spm=0&q=' + encodeURIComponent(searchUrl);
+                    }
+                    break;
+                case 'weiboFriends':
+                    searchUrl = 'https://s.weibo.com/weibo?q=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'bdZhidao':
+                    if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
+                        searchUrl = 'https://zhidao.baidu.com/index?word=' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://zhidao.baidu.com/search?word=' + encodeURIComponent(searchUrl);
+                    }
+                    break;
+                case 'showCheckbox':
+                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'kfBaidu':
+                    searchUrl = 'https://kaifa.baidu.com/searchPage?wd=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'weixinSogou':
+                    if (typeof isMobileAndroidApple === 'function' && isMobileAndroidApple()) {
+                        searchUrl = 'https://weixin.sogou.com/weixinwap?type=2&query=' + encodeURIComponent(searchUrl);
+                    } else {
+                        searchUrl = 'https://weixin.sogou.com/weixin?type=2&query=' + encodeURIComponent(searchUrl);
+                    }
+                    break;
+                case 'baidu_0':
+                    searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
+                    break;
+                case 'customSearch':
+                    var customSearchUrl = null;
+                    try { customSearchUrl = localStorage.getItem('customSearchUrl'); } catch(err) {}
+                    if (customSearchUrl) {
+                        searchUrl = customSearchUrl.replace('{keywords}', encodeURIComponent(searchUrl));
+                    } else {
+                        searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
+                    }
+                    break;
+                default:
+                    if (engine.indexOf('customSearch_') === 0) {
+                        var order = parseInt(engine.split('_')[1]);
+                        var customSearches = [];
+                        try { customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]'); } catch(err) {}
+                        var customSearch = null;
+                        for (var i = 0; i < customSearches.length; i++) {
+                            if (customSearches[i].order === order) {
+                                customSearch = customSearches[i];
+                                break;
+                            }
+                        }
+                        if (customSearch) {
+                            searchUrl = customSearch.url.replace('{keywords}', encodeURIComponent(searchUrl));
+                        } else {
+                            searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(searchUrl);
+                        }
+                    }
+                    break;
+                case 'iFrameFree':
+                    if (searchUrl && searchUrl.indexOf('://') === -1) {
+                        searchUrl = 'https://' + searchUrl;
+                    }
+                    if (searchUrl) {
+                        var webFrame = document.getElementById('webFrame');
+                        if (webFrame) webFrame.src = searchUrl;
+                        var iframeContainer = document.getElementById('iframeContainer');
+                        if (iframeContainer) iframeContainer.style.display = 'block';
+                        var sizeBtn = document.getElementById('iframePlusSizeBtn');
+                        if (sizeBtn) sizeBtn.style.display = 'none';
+                    }
+                    return;
+                case 'iFramePlus':
+                    if (searchUrl && (searchUrl.indexOf('http://') === 0 || searchUrl.indexOf('https://') === 0)) {
+                        if (typeof createIframePlusWindow === 'function') createIframePlusWindow(searchUrl);
+                    } else if (searchUrl && searchUrl.indexOf('://') === -1) {
+                        searchUrl = 'https://' + searchUrl;
+                        if (typeof createIframePlusWindow === 'function') createIframePlusWindow(searchUrl);
+                    } else if (searchUrl) {
+                        if (typeof createIframePlusWindow === 'function') createIframePlusWindow(searchUrl);
+                    }
+                    return;
+            }
+        }
+        
+        // 最终跳转
+        if (searchUrl) {
+            var autoNewTabCheckbox = document.getElementById('autoNewTabCheckbox');
+            var isAutoNewTabChecked = autoNewTabCheckbox ? autoNewTabCheckbox.checked : false;
             var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
             var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
             
-            // 根据设置决定是否在新标签页打开
             if (shouldOpenNewTab) {
-                window.open(finalUrl, '_blank');
-            } else if (engine === 'httpsAutoFill' && url) {
-                // 创建隐藏的表单提交
-                var form = document.createElement('form');
-                form.id = 'httpsForm';
-                form.action = url;
-                form.target = '_self';
-                form.method = 'post';
-                form.style.display = 'none';
-                
-                // 创建提交按钮
-                var submitButton = document.createElement('button');
-                submitButton.type = 'submit';
-                
-                // 将按钮添加到表单
-                form.appendChild(submitButton);
-                
-                // 将表单添加到页面并提交
-                document.body.appendChild(form);
-                form.submit();
-                
-                // 移除表单
-                document.body.removeChild(form);
-                return; // 直接返回，不执行后续跳转
+                window.open(searchUrl, '_blank');
+                return;
+            } else if (engine === 'httpsAutoFill' && searchUrl) {
+                try {
+                    var form = document.createElement('form');
+                    form.action = searchUrl;
+                    form.target = '_self';
+                    form.method = 'post';
+                    form.style.display = 'none';
+                    var submitButton = document.createElement('button');
+                    submitButton.type = 'submit';
+                    form.appendChild(submitButton);
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                } catch(err) {
+                    window.location.href = searchUrl;
+                }
+                return;
             } else {
-                window.location.href = finalUrl;
+                try {
+                    window.location.href = searchUrl;
+                } catch(err) {
+                    window.location = searchUrl;
+                }
             }
-            return; // 直接返回，不执行后续的搜索引擎处理逻辑
         }
-    }
-    
-    // 搜索后清空输入功能
-    if (document.getElementById('clearOnSearchCheckbox').checked && engine !== 'iFrameFree') {
-        setTimeout(function() {
-            document.getElementById('urlInput').value = '';
-            // 如果保存输入文本复选框被勾选，同时清空保存的文本
-            if (document.getElementById('saveInputCheckbox').checked) {
-                localStorage.removeItem('savedInputText');
-            }
-        }, 0);
-    }
-    
-    // 如果选择iFrameFree且输入了完整URL，直接在iframe中加载
-    if (engine === 'iFrameFree' && url.indexOf('://') !== -1) {
-        document.getElementById('webFrame').src = url;
-        document.getElementById('iframeContainer').style.display = 'block';
-        return; // 不执行后续跳转
-    }
+    };
+}
 
-    if (engine === 'iFramePlus') {
-        var urlToLoad = document.getElementById('urlInput').value.trim();
-        if (urlToLoad && (urlToLoad.indexOf('http://') === 0 || urlToLoad.indexOf('https://') === 0)) {
-            // 直接创建 iFramePlus 窗口，不执行页面跳转
-            createIframePlusWindow(urlToLoad);
-            return;
+// 在 DOM 加载完成后绑定事件
+if (document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', function() {
+        bindSubmitEvent();
+    });
+} else if (document.attachEvent) {
+    document.attachEvent('onreadystatechange', function() {
+        if (document.readyState === 'complete') {
+            bindSubmitEvent();
         }
-    }
-    
-    var searchText = document.getElementById('urlInput').value.trim();
-    if (searchText && document.getElementById('searchHistoryCheckbox').checked) {
-        var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-        if (searchText === 'https://' || searchText === 'http://') {
-            return;
-        }
-        // 移除重复项
-        var filteredHistory = history.filter(function(item) {
-            return item.text !== searchText;
+    });
+}
+
+// 确保 engineSelect 变化时也能正确保存（IE 兼容）
+var engineSelect = document.getElementById('engineSelect');
+if (engineSelect) {
+    if (engineSelect.addEventListener) {
+        engineSelect.addEventListener('change', function() {
+            var selectedValue = getSelectedEngineValue();
+            try { localStorage.setItem('selectedEngine', selectedValue); } catch(err) {}
         });
-        // 添加到开头
-        filteredHistory.unshift({ text: searchText });
-        // 限制最多10条记录
-        var limitedHistory = filteredHistory.slice(0, 10);
-        localStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
-        updateSearchHistory();
+    } else if (engineSelect.attachEvent) {
+        engineSelect.attachEvent('onchange', function() {
+            var selectedValue = getSelectedEngineValue();
+            try { localStorage.setItem('selectedEngine', selectedValue); } catch(err) {}
+        });
     }
-    
-    // 如果保存输入文本复选框被勾选，保存当前输入
-    if (document.getElementById('saveInputCheckbox').checked) {
-        localStorage.setItem('savedInputText', document.getElementById('urlInput').value.trim());
-    }
-    
-    if (url && url.indexOf('://') === -1) {
-        // 根据选择的搜索引擎构建搜索URL
-        switch (engine) {
-            case 'baidu':
-                url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
-                break;
-            case 'google':
-                url = 'https://www.google.com/search?q=' + encodeURIComponent(url);
-                break;
-            case 'bing':
-                url = 'https://www.bing.com/search?q=' + encodeURIComponent(url);
-                break;
-            case 'sogou':
-                url = 'https://www.sogou.com/web?query=' + encodeURIComponent(url);
-                break;
-            case 'so':
-                url = 'https://www.so.com/s?q=' + encodeURIComponent(url);
-                break;
-            case 'yandex':
-                url = 'https://yandex.com/search/?text=' + encodeURIComponent(url);
-                break;
-            case 'yahooSearch':
-                url = 'https://sg.search.yahoo.com/search?p=' + encodeURIComponent(url);
-                break;
-            case 'autofillHttp1':
-                // 自动填充http://前缀
-                url = 'http://' + url;
-                break;
-            case 'autofillHttps':
-                // 自动填充https://前缀
-                url = 'https://' + url;
-                break;
-            case 'newtabpageHttp1':
-                // 新建标签页处理
-                if (url) {
-                    // 如果没有协议前缀，添加http://
-                    if (url.indexOf('://') === -1) {
-                        url = 'http://' + url;
-                    }
-                    window.open(url, '_blank');
-                    return; // 直接返回，不执行下面的跳转
-                }
-                break;
-            case 'newtabpageHttps':
-                // 新建标签页处理
-                if (url) {
-                    // 如果没有协议前缀，添加https://
-                    if (url.indexOf('://') === -1) {
-                        url = 'https://' + url;
-                    }
-                    window.open(url, '_blank');
-                    return; // 直接返回，不执行下面的跳转
-                }
-                break;
-            case 'httpsAutoFill':
-                // 获取输入值
-                var inputText = document.getElementById('urlInput').value.trim();
-                // 检查是否以https://开头
-                if (inputText.indexOf('https://') !== 0) {
-                    // 如果没有，自动添加https://
-                    inputText = 'https://' + inputText;
-                }
-                
-                // 创建隐藏的表单
-                var form = document.createElement('form');
-                form.id = 'httpsForm';
-                form.action = inputText;
-                form.target = '_self';
-                form.method = 'post';
-                form.style.display = 'none';
-                
-                // 创建提交按钮
-                var submitButton = document.createElement('button');
-                submitButton.type = 'submit';
-                
-                // 将按钮添加到表单
-                form.appendChild(submitButton);
-                
-                // 将表单添加到页面并提交
-                document.body.appendChild(form);
-                form.submit();
-                
-                // 移除表单
-                document.body.removeChild(form);
-                return; // 直接返回，不执行后续跳转
-                break;
-            case 'duckduckgo':
-                url = 'https://duckduckgo.com/?q=' + encodeURIComponent(url);
-                break;
-            case 'sodouyinM':
-                url = 'https://so.douyin.com/s?keyword=' + encodeURIComponent(url);
-                break;
-            case 'yzmsmM':
-                url = 'https://yz.m.sm.cn/s?q=' + encodeURIComponent(url);
-                break;
-            case 'sotoutiaoM':
-                url = 'https://so.toutiao.com/search?keyword=' + encodeURIComponent(url);
-                break;
-            case 'qksmSearch':
-                url = 'https://quark.sm.cn/s?q=' + encodeURIComponent(url);
-                break;
-            case 'baiduMEasy':
-                url = 'https://m.baidu.com/from=1030335w/pu=sz%401321_1001/s?word=' + encodeURIComponent(url);
-                break;
-            case 'metasosuoAI':
-                url = 'https://metaso.cn/?s=nyzav&referrer_s=nyzav&q=' + encodeURIComponent(url);
-                break;
-            case 'baiduAI':
-                url = 'https://chat.baidu.com/search?word=' + encodeURIComponent(url);
-                break;
-            case '360namisoAI':
-                url = 'https://www.n.cn/?src=360ai_so&s_type=l&q=' + encodeURIComponent(url);
-                break;
-            case 'zhihuZhiDaAI':
-                url = 'https://zhida.zhihu.com/search?q=' + encodeURIComponent(url);
-                break;
-            case 'quarkpcAI':
-                url = 'https://ai.quark.cn/s?ch=pcquark%40homepage_quarkweb&q=' + encodeURIComponent(url) + '&frame_scene=deep_think_light_r1lite&by=deepthink_light';
-                break;
-            case 'googleTranslate':
-                url = 'https://translate.google.com/?sl=auto&tl=zh-CN&text=' + encodeURIComponent(url);
-                break;
-            case 'mcTranslator':
-                url = 'https://cn.bing.com/translator?text=' + encodeURIComponent(url) + '&from=en&to=zh-Hans';
-                break;
-            case 'yandexTranslate':
-                url = 'https://translate.yandex.com/?source_lang=en&target_lang=zh&text=' + encodeURIComponent(url);
-                break;
-            case 'sogouFanyi':
-                url = 'https://fanyi.sogou.com/text?fr=default&keyword=' + encodeURIComponent(url);
-                break;
-            case 'oldBaiduFanyi':
-                url = 'https://fanyi.baidu.com/translate#auto/zh/' + encodeURIComponent(url);
-                break;
-            case 'fanyiSo':
-                url = 'https://fanyi.so.com/#' + encodeURIComponent(url);
-                break;
-            case 'quarkTranslateTools':
-                url = 'https://vt.quark.cn/blm/translation-486/translate?query=' + encodeURIComponent(url) + '&source_language=detect&target_language=zh&from=douyin';
-                break;
-            case 'volcTranslate':
-                url = 'https://translate.volcengine.com/mobile?text=' + encodeURIComponent(url) + '&source_language=detect&target_language=zh&from=douyin';
-                break;
-            case 'transmartQQTs':
-                url = 'https://transmart.qq.com/zh-CN/index?sourcelang=auto&targetlang=zh&source=' + encodeURIComponent(url);
-                break;
-            case 'taobaoWeb':
-                if (isMobileAndroidApple()) {
-                    url = 'https://main.m.taobao.com/search/index.html?q=' + encodeURIComponent(url);
-                } else {
-                    url = 'https://s.taobao.com/search?q=' + encodeURIComponent(url);
-                }
-                break;
-            case 'jdWebPage':
-                if (isMobileAndroidApple()) {
-                    url = 'https://so.m.jd.com/ware/search.action?keyword=' + encodeURIComponent(url);
-                } else {
-                    url = 'https://search.jd.com/Search?keyword=' + encodeURIComponent(url);
-                }
-                break;
-            case 'githubCode':
-                url = 'https://github.com/search?q=' + encodeURIComponent(url);
-                break;
-            case 'baiduTw':
-                url = 'https://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeURIComponent(url);
-                break;
-            case 'biliTv':
-                url = 'http://search.bilibili.com/all?keyword=' + encodeURIComponent(url);
-                break;
-            case 'dyIsWindows':
-                url = 'https://www.douyin.com/root/search/' + encodeURIComponent(url);
-                break;
-            case 'haokanVideo':
-                if (isMobileAndroidApple()) {
-                    url = 'https://haokan.baidu.com/videoui/page/search/result?searchword=' + encodeURIComponent(url);
-                } else {
-                    url = 'https://haokan.baidu.com/web/search/page?query=' + encodeURIComponent(url);
-                }
-                break;
-            case 'enUsYoutubeVideo':
-                url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(url);
-                break;
-            case 'zhihuFriends':
-                url = 'https://www.zhihu.com/search?type=content&q=' + encodeURIComponent(url);
-                break;
-            case 'csdnWebPage':
-                if (isMobileAndroidApple()) {
-                    url = 'https://so.csdn.net/so/search?q=' + encodeURIComponent(url);
-                } else {
-                    url = 'https://so.csdn.net/so/search?spm=0&q=' + encodeURIComponent(url);
-                }
-                break;
-            case 'weiboFriends':
-                url = 'https://s.weibo.com/weibo?q=' + encodeURIComponent(url);
-                break;
-            case 'bdZhidao':
-                if (isMobileAndroidApple()) {
-                    url = 'https://zhidao.baidu.com/index?word=' + encodeURIComponent(url);
-                } else {
-                    url = 'https://zhidao.baidu.com/search?word=' + encodeURIComponent(url);
-                }
-                break;
-            case 'showCheckbox':
-                url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
-                break;
-            case 'kfBaidu':
-                url = 'https://kaifa.baidu.com/searchPage?wd=' + encodeURIComponent(url);
-                break;
-            case 'weixinSogou':
-                if (isMobileAndroidApple()) {
-                    url = 'https://weixin.sogou.com/weixinwap?type=2&query=' + encodeURIComponent(url);
-                } else {
-                    url = 'https://weixin.sogou.com/weixin?type=2&query=' + encodeURIComponent(url);
-                }
-                break;
-            case 'baidu_0':
-                url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
-                break;
-            case 'customSearch':
-                var customSearchUrl = localStorage.getItem('customSearchUrl');
-                if (customSearchUrl) {
-                    url = customSearchUrl.replace('{keywords}', encodeURIComponent(url));
-                } else {
-                    url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
-                }
-                break;
-            default:
-                if (engine.indexOf('customSearch_') === 0) {
-                    var order = parseInt(engine.split('_')[1]);
-                    var customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]');
-                    var customSearch = null;
-                    for (var i = 0; i < customSearches.length; i++) {
-                        if (customSearches[i].order === order) {
-                            customSearch = customSearches[i];
-                            break;
-                        }
-                    }
-                    if (customSearch) {
-                        url = customSearch.url.replace('{keywords}', encodeURIComponent(url));
-                    } else {
-                        url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
-                    }
-                }
-                break;
-            case 'iFrameFree':
-                // 在iframe中加载网页
-                if (url && url.indexOf('://') === -1) {
-                    url = 'https://' + url;
-                }
-                if (url) {
-                    document.getElementById('webFrame').src = url;
-                    document.getElementById('iframeContainer').style.display = 'block';
-                    if (sizeBtn) sizeBtn.style.display = 'block';
-                }
-                return; // 不执行页面跳转
-            case 'iFramePlus':
-                // 创建新的 iFramePlus 窗口
-                // 如果已经是 http:// 或 https:// 开头，直接使用原URL
-                if (url && (url.indexOf('http://') === 0 || url.indexOf('https://') === 0)) {
-                    // 已有协议，直接使用
-                    createIframePlusWindow(url);
-                } else if (url && url.indexOf('://') === -1) {
-                    // 无协议，默认添加 https://
-                    url = 'https://' + url;
-                    createIframePlusWindow(url);
-                } else if (url) {
-                    createIframePlusWindow(url);
-                }
-                return; // 不执行页面跳转
-        }
-    } else if (url) {
-        // 如果包含://，直接使用输入的URL
-        // 无需修改
-    }
-    
-    if (localStorage.getItem('focusCheckboxChecked') === 'true') {
-        document.body.classList.remove('focused');
-        document.querySelector('.search-container').classList.remove('focused');
-        document.getElementById('quickInputBtn').style.display = 'none';
-        document.getElementById('hitokotoDisplay').style.display = 'block';
-        document.getElementById('searchContainer').style.marginTop = savedSearchContainerMargin;
-        // 恢复iframe显示（仅在iFrameFree选中时）
-        if (document.getElementById('engineSelect').value === 'iFrameFree') {
-            document.getElementById('iframeContainer').style.display = 'block';
-        }
-        if (document.getElementById('layoutCheckbox').checked) {
-            document.getElementById('centerBoxDisplay').style.display = 'block';
-        }
-        var engineSelect = document.getElementById('engineSelect');
-        if (engineSelect && engineSelect.value === 'iFramePlus') {
-            var iframePlusSizeBtn = document.getElementById('iframePlusSizeBtn');
-            if (iframePlusSizeBtn) iframePlusSizeBtn.style.display = 'block';
-            var iframePlusContainer = document.getElementById('iframePlusContainer');
-            if (iframePlusContainer && window.iframePlusWindows && window.iframePlusWindows.length > 0) {
-                iframePlusContainer.style.display = 'block';
-            }
-        }
-    }
-    
-    // 在submitBtn点击事件开始处添加：
-    var isAutoNewTabChecked = document.getElementById('autoNewTabCheckbox').checked;
-    var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'iFrameFree'];
-    var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
-    
-    // 在最后的跳转逻辑处修改：
-    if (url) {
-        // 对于新建标签页选项，如果输入为空则不执行任何操作
-        if ((engine === 'newtabpageHttp1' || engine === 'newtabpageHttps') && !url) {
-            return;
-        }
-        
-        // 重新计算排除列表
-        var isAutoNewTabChecked = document.getElementById('autoNewTabCheckbox').checked;
-        var excludedEngines = ['autofillHttp1', 'autofillHttps', 'newtabpageHttp1', 'newtabpageHttps', 'httpsAutoFill', 'iFrameFree', 'showCheckbox'];
-        var shouldOpenNewTab = isAutoNewTabChecked && excludedEngines.indexOf(engine) === -1;
-        
-        // 根据设置决定是否在新标签页打开
-        if (shouldOpenNewTab) {
-            window.open(url, '_blank');
-            // 修复：当在新标签页打开时，原标签页不跳转
-            return;
-        } if (engine === 'httpsAutoFill' && url) {
-            // 创建隐藏的表单提交
-            var form = document.createElement('form');
-            form.id = 'httpsForm';
-            form.action = url;
-            form.target = '_self';
-            form.method = 'post';
-            form.style.display = 'none';
-            
-            // 创建提交按钮
-            var submitButton = document.createElement('button');
-            submitButton.type = 'submit';
-            
-            // 将按钮添加到表单
-            form.appendChild(submitButton);
-            
-            // 将表单添加到页面并提交
-            document.body.appendChild(form);
-            form.submit();
-            
-            // 移除表单
-            document.body.removeChild(form);
-            return; // 直接返回，不执行后续跳转
-        } else {
-            window.location.href = url;
-        }
-    }
-});
+}
 // 重新自定义搜索网址文字点击事件
 document.querySelector('label[for="redefineSearchBtn"]').addEventListener('click', function() {
     var customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]');
@@ -1058,56 +3753,91 @@ function createIframePlusContainer() {
 }
 
 // 创建新窗口时确保容器显示
+// iFramePlus 多窗口管理（修复内存泄漏）
+window.iframePlusWindows = window.iframePlusWindows || [];
+var iframePlusWindows = window.iframePlusWindows;
+var iframePlusNextId = 1;
+
+function createIframePlusContainer() {
+    var container = document.getElementById('iframePlusContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'iframePlusContainer';
+        container.style.cssText = 'display:none;width:100%;margin-top:10px;text-align:center;';
+        container.style.display = '-webkit-box';
+        container.style.display = '-moz-box';
+        container.style.display = '-ms-flexbox';
+        container.style.display = '-webkit-flex';
+        container.style.display = 'flex';
+        container.style.flexWrap = 'wrap';
+        container.style.webkitFlexWrap = 'wrap';
+        container.style.msFlexWrap = 'wrap';
+        container.style.justifyContent = 'center';
+        container.style.webkitJustifyContent = 'center';
+        container.style.msFlexPack = 'center';
+        
+        var iframeContainer = document.getElementById('iframeContainer');
+        if (iframeContainer && iframeContainer.parentNode) {
+            iframeContainer.parentNode.insertBefore(container, iframeContainer.nextSibling);
+        } else {
+            document.body.appendChild(container);
+        }
+    }
+    return container;
+}
+
 function createIframePlusWindow(url) {
     var container = createIframePlusContainer();
     container.style.display = 'block';
     
     var windowId = 'iframePlus_' + (iframePlusNextId++);
+    var isMobile = typeof isMobileAndroidApple === 'function' ? isMobileAndroidApple() : false;
     
-    // 创建窗口包装器
     var wrapper = document.createElement('div');
     wrapper.id = windowId;
     wrapper.className = 'iframe-plus-wrapper';
     
-    var isMobile = isMobileAndroidApple();
-    wrapper.style.cssText = 'display:inline-block;vertical-align:top;margin:5px;margin: 0 auto;';
-    var savedWidth = localStorage.getItem('iframePlusWidth');
-    var defaultWidth = isMobile ? '98%' : '390px';
+    var savedWidth = null;
+    try { savedWidth = localStorage.getItem('iframePlusWidth'); } catch(e) {}
+    var defaultWidth = isMobile ? '98%' : '750px';
     wrapper.style.width = savedWidth ? savedWidth : defaultWidth;
     wrapper.style.maxWidth = isMobile ? '100%' : '960px';
     wrapper.style.boxSizing = 'border-box';
     wrapper.style.marginRight = '7px';
+    wrapper.style.display = 'inline-block';
+    wrapper.style.verticalAlign = 'top';
+    wrapper.style.margin = '5px auto';
     
     var iframe = document.createElement('iframe');
     iframe.src = url || 'about:blank';
     iframe.style.cssText = 'width:100%;height:500px;border:1px solid #ccc;background:#fff;';
     iframe.style.width = '100%';
-    var savedHeight = localStorage.getItem('iframePlusHeight');
+    var savedHeight = null;
+    try { savedHeight = localStorage.getItem('iframePlusHeight'); } catch(e) {}
     var defaultHeight = isMobile ? '500px' : '500px';
     iframe.style.height = savedHeight ? savedHeight : defaultHeight;
+    iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals';
     
     var closeContainer = document.createElement('div');
     closeContainer.style.cssText = 'text-align:right;margin-top:7px;margin-bottom:5px;';
     
-    // 添加刷新当前网址按钮
     var refreshBtn = document.createElement('button');
-    refreshBtn.innerHTML = '<i class="fa fa-repeat" style="font-size: 18px;"><i>';
+    refreshBtn.innerHTML = '<i class="fa fa-repeat" style="font-size: 18px;"></i>';
     refreshBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
     refreshBtn.onclick = function() {
         var currentSrc = iframe.src;
         iframe.src = currentSrc;
     };
     
-    // 添加编辑当前网址按钮
     var editBtn = document.createElement('button');
-    editBtn.innerHTML = '<i class="fa fa-pencil" style="font-size: 18px;"><i>';
+    editBtn.innerHTML = '<i class="fa fa-pencil" style="font-size: 18px;"></i>';
     editBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
     editBtn.onclick = function() {
         var currentUrl = iframe.src;
-        showCustomModal('编辑窗口网址：', currentUrl, function(newUrl) {
-            if (newUrl !== null && newUrl.trim() !== '') {
-                iframe.src = newUrl;
-                if (window.iframePlusWindows) {
+        if (typeof showCustomModal === 'function') {
+            showCustomModal('编辑窗口网址：', currentUrl, function(newUrl) {
+                if (newUrl !== null && newUrl.trim() !== '') {
+                    iframe.src = newUrl;
                     for (var i = 0; i < window.iframePlusWindows.length; i++) {
                         if (window.iframePlusWindows[i].id === windowId) {
                             window.iframePlusWindows[i].url = newUrl;
@@ -1115,12 +3845,12 @@ function createIframePlusWindow(url) {
                         }
                     }
                 }
-            }
-        });
+            });
+        }
     };
     
     var closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '<i class="fa fa-close" style="font-size: 18px;"><i>';
+    closeBtn.innerHTML = '<i class="fa fa-close" style="font-size: 18px;"></i>';
     closeBtn.style.cssText = 'cursor:pointer;margin-right:5px;-webkit-tap-highlight-color: transparent;';
     closeBtn.onclick = function() {
         closeIframePlusWindow(windowId);
@@ -1132,6 +3862,9 @@ function createIframePlusWindow(url) {
     wrapper.appendChild(iframe);
     wrapper.appendChild(closeContainer);
     container.appendChild(wrapper);
+    
+    // 注册动态元素以便清理
+    ResourceManager.registerElement(wrapper);
     
     window.iframePlusWindows.push({
         id: windowId,
@@ -1146,6 +3879,418 @@ function createIframePlusWindow(url) {
     }
     
     return windowId;
+}
+
+// ========== LocalStorage管理功能（兼容所有浏览器版本，包括IE6+） ==========
+(function() {
+    var managerBtn = document.getElementById('localStorageManagerBtn');
+    if (!managerBtn) return;
+    
+    // 检测localStorage是否可用（兼容所有浏览器）
+    function isLocalStorageAvailable() {
+        try {
+            if (typeof localStorage === 'undefined' || localStorage === null) return false;
+            var testKey = '__ls_test_' + new Date().getTime();
+            localStorage.setItem(testKey, testKey);
+            localStorage.removeItem(testKey);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+    
+    // 获取所有localStorage键值对（兼容IE6+）
+    function getAllLocalStorageItems() {
+        var items = [];
+        var lsAvailable = isLocalStorageAvailable();
+        if (!lsAvailable) return items;
+        
+        try {
+            // 方法1：使用 localStorage.length 和 key()（标准方法，IE8+支持）
+            if (typeof localStorage.length !== 'undefined' && typeof localStorage.key === 'function') {
+                var len = localStorage.length;
+                for (var i = 0; i < len; i++) {
+                    var key = localStorage.key(i);
+                    if (key && key !== null && key !== '') {
+                        var value = localStorage.getItem(key);
+                        items.push({ key: key, value: (value !== null && value !== undefined) ? String(value) : '' });
+                    }
+                }
+                return items;
+            }
+        } catch(e) {
+            // 方法1失败，尝试方法2
+        }
+        
+        try {
+            // 方法2：使用 for...in 遍历（兼容性更好，但可能包含原型链属性）
+            for (var key in localStorage) {
+                if (localStorage.hasOwnProperty && localStorage.hasOwnProperty(key)) {
+                    var value = localStorage.getItem(key);
+                    if (value !== null && value !== undefined) {
+                        items.push({ key: key, value: String(value) });
+                    }
+                }
+            }
+        } catch(e) {
+            // 方法2失败
+        }
+        
+        // 去重（防止重复键）
+        var uniqueItems = [];
+        var seenKeys = {};
+        for (var i = 0; i < items.length; i++) {
+            var key = items[i].key;
+            if (!seenKeys[key]) {
+                seenKeys[key] = true;
+                uniqueItems.push(items[i]);
+            }
+        }
+        return uniqueItems;
+    }
+    
+    // 删除指定键（兼容所有浏览器）
+    function removeLocalStorageItem(key) {
+        if (!isLocalStorageAvailable()) return;
+        try {
+            localStorage.removeItem(key);
+        } catch(e) {}
+    }
+    
+    // 更新指定键的值（兼容所有浏览器）
+    function updateLocalStorageItem(key, value) {
+        if (!isLocalStorageAvailable()) return;
+        try {
+            localStorage.setItem(key, String(value));
+        } catch(e) {}
+    }
+    
+    // 转义HTML特殊字符（防止XSS）
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        text = String(text);
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    
+    // 生成管理界面的HTML
+    function generateManagerHTML() {
+        var items = getAllLocalStorageItems();
+        if (items.length === 0) {
+            return '<div style="text-align: center; padding: 10px 0; color: #666; font-size: 14px;">暂无LocalStorage数据</div>';
+        }
+        
+        var html = '<div style="overflow-y: auto; margin: 5px 0;">';
+        html += '<style>#lsManagerContainer .ls-item-row { display: table; width: 100%; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 13px; } #lsManagerContainer .ls-key-cell { display: table-cell; vertical-align: middle; white-space: nowrap; padding-right: 8px; font-weight: bold; min-width: 80px; } #lsManagerContainer .ls-value-cell { display: table-cell; vertical-align: middle; width: 100%; padding-right: 6px; } #lsManagerContainer .ls-value-cell input { width: 100%; border: none; background: #ffffff; padding: 2px 4px; box-sizing: border-box; font-size: 13px; outline: none; border: 1px solid transparent; } #lsManagerContainer .ls-value-cell input:hover { border-color: #ccc; } #lsManagerContainer .ls-value-cell input:focus { border-color: #66afe9; } #lsManagerContainer .ls-delete-cell { display: table-cell; vertical-align: middle; white-space: nowrap; padding-left: 4px; } #lsManagerContainer .ls-delete-cell i { cursor: pointer; color: #999; font-size: 14px; } #lsManagerContainer .ls-delete-cell i:hover { color: #ff0000; }</style>';
+        html += '<div id="lsManagerContainer">';
+        
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var safeKey = item.key.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            var safeValue = (item.value !== null && item.value !== undefined) ? String(item.value).replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+            var rowId = 'ls_row_' + i + '_' + Date.now();
+            
+            html += '<div class="ls-item-row" id="' + rowId + '">';
+            html += '<span class="ls-key-cell" title="' + safeKey + '">' + safeKey + '</span>';
+            html += '<span class="ls-value-cell"><input type="text" id="ls_input_' + rowId + '" value="' + safeValue + '" data-key="' + safeKey + '"></span>';
+            html += '<span class="ls-delete-cell"><i class="fa fa-close" data-key="' + safeKey + '" style="cursor:pointer;color:#999;font-size:15px;"></i></span>';
+            html += '</div>';
+        }
+        
+        html += '</div></div>';
+        return html;
+    }
+    
+    // 绑定事件（兼容所有浏览器）
+    function bindManagerEvents() {
+        var container = document.getElementById('lsManagerContainer');
+        if (!container) return;
+        
+        // 为所有删除按钮绑定事件
+        var deleteIcons = container.getElementsByTagName('i');
+        for (var i = 0; i < deleteIcons.length; i++) {
+            var icon = deleteIcons[i];
+            // 检查是否是删除图标（包含 fa-close 类）
+            var className = icon.className || '';
+            if (className.indexOf('fa-close') === -1) continue;
+            if (icon._boundDelete) continue;
+            icon._boundDelete = true;
+            
+            var key = icon.getAttribute('data-key');
+            if (!key) continue;
+            
+            // 兼容所有浏览器的点击事件
+            (function(iconEl, keyVal) {
+                var clickHandler = function(e) {
+                    e = e || window.event;
+                    if (e.stopPropagation) e.stopPropagation();
+                    if (e.cancelBubble !== undefined) e.cancelBubble = true;
+                    if (e.preventDefault) e.preventDefault();
+                    e.returnValue = false;
+                    
+                    removeLocalStorageItem(keyVal);
+                    // 刷新管理界面
+                    refreshManager();
+                    return false;
+                };
+                
+                if (iconEl.addEventListener) {
+                    iconEl.addEventListener('click', clickHandler);
+                } else if (iconEl.attachEvent) {
+                    iconEl.attachEvent('onclick', clickHandler);
+                } else {
+                    iconEl.onclick = clickHandler;
+                }
+            })(icon, key);
+        }
+        
+        // 为所有输入框绑定事件
+        var inputs = container.getElementsByTagName('input');
+        for (var i = 0; i < inputs.length; i++) {
+            var input = inputs[i];
+            if (input._boundEvents) continue;
+            input._boundEvents = true;
+            
+            var key = input.getAttribute('data-key');
+            if (!key) continue;
+            
+            // 失焦保存
+            (function(inputEl, keyVal) {
+                var blurHandler = function() {
+                    var newValue = this.value;
+                    updateLocalStorageItem(keyVal, newValue);
+                };
+                
+                var keydownHandler = function(e) {
+                    e = e || window.event;
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode === 13) {
+                        if (e.preventDefault) e.preventDefault();
+                        e.returnValue = false;
+                        var newValue = this.value;
+                        updateLocalStorageItem(keyVal, newValue);
+                        this.blur();
+                        return false;
+                    }
+                };
+                
+                if (inputEl.addEventListener) {
+                    inputEl.addEventListener('blur', blurHandler);
+                    inputEl.addEventListener('keydown', keydownHandler);
+                } else if (inputEl.attachEvent) {
+                    inputEl.attachEvent('onblur', blurHandler);
+                    inputEl.attachEvent('onkeydown', keydownHandler);
+                } else {
+                    inputEl.onblur = blurHandler;
+                    inputEl.onkeydown = keydownHandler;
+                }
+            })(input, key);
+        }
+    }
+    
+    // 刷新管理界面
+    function refreshManager() {
+        var modalContent = document.querySelector('#userSelectModalDisabled');
+        if (!modalContent) return;
+        
+        // 查找管理界面容器
+        var container = document.getElementById('lsManagerContainer');
+        if (!container) {
+            // 关闭弹窗重新打开
+            var closeBtn = document.querySelector('label[onclick*="alertCallback_"]');
+            if (closeBtn) {
+                var onclickAttr = closeBtn.getAttribute('onclick');
+                if (onclickAttr) {
+                    try { eval(onclickAttr); } catch(e) {}
+                }
+            }
+            setTimeout(function() {
+                if (managerBtn) managerBtn.click();
+            }, 150);
+            return;
+        }
+        
+        // 保存滚动位置
+        var parentContainer = container.parentNode;
+        var scrollTop = 0;
+        if (parentContainer) {
+            scrollTop = parentContainer.scrollTop || 0;
+        }
+        
+        // 检查是否还有数据
+        var items = getAllLocalStorageItems();
+        
+        // 生成新内容
+        var newHtml = generateManagerHTML();
+        var tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newHtml;
+        var newContainer = tempDiv.querySelector('#lsManagerContainer');
+        
+        if (newContainer) {
+            // 替换容器
+            if (container.parentNode) {
+                container.parentNode.replaceChild(newContainer, container);
+            }
+        } else {
+            // 如果新容器不存在（无数据时），移除旧容器并显示空状态
+            if (container.parentNode) {
+                // 创建空状态显示
+                var emptyDiv = document.createElement('div');
+                emptyDiv.id = 'lsManagerContainer';
+                emptyDiv.innerHTML = '<div style="text-align: center; padding: 15px 0; color: #999; font-size: 14px;">暂无LocalStorage数据</div>';
+                container.parentNode.replaceChild(emptyDiv, container);
+            }
+        }
+        
+        // 恢复滚动位置
+        var newParent = document.getElementById('lsManagerContainer');
+        if (newParent && newParent.parentNode && scrollTop > 0) {
+            newParent.parentNode.scrollTop = scrollTop;
+        }
+        
+        // 重新绑定事件
+        setTimeout(function() {
+            bindManagerEvents();
+        }, 50);
+    }
+    
+    // 点击管理按钮
+    managerBtn.onclick = function() {
+        // 再次检查是否启用（防止被意外调用）
+        var enabled = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                enabled = localStorage.getItem('enableExperimentalFeature') === 'true';
+            }
+        } catch(e) {}
+        if (!enabled) {
+            this.style.display = 'none';
+            return;
+        }
+        
+        var items = getAllLocalStorageItems();
+        var count = items ? items.length : 0;
+        var titleHtml = 'LocalStorage管理 <span style="font-size:12px;font-weight:normal;color:#666;">(共' + count + '项)</span>';
+        var contentHtml = generateManagerHTML();
+        
+        showCustomAlert(titleHtml, contentHtml);
+        
+        setTimeout(function() {
+            bindManagerEvents();
+        }, 100);
+    };
+})();
+// ========== LocalStorage管理功能结束 ==========
+
+// ========== 实验性功能控制（兼容所有浏览器版本） ==========
+(function() {
+    // 检测localStorage是否可用
+    function isLS_Available() {
+        try {
+            if (typeof localStorage === 'undefined' || localStorage === null) return false;
+            var testKey = '__ls_test_' + new Date().getTime();
+            localStorage.setItem(testKey, testKey);
+            localStorage.removeItem(testKey);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+    
+    // 检查实验性功能是否启用
+    function isExperimentalEnabled() {
+        if (!isLS_Available()) return false;
+        try {
+            return localStorage.getItem('enableExperimentalFeature') === 'true';
+        } catch(e) {
+            return false;
+        }
+    }
+    
+    // 控制localStorageManagerBtn显示
+    function updateManagerBtnVisibility() {
+        var managerBtn = document.getElementById('localStorageManagerBtn');
+        if (!managerBtn) return;
+        var enabled = isExperimentalEnabled();
+        managerBtn.style.display = enabled ? 'inline-block' : 'none';
+    }
+    
+    // 页面加载时更新按钮可见性
+    if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', updateManagerBtnVisibility);
+    } else if (document.attachEvent) {
+        document.attachEvent('onreadystatechange', function() {
+            if (document.readyState === 'complete') {
+                updateManagerBtnVisibility();
+            }
+        });
+    } else {
+        window.onload = updateManagerBtnVisibility;
+    }
+    
+    // 如果localStorageManagerBtn已存在，页面加载后立即执行
+    setTimeout(updateManagerBtnVisibility, 0);
+})();
+// ========== 实验性功能控制结束 ==========
+
+function closeIframePlusWindow(windowId) {
+    var container = document.getElementById('iframePlusContainer');
+    if (!container) return;
+    
+    var wrapper = document.getElementById(windowId);
+    if (wrapper) {
+        // 清理 iframe 内容以防止内存泄漏
+        var iframe = wrapper.querySelector('iframe');
+        if (iframe) {
+            iframe.src = 'about:blank';
+            iframe.onload = null;
+            iframe.onerror = null;
+        }
+        // 清理所有按钮引用
+        var buttons = wrapper.getElementsByTagName('button');
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].onclick = null;
+        }
+        if (wrapper.parentNode) {
+            wrapper.parentNode.removeChild(wrapper);
+        }
+    }
+    
+    for (var i = window.iframePlusWindows.length - 1; i >= 0; i--) {
+        if (window.iframePlusWindows[i].id === windowId) {
+            window.iframePlusWindows.splice(i, 1);
+            break;
+        }
+    }
+    
+    if (window.iframePlusWindows.length === 0) {
+        container.style.display = 'none';
+        var hitokoto = document.getElementById('hitokotoDisplay');
+        if (hitokoto) {
+            hitokoto.style.marginTop = '10px';
+        }
+    }
+}
+
+function closeAllIframePlusWindows() {
+    var container = document.getElementById('iframePlusContainer');
+    if (container) {
+        var wrappers = container.getElementsByClassName('iframe-plus-wrapper');
+        for (var i = wrappers.length - 1; i >= 0; i--) {
+            var iframe = wrappers[i].querySelector('iframe');
+            if (iframe) {
+                iframe.src = 'about:blank';
+                iframe.onload = null;
+                iframe.onerror = null;
+            }
+        }
+        container.innerHTML = '';
+        container.style.display = 'none';
+    }
+    window.iframePlusWindows = [];
+    var hitokoto = document.getElementById('hitokotoDisplay');
+    if (hitokoto) {
+        hitokoto.style.marginTop = '10px';
+    }
 }
 
 // 关闭窗口，当没有窗口时隐藏容器
@@ -1189,10 +4334,25 @@ function closeAllIframePlusWindows() {
     }
 }
 
-// 保存和加载clearOnSearchCheckbox状态
+// 保存和加载clearOnSearchCheckbox状态（修复：支持所有浏览器版本）
 var savedClearOnSearchState = localStorage.getItem('clearOnSearchChecked');
-if (savedClearOnSearchState === 'true') {
-    document.getElementById('clearOnSearchCheckbox').checked = true;
+var clearOnSearchCheckbox = document.getElementById('clearOnSearchCheckbox');
+if (clearOnSearchCheckbox) {
+    if (savedClearOnSearchState === 'true') {
+        clearOnSearchCheckbox.checked = true;
+    } else if (savedClearOnSearchState === 'false') {
+        clearOnSearchCheckbox.checked = false;
+    }
+    // 添加change事件监听保存状态
+    if (clearOnSearchCheckbox.addEventListener) {
+        clearOnSearchCheckbox.addEventListener('change', function() {
+            localStorage.setItem('clearOnSearchChecked', this.checked ? 'true' : 'false');
+        });
+    } else if (clearOnSearchCheckbox.attachEvent) {
+        clearOnSearchCheckbox.attachEvent('onchange', function() {
+            localStorage.setItem('clearOnSearchChecked', this.checked ? 'true' : 'false');
+        });
+    }
 }
 
 // 加载保存的clearOnBlurCheckbox状态
@@ -1279,6 +4439,511 @@ document.getElementById('urlInput').addEventListener('blur', function(e) {
     }
 });
 
+// 修改位置：在 quickInputCheckbox 事件监听后添加
+// 修改位置：在 quickInputCheckbox 事件监听后添加
+// 快捷输入行选择功能（单个label按钮，选择即自动保存）
+(function() {
+    var rowSelectBtn = document.querySelector('label[for="quickInputRowSelectBtn"]');
+    var quickInputCheckbox = document.getElementById('quickInputCheckbox');
+    var focusCheckbox = document.getElementById('focusCheckbox');  // 【新增】获取 focusCheckbox 元素
+    
+    if (!rowSelectBtn || !quickInputCheckbox) return;
+    
+    // 【新增】根据 focusCheckbox 和 quickInputCheckbox 状态设置 rowSelectBtn 的禁用样式
+    function setRowSelectBtnDisabled() {
+        var isFocusChecked = focusCheckbox ? focusCheckbox.checked : false;
+        var isQuickChecked = quickInputCheckbox.checked;
+        var disabled = !isFocusChecked || !isQuickChecked;
+        
+        if (disabled) {
+            rowSelectBtn.style.opacity = '0.7';
+            rowSelectBtn.style.cursor = 'not-allowed';
+            rowSelectBtn.style.pointerEvents = 'none';
+            rowSelectBtn.setAttribute('data-disabled', 'true');
+        } else {
+            rowSelectBtn.style.opacity = '1';
+            rowSelectBtn.style.cursor = 'pointer';
+            rowSelectBtn.style.pointerEvents = 'auto';
+            rowSelectBtn.removeAttribute('data-disabled');
+        }
+    }
+    
+    // 【新增】初始设置禁用状态
+    setRowSelectBtnDisabled();
+    
+    // 【新增】监听 focusCheckbox 变化
+    if (focusCheckbox) {
+        if (focusCheckbox.addEventListener) {
+            focusCheckbox.addEventListener('change', setRowSelectBtnDisabled);
+        } else if (focusCheckbox.attachEvent) {
+            focusCheckbox.attachEvent('onchange', setRowSelectBtnDisabled);
+        }
+    }
+    
+    // 加载保存的显示行选择
+    var savedRowSelection = 'all';
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var val = localStorage.getItem('quickInputRowSelection');
+            if (val) savedRowSelection = val;
+        }
+    } catch(e) {}
+    
+    // 应用行显示状态
+    function applyRowSelection(selection) {
+        var row1 = document.getElementById('quickInputBtn1Head');
+        var row2 = document.getElementById('quickInputBtn2');
+        var row3 = document.getElementById('quickInputBtn3');
+        var rowContainers = [row1, row2, row3];
+        
+        var isChecked = quickInputCheckbox.checked;
+        
+        for (var i = 0; i < rowContainers.length; i++) {
+            if (!rowContainers[i]) continue;
+            if (!isChecked) {
+                rowContainers[i].style.display = 'none';
+                continue;
+            }
+            if (selection === 'all') {
+                rowContainers[i].style.display = '';
+            } else if (selection === 'row1') {
+                rowContainers[i].style.display = (i === 0) ? '' : 'none';
+            } else if (selection === 'row2') {
+                rowContainers[i].style.display = (i === 1) ? '' : 'none';
+            } else if (selection === 'row3') {
+                rowContainers[i].style.display = (i === 2) ? '' : 'none';
+            } else if (selection === 'row12') {
+                rowContainers[i].style.display = (i === 0 || i === 1) ? '' : 'none';
+            } else if (selection === 'row13') {
+                rowContainers[i].style.display = (i === 0 || i === 2) ? '' : 'none';
+            } else if (selection === 'row23') {
+                rowContainers[i].style.display = (i === 1 || i === 2) ? '' : 'none';
+            }
+        }
+    }
+    
+    // 点击选择行按钮
+    rowSelectBtn.onclick = function() {
+        // 【修改】使用 data-disabled 属性检查禁用状态
+        if (this.getAttribute('data-disabled') === 'true') {
+            return;
+        }
+        if (rowSelectBtn.style.pointerEvents === 'none' || rowSelectBtn.style.opacity === '0.7') {
+            return;
+        }
+        if (!quickInputCheckbox.checked) {
+            return;
+        }
+        var currentSelection = 'all';
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var val = localStorage.getItem('quickInputRowSelection');
+                if (val) currentSelection = val;
+            }
+        } catch(e) {}
+        
+        var html = '<div style="text-align: left; font-size: 15px; -webkit-tap-highlight-color: transparent;">' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="all" id="qir_all"' + (currentSelection === 'all' ? ' checked' : '') + '><label for="qir_all" style="margin-left: 5px; cursor: pointer;">全部显示</label></div>' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="row1" id="qir_row1"' + (currentSelection === 'row1' ? ' checked' : '') + '><label for="qir_row1" style="margin-left: 5px; cursor: pointer;">显示第1行</label></div>' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="row2" id="qir_row2"' + (currentSelection === 'row2' ? ' checked' : '') + '><label for="qir_row2" style="margin-left: 5px; cursor: pointer;">显示第2行</label></div>' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="row3" id="qir_row3"' + (currentSelection === 'row3' ? ' checked' : '') + '><label for="qir_row3" style="margin-left: 5px; cursor: pointer;">显示第3行</label></div>' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="row12" id="qir_row12"' + (currentSelection === 'row12' ? ' checked' : '') + '><label for="qir_row12" style="margin-left: 5px; cursor: pointer;">显示1 2行</label></div>' +
+            '<div style="margin-bottom: 8px;"><input type="radio" name="quickInputRow" value="row13" id="qir_row13"' + (currentSelection === 'row13' ? ' checked' : '') + '><label for="qir_row13" style="margin-left: 5px; cursor: pointer;">显示1 3行</label></div>' +
+            '<div><input type="radio" name="quickInputRow" value="row23" id="qir_row23"' + (currentSelection === 'row23' ? ' checked' : '') + '><label for="qir_row23" style="margin-left: 5px; cursor: pointer;">显示2 3行</label></div>' +
+            '</div>';
+        
+        var callbackName = 'rowSelectCallback_' + Date.now();
+        window[callbackName] = function() {
+            delete window[callbackName];
+        };
+        
+        // 为所有radio添加change事件，选择即自动保存并关闭弹窗
+        var radioChangeHandler = function(e) {
+            var target = e.target || e.srcElement;
+            if (target && target.type === 'radio') {
+                var selected = target.value;
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage) {
+                        localStorage.setItem('quickInputRowSelection', selected);
+                    }
+                } catch(e) {}
+                applyRowSelection(selected);
+                // 关闭弹窗
+                if (typeof window[callbackName] === 'function') {
+                    window[callbackName]();
+                }
+            }
+        };
+        
+        // 保存原始showCustomAlert函数引用
+        var originalShowCustomAlert = window.showCustomAlert;
+        window.showCustomAlert = function(title, content) {
+            originalShowCustomAlert(title, content);
+            // 延迟绑定radio事件，确保DOM已渲染
+            setTimeout(function() {
+                var radios = document.querySelectorAll('input[name="quickInputRow"]');
+                for (var i = 0; i < radios.length; i++) {
+                    if (radios[i].addEventListener) {
+                        radios[i].addEventListener('change', radioChangeHandler);
+                    } else if (radios[i].attachEvent) {
+                        radios[i].attachEvent('onchange', radioChangeHandler);
+                    }
+                }
+            }, 50);
+        };
+        
+        // 调用showCustomAlert，不包含确定按钮
+        showCustomAlert('选择快捷输入行', html);
+        
+        // 恢复原始showCustomAlert（延迟执行，确保弹窗已创建）
+        setTimeout(function() {
+            window.showCustomAlert = originalShowCustomAlert;
+        }, 100);
+    };
+    
+    // 监听 quickInputCheckbox 变化，重新应用行显示状态
+    function onQuickInputChange() {
+        setRowSelectBtnDisabled();  // 【新增】调用禁用状态更新函数
+        
+        if (quickInputCheckbox.checked) {
+            var savedSelection = 'all';
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    var val = localStorage.getItem('quickInputRowSelection');
+                    if (val) savedSelection = val;
+                }
+            } catch(e) {}
+            applyRowSelection(savedSelection);
+        } else {
+            var row1 = document.getElementById('quickInputBtn1Head');
+            var row2 = document.getElementById('quickInputBtn2');
+            var row3 = document.getElementById('quickInputBtn3');
+            if (row1) row1.style.display = 'none';
+            if (row2) row2.style.display = 'none';
+            if (row3) row3.style.display = 'none';
+        }
+    }
+    
+    if (quickInputCheckbox.addEventListener) {
+        quickInputCheckbox.addEventListener('change', onQuickInputChange);
+    } else if (quickInputCheckbox.attachEvent) {
+        quickInputCheckbox.attachEvent('onchange', onQuickInputChange);
+    }
+    
+    // 监听输入框聚焦事件，重新应用行显示状态
+    var urlInput = document.getElementById('urlInput');
+    if (urlInput) {
+        function onUrlInputFocus() {
+            setTimeout(function() {
+                if (quickInputCheckbox.checked) {
+                    var savedSelection = 'all';
+                    try {
+                        if (typeof localStorage !== 'undefined' && localStorage) {
+                            var val = localStorage.getItem('quickInputRowSelection');
+                            if (val) savedSelection = val;
+                        }
+                    } catch(e) {}
+                    applyRowSelection(savedSelection);
+                }
+            }, 50);
+        }
+        if (urlInput.addEventListener) {
+            urlInput.addEventListener('focus', onUrlInputFocus);
+        } else if (urlInput.attachEvent) {
+            urlInput.attachEvent('onfocus', onUrlInputFocus);
+        }
+    }
+    
+    // 页面加载完成后应用行显示状态
+    function applyOnLoad() {
+        setRowSelectBtnDisabled();  // 【新增】页面加载时更新禁用状态
+        if (quickInputCheckbox.checked) {
+            var savedSelection = 'all';
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    var val = localStorage.getItem('quickInputRowSelection');
+                    if (val) savedSelection = val;
+                }
+            } catch(e) {}
+            applyRowSelection(savedSelection);
+        }
+    }
+    
+    if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', applyOnLoad);
+    } else if (document.attachEvent) {
+        document.attachEvent('onreadystatechange', function() {
+            if (document.readyState === 'complete') {
+                applyOnLoad();
+            }
+        });
+    } else {
+        window.onload = applyOnLoad;
+    }
+    
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        applyOnLoad();
+    }
+})();
+
+// 滚轮支持光标移动功能
+(function() {
+    var wheelCheckbox = document.getElementById('wheelScrollCheckbox');
+    var urlInput = document.getElementById('urlInput');
+    
+    if (!wheelCheckbox || !urlInput) return;
+    
+    // 检测是否为移动端
+    var isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // 移动端禁用此开关
+    if (isMobile) {
+        wheelCheckbox.disabled = true;
+        wheelCheckbox.checked = false;
+        var wheelLabel = document.querySelector('label[for="wheelScrollCheckbox"]');
+        if (wheelLabel) {
+            wheelLabel.style.opacity = '0.7';
+            wheelLabel.style.cursor = 'not-allowed';
+        }
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                localStorage.setItem('wheelScrollChecked', 'false');
+            }
+        } catch(e) {}
+        return;
+    }
+    
+    // 加载保存的状态
+    var savedState = false;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            savedState = localStorage.getItem('wheelScrollChecked') === 'true';
+        }
+    } catch(e) {}
+    wheelCheckbox.checked = savedState;
+    
+    // 滚轮事件处理函数
+    var wheelHandler = function(e) {
+        if (!wheelCheckbox.checked) return;
+        
+        e = e || window.event;
+        var target = e.target || e.srcElement;
+        
+        // 检查目标是否为输入框或其子元素
+        var isHoveringInput = false;
+        var checkElem = target;
+        while (checkElem && checkElem !== document.body) {
+            if (checkElem === urlInput) {
+                isHoveringInput = true;
+                break;
+            }
+            checkElem = checkElem.parentNode;
+        }
+        
+        // 如果鼠标不在输入框上，允许页面滚动
+        if (!isHoveringInput) {
+            return true;
+        }
+        
+        // 检查输入框是否获得焦点
+        var isFocused = (document.activeElement === urlInput);
+        
+        // 如果输入框未获得焦点，允许页面滚动
+        if (!isFocused) {
+            return true;
+        }
+        
+        // 获取输入框当前值
+        var value = urlInput.value;
+        if (!value || value === '') return true;
+        
+        // 获取当前光标位置
+        var cursorPos = urlInput.selectionStart || 0;
+        var selectionEnd = urlInput.selectionEnd || cursorPos;
+        
+        // 检查是否按下了Shift键
+        var shiftPressed = e.shiftKey || false;
+        
+        // 获取滚动方向
+        var delta = 0;
+        if (e.wheelDelta) {
+            delta = e.wheelDelta;
+        } else if (e.detail) {
+            delta = -e.detail;
+        }
+        
+        // 阻止页面滚动
+        if (e.preventDefault) {
+            e.preventDefault();
+        } else {
+            e.returnValue = false;
+        }
+        
+        var newPos = cursorPos;
+        if (delta > 0) {
+            // 向上滚动：光标向左移动一格
+            newPos = Math.max(0, cursorPos - 1);
+        } else if (delta < 0) {
+            // 向下滚动：光标向右移动一格
+            newPos = Math.min(value.length, cursorPos + 1);
+        }
+        // 当按Shift键时，从原点到滚动移动位置连删文本
+        if (shiftPressed && newPos !== cursorPos) {
+            // 确定删除范围（从光标位置到新位置）
+            var start = Math.min(cursorPos, newPos);
+            var end = Math.max(cursorPos, newPos);
+            
+            // 删除范围内的文本
+            var before = value.substring(0, start);
+            var after = value.substring(end);
+            urlInput.value = before + after;
+            
+            // 将光标移动到删除起始位置
+            var finalPos = start;
+            if (urlInput.setSelectionRange) {
+                urlInput.setSelectionRange(finalPos, finalPos);
+            } else if (urlInput.createTextRange) {
+                var range = urlInput.createTextRange();
+                range.collapse(true);
+                range.moveStart('character', finalPos);
+                range.moveEnd('character', 0);
+                range.select();
+            }
+            
+            // 修改位置：删除文本后更新搜索建议（仅在searchSuggestionsCheckbox被勾选时）
+            var suggestionsCheckbox = document.getElementById('searchSuggestionsCheckbox');
+            if (suggestionsCheckbox && suggestionsCheckbox.checked) {
+                var currentValue = urlInput.value;
+                var searchSuggestionsElem = document.getElementById('searchSuggestions');
+                
+                if (currentValue && currentValue.trim() !== '') {
+                    if (typeof fetchSearchSuggestions === 'function') {
+                        fetchSearchSuggestions(currentValue);
+                    }
+                } else {
+                    // 修改位置：文本被清空时，搜索建议未显示时重置快捷输入按钮原来位置
+                    if (searchSuggestionsElem) {
+                        searchSuggestionsElem.style.display = 'none';
+                    }
+                    // 重置快捷输入按钮位置
+                    if (typeof resetQuickInputPosition === 'function') {
+                        resetQuickInputPosition();
+                    } else {
+                        var quickInputBtn = document.getElementById('quickInputBtn');
+                        if (quickInputBtn) {
+                            quickInputBtn.style.marginTop = '0px';
+                        }
+                    }
+                }
+                
+                // 修改位置：当搜索建议显示类型记录时继续调整快捷输入按钮位置
+                if (searchSuggestionsElem && searchSuggestionsElem.style.display === 'block') {
+                    var quickInputCheckbox = document.getElementById('quickInputCheckbox');
+                    if (quickInputCheckbox && quickInputCheckbox.checked) {
+                        var quickInputBtn = document.getElementById('quickInputBtn');
+                        if (quickInputBtn) {
+                            var suggestionsHeight = searchSuggestionsElem.offsetHeight;
+                            if (suggestionsHeight > 0) {
+                                quickInputBtn.style.marginTop = (suggestionsHeight + 10) + 'px';
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (newPos !== cursorPos) {
+            // 未按Shift键时，正常移动光标
+            if (urlInput.setSelectionRange) {
+                urlInput.setSelectionRange(newPos, newPos);
+            } else if (urlInput.createTextRange) {
+                var range = urlInput.createTextRange();
+                range.collapse(true);
+                range.moveStart('character', newPos);
+                range.moveEnd('character', 0);
+                range.select();
+            }
+        }
+        
+        return false;
+    };
+    
+    // 绑定滚轮事件（兼容所有浏览器）
+    if (urlInput.addEventListener) {
+        urlInput.addEventListener('wheel', wheelHandler);
+        urlInput.addEventListener('mousewheel', wheelHandler);
+        urlInput.addEventListener('DOMMouseScroll', wheelHandler);
+    } else if (urlInput.attachEvent) {
+        urlInput.attachEvent('onmousewheel', wheelHandler);
+    }
+    
+    // 监听 checkbox 变化保存状态
+    if (wheelCheckbox.addEventListener) {
+        wheelCheckbox.addEventListener('change', function(e) {
+            e = e || window.event;
+            var isChecked = this.checked;
+            
+            // 修改位置：勾选时弹出确认框
+            if (isChecked) {
+                showCustomConfirm('启用后，你可以将鼠标移动到搜索输入框并滚动鼠标滚轮移动光标，支持以下操作: <br><b>向上滚动: </b>光标向左移动<br><b>向下滚动: </b>光标向右移动<br><b>Shift + 鼠标滚轮: </b>按滚动方向连续删除文字', function(result) {
+                    if (result) {
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('wheelScrollChecked', 'true');
+                            }
+                        } catch(e) {}
+                        // 保持勾选状态
+                    } else {
+                        // 取消时恢复未勾选状态
+                        wheelCheckbox.checked = false;
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('wheelScrollChecked', 'false');
+                            }
+                        } catch(e) {}
+                    }
+                });
+            } else {
+                // 取消勾选时直接保存
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage) {
+                        localStorage.setItem('wheelScrollChecked', 'false');
+                    }
+                } catch(e) {}
+            }
+        });
+    } else if (wheelCheckbox.attachEvent) {
+        wheelCheckbox.attachEvent('onchange', function(e) {
+            e = e || window.event;
+            var isChecked = this.checked;
+            
+            // 修改位置：勾选时弹出确认框
+            if (isChecked) {
+                showCustomConfirm('确定要启用鼠标滚轮支持光标移动功能吗？', function(result) {
+                    if (result) {
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('wheelScrollChecked', 'true');
+                            }
+                        } catch(e) {}
+                    } else {
+                        wheelCheckbox.checked = false;
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('wheelScrollChecked', 'false');
+                            }
+                        } catch(e) {}
+                    }
+                });
+            } else {
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage) {
+                        localStorage.setItem('wheelScrollChecked', 'false');
+                    }
+                } catch(e) {}
+            }
+        });
+    }
+})();
+
 // 更新自定义搜索选项
 function updateCustomSearchOptions() {
     var customSearches = JSON.parse(localStorage.getItem('customSearches') || '[]');
@@ -1305,7 +4970,8 @@ function updateCustomSearchOptions() {
     });
     
     // 添加自定义搜索选项
-    customSearches.forEach(function(item) {
+    for (var i = 0; i < customSearches.length; i++) {
+    var item = customSearches[i];
         var option = document.createElement('option');
         option.value = 'customSearch_' + item.order;
         option.textContent = item.name;
@@ -1321,7 +4987,7 @@ function updateCustomSearchOptions() {
                 customSearchOption.parentNode.insertBefore(option, customSearchOption.nextSibling);
             }
         }
-    });
+    }
 }
 
 // 在页面加载时更新自定义搜索选项
@@ -1371,13 +5037,39 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
     // 根据选择显示或隐藏 checkbox
     if (this.value === 'showCheckbox') {
-        document.getElementById('autoFillhttps').style.display = 'block';
+        document.getElementById('showToolPanel').style.display = 'block';
         submitBtn.disabled = true;
         urlInput.disabled = true;
     } else {
-        document.getElementById('autoFillhttps').style.display = 'none';
+        document.getElementById('showToolPanel').style.display = 'none';
         submitBtn.disabled = false;
         urlInput.disabled = false;
+    }
+    // 切换到 iFrameFree、iFramePlus 或 showCheckbox 时隐藏搜索建议
+    if (this.value === 'iFrameFree' || this.value === 'iFramePlus' || this.value === 'showCheckbox') {
+        if (document.getElementById('searchSuggestions') || document.getElementById('searchSuggestionsCheckbox').checked) {
+            document.getElementById('searchSuggestions').style.display = 'none';
+        }
+    } else {
+        // 检查输入框是否获得焦点
+        var isInputFocused = (document.activeElement === document.getElementById('urlInput'));
+        if (isInputFocused) {
+            fetchSearchSuggestions(document.getElementById('urlInput').value);
+        } else {
+            var searchSuggestionsElem = document.getElementById('searchSuggestions');
+            if (searchSuggestionsElem) {
+                searchSuggestionsElem.style.display = 'none';
+            }
+        }
+    }
+    // ========== 切换搜索引擎后，如果输入框未聚焦，隐藏搜索建议 ==========
+    var urlInputElement = document.getElementById('urlInput');
+    var searchSuggestions = document.getElementById('searchSuggestions');
+    if (urlInputElement && searchSuggestions) {
+        var isInputFocused = (document.activeElement === urlInputElement);
+        if (!isInputFocused) {
+            searchSuggestions.style.display = 'none';
+        }
     }
     // 控制iframe显示
     if (this.value === 'iFrameFree') {
@@ -1427,13 +5119,13 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
     // 根据选择显示或隐藏 checkbox
     if (this.value === 'showCheckbox') {
-        document.getElementById('autoFillhttps').style.display = 'block';
+        document.getElementById('showToolPanel').style.display = 'block';
         var savedLayoutState = localStorage.getItem('layoutChecked');
         if (savedLayoutState === 'true') {
             applyLayoutStyle(true);
         }
     } else {
-        document.getElementById('autoFillhttps').style.display = 'none';
+        document.getElementById('showToolPanel').style.display = 'none';
         var savedLayoutState = localStorage.getItem('layoutChecked');
         if (savedLayoutState !== 'true') {
             applyLayoutStyle(false);
@@ -1441,7 +5133,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
     if (isMobileAndroidApple()) {
         if (this.value === 'baiduTw' ||
-            this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
+            this.value === 'quarkpcAI' || this.value === '360namisoAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || this.value === 'showCheckbox') {
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('urlInput').disabled = true;
         } else {
@@ -1450,8 +5142,8 @@ document.getElementById('engineSelect').addEventListener('change', function() {
         }
     }
     if (isDesktop()) {
-        if (this.value === 'sodouyinM' || this.value === 'yzmsmM' ||
-            this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'quarkTranslateTools' || this.value === 'showCheckbox') {
+        if (this.value === 'yzmsmM' ||
+            this.value === 'qksmSearch' || this.value === 'baiduMEasy' || savedEngine === 'pddWebPage' || this.value === 'quarkTranslateTools' || this.value === 'showCheckbox') {
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('urlInput').disabled = true;
         } else {
@@ -1464,11 +5156,9 @@ document.getElementById('engineSelect').addEventListener('change', function() {
         // 如果有之前保存的窗口，可以在这里恢复（可选）
     }
     if (this.value === 'showCheckbox') {
-        document.getElementById('autoFillhttps').style.display = 'block';
-        linkCreatorBtn.style.display = 'inline-block';
+        document.getElementById('showToolPanel').style.display = 'block';
     } else {
-        document.getElementById('autoFillhttps').style.display = 'none';
-        linkCreatorBtn.style.display = 'none';
+        document.getElementById('showToolPanel').style.display = 'none';
         document.getElementById('linkCreatorPanel').style.display = 'none';
     }
     // 保存自定义搜索选项的选择状态
@@ -1500,9 +5190,8 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                     localStorage.removeItem('selectedCustomSearch');
                 }
                 if (document.getElementById('engineSelect').value === 'showCheckbox') {
-                    linkCreatorBtn.style.display = 'inline-block';
                     updateQuickLinks();
-                    document.getElementById('autoFillhttps').style.display = 'block';
+                    document.getElementById('showToolPanel').style.display = 'block';
                     submitBtn.disabled = true;
                     urlInput.disabled = true;
                 }
@@ -1525,7 +5214,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                 }
                 if (isMobileAndroidApple()) {
                     if (this.value === 'baiduTw' ||
-                        this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
+                        this.value === 'quarkpcAI' || this.value === '360namisoAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || this.value === 'showCheckbox') {
                         document.getElementById('submitBtn').disabled = true;
                         document.getElementById('urlInput').disabled = true;
                     } else {
@@ -1534,8 +5223,8 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                     }
                 }
                 if (isDesktop()) {
-                    if (this.value === 'sodouyinM' || this.value === 'yzmsmM' ||
-                        this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'quarkTranslateTools' || this.value === 'showCheckbox') {
+                    if (this.value === 'yzmsmM' ||
+                        this.value === 'qksmSearch' || this.value === 'baiduMEasy' || savedEngine === 'pddWebPage' || this.value === 'quarkTranslateTools' || this.value === 'showCheckbox') {
                         document.getElementById('submitBtn').disabled = true;
                         document.getElementById('urlInput').disabled = true;
                     } else {
@@ -1560,9 +5249,8 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                     localStorage.removeItem('selectedCustomSearch');
                 }
                 if (document.getElementById('engineSelect').value === 'showCheckbox') {
-                    linkCreatorBtn.style.display = 'inline-block';
                     updateQuickLinks();
-                    document.getElementById('autoFillhttps').style.display = 'block';
+                    document.getElementById('showToolPanel').style.display = 'block';
                     submitBtn.disabled = true;
                     urlInput.disabled = true;
                 }
@@ -1571,7 +5259,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                 }
                 if (isMobileAndroidApple()) {
                     if (this.value === 'baiduTw' ||
-                        this.value === 'quarkpcAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || this.value === 'showCheckbox') {
+                        this.value === 'quarkpcAI' || this.value === '360namisoAI' || this.value === 'transmartQQTs' || this.value === 'dyIsWindows' || savedEngine === 'fastHandVideo' || savedEngine === 'hongshuVideo' || this.value === 'showCheckbox') {
                         document.getElementById('submitBtn').disabled = true;
                         document.getElementById('urlInput').disabled = true;
                     } else {
@@ -1580,8 +5268,8 @@ document.getElementById('engineSelect').addEventListener('change', function() {
                     }
                 }
                 if (isDesktop()) {
-                    if (this.value === 'sodouyinM' || this.value === 'yzmsmM' ||
-                        this.value === 'sotoutiaoM' || this.value === 'qksmSearch' || this.value === 'baiduMEasy' || this.value === 'oldBaiduFanyi' || this.value === 'quarkTranslateTools' || this.value === 'showCheckbox') {
+                    if (this.value === 'yzmsmM' ||
+                        this.value === 'qksmSearch' || this.value === 'baiduMEasy' || savedEngine === 'pddWebPage' || this.value === 'quarkTranslateTools' || this.value === 'showCheckbox') {
                         document.getElementById('submitBtn').disabled = true;
                         document.getElementById('urlInput').disabled = true;
                     } else {
@@ -1597,7 +5285,7 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     } else {
         // 保存当前选择作为previousEngine，用于customSearch取消时恢复
         localStorage.setItem('previousEngine', currentValue);
-        hideCustomSearchButton();
+        // hideCustomSearchButton();
     }
 });
 
@@ -1673,41 +5361,697 @@ document.getElementById('engineSelect').addEventListener('change', function() {
     }
 })();
 
+// ========== 右键/长按操作功能（兼容所有浏览器版本）==========
+(function() {
+    // 弹窗是否打开的标志
+    window._isModalOpen = false;
+    
+    // 获取操作类型
+    function getRightClickAction() {
+        var select = document.getElementById('rightClickActionSelect');
+        if (select) {
+            return select.value;
+        }
+        return localStorage.getItem('rightClickAction') || 'disabled';
+    }
+    
+    // 保存操作类型
+    function saveRightClickAction(value) {
+        localStorage.setItem('rightClickAction', value);
+        var select = document.getElementById('rightClickActionSelect');
+        if (select && select.value !== value) {
+            select.value = value;
+        }
+    }
+    
+    // 执行聚焦操作
+    function performFocusAction() {
+        // 弹窗打开时不执行聚焦
+        if (window._isModalOpen) return;
+        var urlInput = document.getElementById('urlInput');
+        if (urlInput) {
+            urlInput.focus();
+            setTimeout(function() {
+                try {
+                    if (urlInput.setSelectionRange) {
+                        urlInput.setSelectionRange(urlInput.value.length, urlInput.value.length);
+                    }
+                } catch(e) {}
+            }, 10);
+            setTimeout(function() {
+                var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
+                var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+                var historyInSuggestChecked = document.getElementById('searchHistoryInSuggestCheckbox').checked;
+                var engine = document.getElementById('engineSelect');
+                var searchSuggestionsElem = document.getElementById('searchSuggestions');
+                if (historyChecked && suggestionsChecked && historyInSuggestChecked) {
+                    if (engine.value !== 'iFrameFree' && engine.value !== 'iFramePlus' && engine.value !== 'showCheckbox') {
+                        showSearchSuggestions([]);
+                    } else {
+                        searchSuggestionsElem.style.display = 'none';
+                    }
+                }
+            }, 100);
+        }
+    }
+    
+    // 监听下拉框变化
+    var actionSelect = document.getElementById('rightClickActionSelect');
+    if (actionSelect) {
+        var savedAction = localStorage.getItem('rightClickAction');
+        if (savedAction && (savedAction === 'disabled' || savedAction === 'focusInput')) {
+            actionSelect.value = savedAction;
+        } else {
+            actionSelect.value = 'disabled';
+            localStorage.setItem('rightClickAction', 'disabled');
+        }
+        
+        if (actionSelect.addEventListener) {
+            actionSelect.addEventListener('change', function() {
+                saveRightClickAction(this.value);
+            });
+        } else if (actionSelect.attachEvent) {
+            actionSelect.attachEvent('onchange', function() {
+                saveRightClickAction(this.value);
+            });
+        }
+    }
+    
+    // 检查目标是否为超链接元素的辅助函数
+    function isAnchorElement(target) {
+        if (!target) return false;
+        var tagName = target.tagName ? target.tagName.toLowerCase() : '';
+        // 检查当前元素是否为超链接
+        if (tagName === 'a' || tagName === 'input' || tagName === 'textarea' || tagName === 'button' || tagName === 'select') return true;
+        // 检查父元素是否为超链接（兼容点击子元素的情况）
+        var parent = target.parentNode;
+        while (parent && parent !== document.body) {
+            if (parent.tagName && parent.tagName.toLowerCase() === 'a') {
+                return true;
+            }
+            parent = parent.parentNode;
+        }
+        return false;
+    }
+    
+    // 全局右键/长按处理函数
+    function handleContextMenu(e) {
+        // 兼容低版本浏览器获取事件对象
+        e = e || window.event;
+        
+        // 弹窗打开时不处理
+        if (window._isModalOpen) return true;
+        
+        var action = getRightClickAction();
+        if (action !== 'focusInput') {
+            return true;
+        }
+        
+        var target = e.target || e.srcElement;
+        
+        // 检查目标是否为超链接，如果是则禁止自动聚焦
+        if (isAnchorElement(target)) {
+            return true;
+        }
+        
+        // 检查目标是否为 hitokotoDisplay 或其子元素
+        var isHitokoto = false;
+        var checkElem = target;
+        while (checkElem && checkElem !== document.body) {
+            if (checkElem.id === 'hitokotoDisplay') {
+                isHitokoto = true;
+                break;
+            }
+            checkElem = checkElem.parentNode;
+        }
+        if (isHitokoto) return true;
+        
+        var tagName = target.tagName ? target.tagName.toLowerCase() : '';
+        
+        var excludeTags = ['input', 'select', 'button', 'textarea'];
+        var isExcluded = false;
+        for (var i = 0; i < excludeTags.length; i++) {
+            if (tagName === excludeTags[i]) {
+                isExcluded = true;
+                break;
+            }
+        }
+        var isSearchContainer = target.id === 'searchContainer' || 
+                               (target.parentNode && target.parentNode.id === 'searchContainer');
+        
+        if (!isExcluded || isSearchContainer) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+            }
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            } else {
+                e.cancelBubble = true;
+            }
+            performFocusAction();
+            return false;
+        }
+        return true;
+    }
+    
+    // 移动端长按处理
+    var isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        var touchTimer = null;
+        var touchTarget = null;
+        
+        document.addEventListener('touchstart', function(e) {
+            e = e || window.event;
+            
+            if (window._isModalOpen) return;
+            
+            var action = getRightClickAction();
+            if (action !== 'focusInput') return;
+            
+            var urlInput = document.getElementById('urlInput');
+            if (urlInput && document.activeElement === urlInput) {
+                return;
+            }
+            
+            var target = e.target || e.srcElement;
+            
+            // 检查目标是否为超链接，如果是则禁止长按聚焦
+            if (isAnchorElement(target)) {
+                return;
+            }
+            
+            // 检查目标是否为 hitokotoDisplay 或其子元素
+            var isHitokoto = false;
+            var checkElem = target;
+            while (checkElem && checkElem !== document.body) {
+                if (checkElem.id === 'hitokotoDisplay') {
+                    isHitokoto = true;
+                    break;
+                }
+                checkElem = checkElem.parentNode;
+            }
+            if (isHitokoto) return;
+            
+            var tagName = target.tagName ? target.tagName.toLowerCase() : '';
+            var excludeTags = ['input', 'select', 'button', 'textarea'];
+            var isExcluded = false;
+            for (var i = 0; i < excludeTags.length; i++) {
+                if (tagName === excludeTags[i]) {
+                    isExcluded = true;
+                    break;
+                }
+            }
+            
+            if (!isExcluded) {
+                touchTarget = target;
+                if (touchTimer) {
+                    clearTimeout(touchTimer);
+                }
+                touchTimer = setTimeout(function() {
+                    if (touchTarget && !window._isModalOpen) {
+                        // 再次检查目标是否为超链接
+                        if (isAnchorElement(touchTarget)) {
+                            touchTimer = null;
+                            touchTarget = null;
+                            return;
+                        }
+                        var stillNotFocused = (document.activeElement !== document.getElementById('urlInput'));
+                        if (stillNotFocused) {
+                            if (e.preventDefault) {
+                                e.preventDefault();
+                            } else {
+                                e.returnValue = false;
+                            }
+                            performFocusAction();
+                        }
+                    }
+                    touchTimer = null;
+                    touchTarget = null;
+                }, 500);
+            }
+        });
+        
+        document.addEventListener('touchend', function(e) {
+            if (touchTimer) {
+                clearTimeout(touchTimer);
+                touchTimer = null;
+            }
+            touchTarget = null;
+        });
+        
+        document.addEventListener('touchmove', function(e) {
+            if (touchTimer) {
+                clearTimeout(touchTimer);
+                touchTimer = null;
+            }
+            touchTarget = null;
+        });
+    } else {
+        if (document.addEventListener) {
+            document.addEventListener('contextmenu', handleContextMenu);
+        } else if (document.attachEvent) {
+            document.attachEvent('oncontextmenu', handleContextMenu);
+        }
+    }
+    
+    // 重写弹窗函数，设置弹窗状态
+    var originalShowCustomModal = window.showCustomModal;
+    if (originalShowCustomModal) {
+        window.showCustomModal = function(title, currentValue, callback) {
+            window._isModalOpen = true;
+            originalShowCustomModal(title, currentValue, function(value) {
+                window._isModalOpen = false;
+                if (callback) callback(value);
+            });
+        };
+    }
+    
+    var originalShowCustomConfirm = window.showCustomConfirm;
+    if (originalShowCustomConfirm) {
+        window.showCustomConfirm = function(title, callback) {
+            window._isModalOpen = true;
+            originalShowCustomConfirm(title, function(result) {
+                window._isModalOpen = false;
+                if (callback) callback(result);
+            });
+        };
+    }
+    
+    var originalShowCustomAlert = window.showCustomAlert;
+    if (originalShowCustomAlert) {
+        window.showCustomAlert = function(title, prompts) {
+            window._isModalOpen = true;
+            originalShowCustomAlert(title, prompts);
+            var checkInterval = setInterval(function() {
+                var modals = document.querySelectorAll('div[style*="position: fixed"][style*="z-index: 10000"]');
+                if (modals.length === 0) {
+                    window._isModalOpen = false;
+                    clearInterval(checkInterval);
+                }
+            }, 200);
+        };
+    }
+    
+    var originalShowCustomCodeModal = window.showCustomCodeModal;
+    if (originalShowCustomCodeModal) {
+        window.showCustomCodeModal = function(title, currentCode, callback, placeholder) {
+            window._isModalOpen = true;
+            originalShowCustomCodeModal(title, currentCode, function(code) {
+                window._isModalOpen = false;
+                if (callback) callback(code);
+            }, placeholder);
+        };
+    }
+    
+    var originalShowCustomDoubleInput = window.showCustomDoubleInput;
+    if (originalShowCustomDoubleInput) {
+        window.showCustomDoubleInput = function(title, label1, label2, currentValue1, currentValue2, callback) {
+            window._isModalOpen = true;
+            originalShowCustomDoubleInput(title, label1, label2, currentValue1, currentValue2, function(v1, v2) {
+                window._isModalOpen = false;
+                if (callback) callback(v1, v2);
+            });
+        };
+    }
+})();
+
+// ========== 移动端左右滑动切换搜索引擎功能（兼容所有浏览器版本）==========
+(function() {
+    // 检测是否为移动端
+    function isMobileDevice() {
+        return /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+    
+    // 如果不是移动端，不初始化滑动功能
+    if (!isMobileDevice()) {
+        var swipeCheckbox = document.getElementById('swipeSwitchCheckbox');
+        if (swipeCheckbox) {
+            swipeCheckbox.disabled = true;
+            var swipeLabel = document.querySelector('label[for="swipeSwitchCheckbox"]');
+            if (swipeLabel) {
+                swipeLabel.style.opacity = '0.7';
+                swipeLabel.style.cursor = 'not-allowed';
+            }
+        }
+        return;
+    }
+    
+    var swipeCheckbox = document.getElementById('swipeSwitchCheckbox');
+    if (!swipeCheckbox) return;
+    
+    // 加载保存的状态
+    var savedSwipeState = localStorage.getItem('swipeSwitchChecked');
+    if (savedSwipeState === 'true') {
+        swipeCheckbox.checked = true;
+    }
+    
+    // 保存状态变化
+    if (swipeCheckbox.addEventListener) {
+        swipeCheckbox.addEventListener('change', function() {
+            localStorage.setItem('swipeSwitchChecked', this.checked);
+        });
+    } else if (swipeCheckbox.attachEvent) {
+        swipeCheckbox.attachEvent('onchange', function() {
+            localStorage.setItem('swipeSwitchChecked', this.checked);
+        });
+    }
+    
+    // 检查输入框是否聚焦
+    function isUrlInputFocused() {
+        if (!document.getElementById('focusCheckbox').checked) return;
+        var urlInput = document.getElementById('urlInput');
+        if (!urlInput) return false;
+        return document.activeElement === urlInput;
+    }
+    
+    // 检查是否有模态框/弹窗处于打开状态
+    function isModalOpen() {
+        // 检查是否有模态框元素存在且可见
+        var modals = document.querySelectorAll('div[style*="position: fixed"][style*="z-index: 10000"]');
+        for (var i = 0; i < modals.length; i++) {
+            if (modals[i].style.display !== 'none' && modals[i].parentNode) {
+                return true;
+            }
+        }
+        // 检查是否有 alert/confirm/prompt 原生弹窗（无法直接检测，通过页面滚动状态辅助判断）
+        // 当原生弹窗打开时，代码执行会被阻塞，此处主要通过模态框检测
+        return false;
+    }
+    
+    // 滑动切换搜索引擎函数
+    function switchToPrevEngine() {
+        if (document.getElementById('hideSearchContainerCheckbox') && 
+            document.getElementById('hideSearchContainerCheckbox').checked) {
+            return;
+        }
+        var engineSelect = document.getElementById('engineSelect');
+        if (!engineSelect) return;
+        
+        var options = engineSelect.options;
+        var currentIndex = engineSelect.selectedIndex;
+        var prevIndex = currentIndex - 1;
+        
+        while (prevIndex >= 0) {
+            var opt = options[prevIndex];
+            var isHidden = opt.style.display === 'none';
+            var isDisabled = opt.disabled === true;
+            if (!isHidden && !isDisabled) {
+                engineSelect.selectedIndex = prevIndex;
+                if (document.createEvent) {
+                    var evt = document.createEvent('HTMLEvents');
+                    evt.initEvent('change', true, false);
+                    engineSelect.dispatchEvent(evt);
+                } else if (engineSelect.fireEvent) {
+                    engineSelect.fireEvent('onchange');
+                }
+                break;
+            }
+            prevIndex--;
+        }
+    }
+    
+    function switchToNextEngine() {
+        if (document.getElementById('hideSearchContainerCheckbox') && 
+            document.getElementById('hideSearchContainerCheckbox').checked) {
+            return;
+        }
+        var engineSelect = document.getElementById('engineSelect');
+        if (!engineSelect) return;
+        
+        var options = engineSelect.options;
+        var currentIndex = engineSelect.selectedIndex;
+        var nextIndex = currentIndex + 1;
+        
+        while (nextIndex < options.length) {
+            var opt = options[nextIndex];
+            var isHidden = opt.style.display === 'none';
+            var isDisabled = opt.disabled === true;
+            if (!isHidden && !isDisabled) {
+                engineSelect.selectedIndex = nextIndex;
+                if (document.createEvent) {
+                    var evt = document.createEvent('HTMLEvents');
+                    evt.initEvent('change', true, false);
+                    engineSelect.dispatchEvent(evt);
+                } else if (engineSelect.fireEvent) {
+                    engineSelect.fireEvent('onchange');
+                }
+                break;
+            }
+            nextIndex++;
+        }
+    }
+    
+    // 触摸滑动变量
+    var touchStartX = 0;
+    var touchEndX = 0;
+    var minSwipeDistance = 80;
+    
+    // 触摸开始
+    document.addEventListener('touchstart', function(e) {
+        var isEnabled = swipeCheckbox && swipeCheckbox.checked;
+        if (!isEnabled) return;
+        
+        // 输入框聚焦时禁止滑动切换
+        if (isUrlInputFocused()) {
+            touchStartX = 0;
+            return;
+        }
+        
+        // 弹窗打开时禁止滑动切换
+        if (isModalOpen()) {
+            touchStartX = 0;
+            return;
+        }
+        
+        var target = e.target || e.srcElement;
+        var tagName = target.tagName ? target.tagName.toLowerCase() : '';
+        if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
+            return;
+        }
+        
+        // 兼容低版本浏览器获取触摸点
+        var touch = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : null);
+        if (touch) {
+            touchStartX = touch.clientX;
+        } else {
+            touchStartX = 0;
+        }
+    });
+    
+    // 触摸结束
+    document.addEventListener('touchend', function(e) {
+        var isEnabled = swipeCheckbox && swipeCheckbox.checked;
+        if (!isEnabled) return;
+        
+        // 输入框聚焦时禁止滑动切换
+        if (isUrlInputFocused()) {
+            touchStartX = 0;
+            return;
+        }
+        
+        // 弹窗打开时禁止滑动切换
+        if (isModalOpen()) {
+            touchStartX = 0;
+            return;
+        }
+        
+        var target = e.target || e.srcElement;
+        var tagName = target.tagName ? target.tagName.toLowerCase() : '';
+        if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
+            touchStartX = 0;
+            return;
+        }
+        
+        if (touchStartX === 0) return;
+        
+        // 兼容低版本浏览器获取触摸点
+        var changedTouch = e.changedTouches ? e.changedTouches[0] : (e.touches ? e.touches[0] : null);
+        if (changedTouch) {
+            touchEndX = changedTouch.clientX;
+        } else {
+            touchEndX = 0;
+        }
+        
+        if (touchEndX === 0) {
+            touchStartX = 0;
+            return;
+        }
+        
+        var deltaX = touchEndX - touchStartX;
+        
+        if (deltaX > minSwipeDistance) {
+            switchToPrevEngine();
+        }
+        else if (deltaX < -minSwipeDistance) {
+            switchToNextEngine();
+        }
+        
+        touchStartX = 0;
+        touchEndX = 0;
+    });
+    
+    // 触摸移动
+    document.addEventListener('touchmove', function(e) {
+        var isEnabled = swipeCheckbox && swipeCheckbox.checked;
+        if (!isEnabled) return;
+        
+        // 输入框聚焦时禁止滑动切换
+        if (isUrlInputFocused()) {
+            if (touchStartX !== 0) {
+                touchStartX = 0;
+            }
+            return;
+        }
+        
+        // 弹窗打开时禁止滑动切换
+        if (isModalOpen()) {
+            if (touchStartX !== 0) {
+                touchStartX = 0;
+            }
+            return;
+        }
+        
+        if (touchStartX !== 0) {
+            // 兼容低版本浏览器获取触摸点
+            var touch = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : null);
+            if (touch) {
+                var currentX = touch.clientX;
+                var deltaX = currentX - touchStartX;
+                // 不调用preventDefault以保持页面可滚动
+            }
+        }
+    });
+})();
+
+// 一言字体颜色控制功能（带颜色预览）
+document.querySelector('label[id="hitokotoColorBtn"]').addEventListener('click', function() {
+    var currentColor = localStorage.getItem('hitokotoColor') || '#000000';
+    // 添加颜色预览和调色盘/图片链接
+    showCustomModal('请输入一言字体颜色值（如 #000000 或 black）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}var btnRect=this.getBoundingClientRect();colorPicker.style.position=\'fixed\';colorPicker.style.left=btnRect.left+\'px\';colorPicker.style.top=(btnRect.bottom+5)+\'px\';colorPicker.style.width=\'0px\';colorPicker.style.height=\'0px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10002\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;margin-left:2px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newColor) {
+        if (newColor === null) {
+            return;
+        }
+        if (newColor === '') {
+            // 输入为空时恢复默认颜色
+            var defaultColor = '#000000';
+            var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+            if (hitokotoDisplay) {
+                hitokotoDisplay.style.color = defaultColor;
+            }
+            document.getElementById('hitokotoColorValue').textContent = defaultColor;
+            localStorage.setItem('hitokotoColor', defaultColor);
+        } else if (/^#([0-9A-F]{3,6})$/i.test(newColor) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newColor) || /^[a-z]+$/i.test(newColor) || /^hsla?\(\s*\d+\s*,\s*\d+%?\s*,\s*\d+%?\s*(,\s*[\d.]+\s*)?\)$/i.test(newColor)) {
+            var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+            if (hitokotoDisplay) {
+                hitokotoDisplay.style.color = newColor;
+            }
+            document.getElementById('hitokotoColorValue').textContent = newColor;
+            localStorage.setItem('hitokotoColor', newColor);
+            truncateText('hitokotoColorValue', newColor, 80);
+        }
+    });
+});
+
+// 一言字体样式控制功能
+var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
+if (hitokotoStyleBtn) {
+    hitokotoStyleBtn.addEventListener('click', function() {
+        var currentStyle = localStorage.getItem('hitokotoFontStyle') || 'italic';
+        showCustomModal('请输入一言字体样式 (normal/italic/oblique)：', currentStyle, function(newStyle) {
+            if (newStyle === null) {
+                return;
+            }
+            if (newStyle === '') {
+                // 输入为空时恢复默认样式
+                var defaultStyle = 'italic';
+                var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+                if (hitokotoDisplay) {
+                    hitokotoDisplay.style.fontStyle = defaultStyle;
+                }
+                document.getElementById('hitokotoStyleValue').textContent = defaultStyle;
+                localStorage.setItem('hitokotoFontStyle', defaultStyle);
+            } else if (/^(normal|italic|oblique)$/i.test(newStyle)) {
+                var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+                if (hitokotoDisplay) {
+                    hitokotoDisplay.style.fontStyle = newStyle.toLowerCase();
+                }
+                document.getElementById('hitokotoStyleValue').textContent = newStyle.toLowerCase();
+                localStorage.setItem('hitokotoFontStyle', newStyle.toLowerCase());
+                truncateText('hitokotoStyleValue', newStyle.toLowerCase(), 80);
+            }
+        });
+    });
+}
+
+// 加载保存的一言字体样式
+var savedHitokotoFontStyle = localStorage.getItem('hitokotoFontStyle');
+if (savedHitokotoFontStyle) {
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    if (hitokotoDisplay) {
+        hitokotoDisplay.style.fontStyle = savedHitokotoFontStyle;
+    }
+    document.getElementById('hitokotoStyleValue').textContent = savedHitokotoFontStyle;
+}
+
+// 加载保存的一言字体颜色
+var savedHitokotoColor = localStorage.getItem('hitokotoColor');
+if (savedHitokotoColor) {
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    if (hitokotoDisplay) {
+        hitokotoDisplay.style.color = savedHitokotoColor;
+    }
+    document.getElementById('hitokotoColorValue').textContent = savedHitokotoColor;
+}
+
+// 一言字体大小调整功能
+var hitokotoSizeLabel = document.querySelector('label[for="hitokotoSizePicker"]');
+if (hitokotoSizeLabel) {
+    hitokotoSizeLabel.addEventListener('click', function() {
+        var currentSize = localStorage.getItem('hitokotoFontSize') || '14px';
+        showCustomModal('请输入一言字体大小（如 14px，输入为空时恢复默认）：', currentSize, function(newSize) {
+            if (newSize === null) return;
+            var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+            if (newSize === '') {
+                var defaultSize = '14px';
+                if (hitokotoDisplay) hitokotoDisplay.style.fontSize = defaultSize;
+                document.getElementById('hitokotoSizeValue').textContent = defaultSize;
+                localStorage.setItem('hitokotoFontSize', defaultSize);
+            } else if (/^\d+(\.\d+)?(px|in|mm|pt|em|rem|%)$/.test(newSize)) {
+                if (hitokotoDisplay) hitokotoDisplay.style.fontSize = newSize;
+                document.getElementById('hitokotoSizeValue').textContent = newSize;
+                localStorage.setItem('hitokotoFontSize', newSize);
+                truncateText('hitokotoSizeValue', newSize, 80);
+            }
+        });
+    });
+}
+
+// 加载保存的一言字体大小
+var savedHitokotoFontSize = localStorage.getItem('hitokotoFontSize');
+if (savedHitokotoFontSize) {
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    if (hitokotoDisplay) hitokotoDisplay.style.fontSize = savedHitokotoFontSize;
+    document.getElementById('hitokotoSizeValue').textContent = savedHitokotoFontSize;
+} else {
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    if (hitokotoDisplay) hitokotoDisplay.style.fontSize = '14px';
+    document.getElementById('hitokotoSizeValue').textContent = '14px';
+    localStorage.setItem('hitokotoFontSize', '14px');
+}
+
 // 保存和加载focusCheckbox状态
 var savedFocusCheckboxState = localStorage.getItem('focusCheckboxChecked');
 if (savedFocusCheckboxState === 'true') {
     document.getElementById('focusCheckbox').checked = true;
     document.getElementById('quickInputCheckbox').disabled = false;
     document.getElementById('clearOnBlurCheckbox').disabled = false;
-    // 监听输入框聚焦时的高度变化，调整quickInputUi位置
     document.getElementById('urlInput').addEventListener('focus', function() {
-        document.body.classList.add('focused');
-        document.querySelector('.search-container').classList.add('focused');
-        document.getElementById('quickInputBtn').style.display = 'block';
-        document.getElementById('iframeContainer').style.display = 'none';
-        document.getElementById('centerBoxDisplay').style.display = 'none';
-        document.getElementById('searchContainer').style.marginTop = '0';
-        
-        // 添加高度检测和间距调整
-        var inputHeight = parseInt(getComputedStyle(this).height);
-        var submitBtnHeight = parseInt(getComputedStyle(document.getElementById('submitBtn')).height);
-        var maxHeight = Math.max(inputHeight, submitBtnHeight);
-        
-        if (maxHeight > 24) {
-            var extraSpace = maxHeight - 24;
-            document.getElementById('quickInputBtn').style.marginTop = (0 + extraSpace) + 'px';
-        } else {
-            document.getElementById('quickInputBtn').style.marginTop = '0px';
-        }
-        
-        // 检查是否启用了自动选择https文本功能
-        var isSelectHttpsTextChecked = localStorage.getItem('selectHttpsTextChecked') === 'true';
-        var isAutoFillHttpsChecked = localStorage.getItem('autoFillHttpsChecked') === 'true';
-        
-        // 只有当所有条件满足且用户没有手动输入时才自动选择
-        if (isSelectHttpsTextChecked && isAutoFillHttpsChecked &&
-            this.value === 'https://' && !this.dataset.userInput) {
-            this.select(); // 自动选择所有文本
+        var urlInput = document.getElementById('urlInput');
+        if (urlInput.value === '') {
+            resetQuickInputPosition();
         }
     });
 }
@@ -1767,13 +6111,19 @@ for (var i = 0; i < buttons.length; i++) {
         }
         urlInput.focus();
         // 更新搜索建议
-        fetchSearchSuggestions(urlInput.value);
-        setTimeout(function() {
-            if (document.getElementById('searchSuggestionsCheckbox').checked) {
-                searchSuggestions.style.display = 'block';
-                fetchSearchSuggestions(urlInput.value);
-            }
-        }, 100);
+        var engine = document.getElementById('engineSelect');
+        if (engine.value !== 'iFrameFree' && engine.value !== 'iFramePlus'
+         && engine.value !== 'showCheckbox' && engine.value !== 'autofillHttp1'
+          && engine.value !== 'autofillHttps' && engine.value !== 'newtabpageHttp1'
+           && engine.value !== 'newtabpageHttps' && engine.value !== 'httpsAutoFill') {
+            fetchSearchSuggestions(urlInput.value);
+            setTimeout(function() {
+                if (document.getElementById('searchSuggestionsCheckbox').checked) {
+                    searchSuggestions.style.display = 'block';
+                    fetchSearchSuggestions(urlInput.value);
+                }
+            }, 100);
+        }
         // 如果保存输入文本复选框被勾选，保存当前输入
         if (document.getElementById('saveInputCheckbox').checked) {
             localStorage.setItem('savedInputText', urlInput.value);
@@ -1798,7 +6148,7 @@ document.querySelector('label[for="linkColorPicker"]').addEventListener('click',
     if (savedLinkImage) {
         // 当前使用图片，直接弹出图片URL输入框
         var currentImage = localStorage.getItem('linkImage') || '';
-        showCustomModal('请输入图片URL：', currentImage, function(imageUrl) {
+        showCustomModal('请输入图片URL（输入为空时取消使用图片）：', currentImage, function(imageUrl) {
             if (imageUrl && imageUrl.trim() !== '') {
                 var linkElement = document.getElementById('85727544071588039023');
                 var linkSize = localStorage.getItem('linkSize') || '30px';
@@ -1823,7 +6173,7 @@ document.querySelector('label[for="linkColorPicker"]').addEventListener('click',
     }
     var currentColor = localStorage.getItem('linkColor') || '#0000ee';
     var currentLinkValue = localStorage.getItem('linkColor') || '#0000ee';
-    showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}colorPicker.style.position=\'fixed\';colorPicker.style.left=\'0\';colorPicker.style.top=\'0\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a>。或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){input.value=\'image url\';var labels=document.querySelectorAll(\'label[onclick*=\\\'modalCallback_\\\']\');if(labels.length>0){labels[labels.length-1].click();}}}return false;">图片</a> <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentLinkValue, function(newValue) {
+    showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}var btnRect=this.getBoundingClientRect();colorPicker.style.position=\'fixed\';colorPicker.style.left=btnRect.left+\'px\';colorPicker.style.top=(btnRect.bottom+5)+\'px\';colorPicker.style.width=\'0px\';colorPicker.style.height=\'0px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10002\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a>。或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){input.value=\'image url\';var labels=document.querySelectorAll(\'label[onclick*=\\\'modalCallback_\\\']\');if(labels.length>0){labels[labels.length-1].click();}}}return false;">图片</a> <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentLinkValue, function(newValue) {
         if (newValue !== null) {
             if (newValue === '') {
                 // 输入为空时恢复默认颜色
@@ -1920,6 +6270,11 @@ document.querySelector('label[for="renameLinkBtn"]').addEventListener('click', f
     if (!document.getElementById('showLinkCheckbox').checked) {
         return;
     }
+    var linkImage = localStorage.getItem('linkImage');
+    if (linkImage) {
+        // 使用图片时禁用重命名
+        return;
+    }
     if (document.getElementById('showTimeCheckbox').checked) {
         return;
     }
@@ -1939,6 +6294,7 @@ document.querySelector('label[for="renameLinkBtn"]').addEventListener('click', f
             linkElement.innerHTML = newName;
             document.getElementById('linkNameValue').innerHTML = newName;
             localStorage.setItem('linkName', newName);
+            truncateText('linkNameValue', newName, 100);
             if (!localStorage.getItem('36156798756549916136')) {
                 localStorage.setItem('36156798756549916136', 'true');
             }
@@ -1996,6 +6352,7 @@ document.querySelector('label[for="searchContainerMarginPicker"]').addEventListe
                 document.getElementById('searchContainer').style.marginTop = newMargin;
                 document.getElementById('searchContainerMarginValue').textContent = newMargin;
                 localStorage.setItem('searchContainerMargin', newMargin);
+                truncateText('searchContainerMarginValue', newMargin, 80);
             }
         });
 });
@@ -2029,6 +6386,7 @@ document.querySelector('label[for="renameSubmitBtn"]').addEventListener('click',
             document.getElementById('submitBtn').innerHTML = newName;
             document.getElementById('submitBtnNameValue').innerHTML = newName;
             localStorage.setItem('submitBtnName', newName);
+            truncateText('submitBtnNameValue', newName, 100);
         }
     });
 });
@@ -2067,7 +6425,15 @@ document.querySelector('label[for="executeJsBtn"]').addEventListener('click', fu
                     localStorage.removeItem('customJs');
                 }
             } catch (error) {
-                // 执行出错时不保存
+                try {
+                    if (typeof console !== 'undefined' && console && typeof console.error === 'function') {
+                        console.error('Error: ' + error.message);
+                    } else {
+                        alert('Error: ' + error.message);
+                    }
+                } catch(e) {
+                    try { alert('Error'); } catch(e2) {}
+                }
             }
         }
     }, '输入JavaScript脚本');
@@ -2484,39 +6850,128 @@ if (savedPlaceholder) {
 // 对其他需要截断的元素也应用此函数
 // 在页面加载时对已有元素应用截断
 document.addEventListener('DOMContentLoaded', function() {
+    function truncateTextById(elementId, text, maxWidth) {
+        var element = document.getElementById(elementId);
+        if (!element || !text) return;
+        var tempSpan = document.createElement('span');
+        tempSpan.style.visibility = 'hidden';
+        tempSpan.style.position = 'absolute';
+        tempSpan.style.whiteSpace = 'nowrap';
+        tempSpan.style.font = window.getComputedStyle ? window.getComputedStyle(element).font : (element.currentStyle ? element.currentStyle.font : '14px Arial');
+        tempSpan.textContent = text;
+        document.body.appendChild(tempSpan);
+        var displayText = text;
+        if (tempSpan.offsetWidth > maxWidth) {
+            while (tempSpan.offsetWidth > maxWidth && displayText.length > 3) {
+                displayText = displayText.substring(0, displayText.length - 1);
+                tempSpan.textContent = displayText + '...';
+            }
+            displayText = displayText + '...';
+        }
+        document.body.removeChild(tempSpan);
+        element.textContent = displayText;
+        element.title = text;
+    }
     // linkNameValue
     var savedLinkName = localStorage.getItem('linkName');
     if (savedLinkName) {
-        truncateText('linkNameValue', savedLinkName, 100);
+        truncateTextById('linkNameValue', savedLinkName, 100);
     }
     
     // linkColorValue
     var savedLinkColor = localStorage.getItem('linkColor');
     if (savedLinkColor) {
-        truncateText('linkColorValue', savedLinkColor, 80);
+        truncateTextById('linkColorValue', savedLinkColor, 80);
     }
     
     // colorValue
     var savedBgColor = localStorage.getItem('backgroundColor');
     if (savedBgColor) {
-        truncateText('colorValue', savedBgColor, 80);
+        truncateTextById('colorValue', savedBgColor, 80);
     }
     
     // placeholderValue
     var savedPlaceholder = localStorage.getItem('urlInputPlaceholder');
     if (savedPlaceholder) {
-        truncateText('placeholderValue', savedPlaceholder === '{empty}' ? '{empty}' : savedPlaceholder, 100);
+        truncateTextById('placeholderValue', savedPlaceholder === '{empty}' ? '{empty}' : savedPlaceholder, 100);
     }
     
     // fontColorValue
     var savedFontColor = localStorage.getItem('fontColor');
     if (savedFontColor) {
-        truncateText('fontColorValue', savedFontColor, 80);
+        truncateTextById('fontColorValue', savedFontColor, 80);
     }
     
     var savedQuickLinksColor = localStorage.getItem('quickLinksColor');
     if (savedQuickLinksColor) {
-        truncateText('quickLinksColorValue', savedQuickLinksColor, 80);
+        truncateTextById('quickLinksColorValue', savedQuickLinksColor, 80);
+    }
+    
+    var savedWidth = localStorage.getItem('buttonWidth');
+    if (savedWidth && savedWidth !== 'Default') {
+        truncateTextById('widthValue', savedWidth, 80);
+    }
+    
+    var savedHeight = localStorage.getItem('elementHeight');
+    if (savedHeight) {
+        truncateTextById('heightValue', savedHeight, 80);
+    }
+    
+    var savedHistoryLinksColor = localStorage.getItem('historyLinksColor');
+    if (savedHistoryLinksColor) {
+        truncateTextById('historyLinksColorValue', savedHistoryLinksColor, 80);
+    }
+    
+    var savedHitokotoColor = localStorage.getItem('hitokotoColor');
+    if (savedHitokotoColor) {
+        truncateTextById('hitokotoColorValue', savedHitokotoColor, 80);
+    }
+    
+    var savedHitokotoStyle = localStorage.getItem('hitokotoFontStyle');
+    if (savedHitokotoStyle) {
+        truncateTextById('hitokotoStyleValue', savedHitokotoStyle, 80);
+    }
+    
+    var savedSubmitBtnName = localStorage.getItem('submitBtnName');
+    if (savedSubmitBtnName) {
+        truncateTextById('submitBtnNameValue', savedSubmitBtnName, 100);
+    }
+    
+    var savedHeightPercent = localStorage.getItem('heightPercent');
+    if (savedHeightPercent) {
+        truncateTextById('heightPercentValue', savedHeightPercent, 80);
+    }
+    
+    var savedFontSize = localStorage.getItem('urlInputFontSize');
+    if (savedFontSize && savedFontSize !== 'Default') {
+        truncateTextById('fontSizeValue', savedFontSize, 80);
+    }
+    
+    var savedLinkSize = localStorage.getItem('linkSize');
+    if (savedLinkSize) {
+        truncateTextById('linkSizeValue', savedLinkSize, 80);
+    }
+    
+    var savedQuickLinksSize = localStorage.getItem('quickLinksFontSize');
+    if (savedQuickLinksSize && savedQuickLinksSize !== 'Default') {
+        setTimeout(function() {
+            truncateTextById('quickLinksSizeValue', savedQuickLinksSize, 80);
+        }, 50);
+    }
+    
+    var savedHistoryLinksSize = localStorage.getItem('historyLinksFontSize');
+    if (savedHistoryLinksSize && savedHistoryLinksSize !== 'Default') {
+        truncateTextById('historyLinksSizeValue', savedHistoryLinksSize, 80);
+    }
+    
+    var savedHitokotoSize = localStorage.getItem('hitokotoFontSize');
+    if (savedHitokotoSize) {
+        truncateTextById('hitokotoSizeValue', savedHitokotoSize, 80);
+    }
+    
+    var savedSearchContainerMargin = localStorage.getItem('searchContainerMargin');
+    if (savedSearchContainerMargin && savedSearchContainerMargin !== 'Default') {
+        truncateTextById('searchContainerMarginValue', savedSearchContainerMargin, 80);
     }
 });
 
@@ -2552,6 +7007,7 @@ document.querySelector('label[for="linkSizePicker"]').addEventListener('click', 
             }
             document.getElementById('linkSizeValue').textContent = newSize;
             localStorage.setItem('linkSize', newSize);
+            truncateText('linkSizeValue', newSize, 80);
         }
     });
 });
@@ -2574,18 +7030,46 @@ if (savedLinkSize) {
 
 // 保存和加载搜索历史记录checkbox状态
 var savedSearchHistoryState = localStorage.getItem('searchHistoryChecked');
+var historyLinksSizeLabel = document.querySelector('label[for="historyLinksSizePicker"]');
 if (savedSearchHistoryState === 'true') {
     document.getElementById('searchHistoryCheckbox').checked = true;
     document.getElementById('searchHistory').style.display = 'block';
     updateSearchHistory();
+    if (historyLinksSizeLabel) {
+        historyLinksSizeLabel.style.opacity = '1';
+        historyLinksSizeLabel.style.cursor = 'pointer';
+        historyLinksSizeLabel.style.pointerEvents = 'auto';
+    }
+} else {
+    if (historyLinksSizeLabel) {
+        historyLinksSizeLabel.style.opacity = '0.7';
+        historyLinksSizeLabel.style.cursor = 'not-allowed';
+        historyLinksSizeLabel.style.pointerEvents = 'none';
+    }
 }
 
-// 监听搜索历史记录checkbox变化
+// 修改位置：找到 searchHistoryCheckbox 的 change 事件监听器，修改用户取消时的处理
+
 document.getElementById('searchHistoryCheckbox').addEventListener('change', function() {
+    var historyLinksSizeLabel = document.querySelector('label[for="historyLinksSizePicker"]');
+    var historyLinksColorLabel = document.querySelector('label[for="historyLinksColorPicker"]');
+    var historyInSuggestCheckbox = document.getElementById('searchHistoryInSuggestCheckbox');
+    
     if (this.checked) {
         localStorage.setItem('searchHistoryChecked', this.checked);
         document.getElementById('searchHistory').style.display = 'block';
         updateSearchHistory();
+        if (historyLinksSizeLabel) {
+            historyLinksSizeLabel.style.opacity = '1';
+            historyLinksSizeLabel.style.cursor = 'pointer';
+            historyLinksSizeLabel.style.pointerEvents = 'auto';
+        }
+        if (historyLinksColorLabel) {
+            historyLinksColorLabel.style.opacity = '1';
+            historyLinksColorLabel.style.cursor = 'pointer';
+            historyLinksColorLabel.style.pointerEvents = 'auto';
+        }
+        updateHistoryInSuggestDisabled();
     } else {
         var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
         if (history.length > 0) {
@@ -2595,9 +7079,49 @@ document.getElementById('searchHistoryCheckbox').addEventListener('change', func
                     document.getElementById('searchHistory').style.display = 'none';
                     document.getElementById('clearHistoryBtn').style.display = 'none';
                     localStorage.setItem('searchHistoryChecked', false);
+                    updateHistoryInSuggestDisabled();
+                    if (historyInSuggestCheckbox && historyInSuggestCheckbox.checked) {
+                        historyInSuggestCheckbox.checked = false;
+                        localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+                        var searchHistoryDiv = document.getElementById('searchHistory');
+                        var clearHistoryBtn = document.getElementById('clearHistoryBtn');
+                        if (searchHistoryDiv) {
+                            searchHistoryDiv.style.display = 'none';
+                        }
+                        if (clearHistoryBtn) {
+                            clearHistoryBtn.style.display = 'none';
+                        }
+                    }
                 } else {
-                    // 用户点击取消，恢复checkbox选中状态
+                    // === 修复：用户点击取消时，恢复复选框为勾选状态 ===
                     document.getElementById('searchHistoryCheckbox').checked = true;
+                    localStorage.setItem('searchHistoryChecked', 'true');
+                    // 恢复历史记录显示
+                    document.getElementById('searchHistory').style.display = 'block';
+                    updateSearchHistory();
+                    if (historyLinksSizeLabel) {
+                        historyLinksSizeLabel.style.opacity = '1';
+                        historyLinksSizeLabel.style.cursor = 'pointer';
+                        historyLinksSizeLabel.style.pointerEvents = 'auto';
+                    }
+                    if (historyLinksColorLabel) {
+                        historyLinksColorLabel.style.opacity = '1';
+                        historyLinksColorLabel.style.cursor = 'pointer';
+                        historyLinksColorLabel.style.pointerEvents = 'auto';
+                    }
+                    // === 恢复 searchHistoryInSuggestCheckbox 的禁用状态 ===
+                    // 检查 suggestionsChecked 状态，重新启用或禁用 historyInSuggestCheckbox
+                    var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+                    if (historyInSuggestCheckbox) {
+                        if (suggestionsChecked) {
+                            historyInSuggestCheckbox.disabled = false;
+                        } else {
+                            historyInSuggestCheckbox.disabled = true;
+                        }
+                    }
+                    // 更新所有相关禁用状态
+                    updateHistoryInSuggestDisabled();
+                    // === 修复代码结束 ===
                 }
             });
         } else {
@@ -2605,6 +7129,11 @@ document.getElementById('searchHistoryCheckbox').addEventListener('change', func
             localStorage.setItem('searchHistoryChecked', this.checked);
             document.getElementById('searchHistory').style.display = 'none';
             document.getElementById('clearHistoryBtn').style.display = 'none';
+            updateHistoryInSuggestDisabled();
+            if (historyInSuggestCheckbox && historyInSuggestCheckbox.checked) {
+                historyInSuggestCheckbox.checked = false;
+                localStorage.setItem('searchHistoryInSuggestChecked', 'false');
+            }
         }
     }
 });
@@ -2620,7 +7149,89 @@ document.querySelector('#clearHistoryBtn label').addEventListener('click', funct
     });
 });
 
+// 历史记录链接字体大小调整功能
+var historyLinksSizeLabel = document.querySelector('label[for="historyLinksSizePicker"]');
+if (historyLinksSizeLabel) {
+    historyLinksSizeLabel.addEventListener('click', function() {
+        var currentSize = localStorage.getItem('historyLinksFontSize') || 'Default';
+        showCustomModal('请输入历史记录链接字体大小（如 14px，输入为空时恢复默认）：',
+            currentSize === 'Default' ? '' : currentSize,
+            function(newSize) {
+                if (newSize === '') {
+                    localStorage.removeItem('historyLinksFontSize');
+                    document.getElementById('historyLinksSizeValue').textContent = 'Default';
+                    applyHistoryLinksFontSize();
+                } else if (/^\d+(\.\d+)?(px|in|mm|pt|em|rem)$/.test(newSize)) {
+                    localStorage.setItem('historyLinksFontSize', newSize);
+                    document.getElementById('historyLinksSizeValue').textContent = newSize;
+                    applyHistoryLinksFontSize();
+                    truncateText('historyLinksSizeValue', newSize, 80);
+                }
+            });
+    });
+}
+
+// 应用历史记录链接字体大小
+function applyHistoryLinksFontSize() {
+    var savedSize = localStorage.getItem('historyLinksFontSize');
+    var historyLinks = document.querySelectorAll('#searchHistory a');
+    for (var i = 0; i < historyLinks.length; i++) {
+        if (savedSize) {
+            historyLinks[i].style.fontSize = savedSize;
+        } else {
+            historyLinks[i].style.fontSize = '';
+        }
+    }
+}
+
+// 加载保存的历史记录字体大小设置
+var savedHistoryLinksFontSize = localStorage.getItem('historyLinksFontSize');
+if (savedHistoryLinksFontSize) {
+    document.getElementById('historyLinksSizeValue').textContent = savedHistoryLinksFontSize;
+    setTimeout(applyHistoryLinksFontSize, 100);
+}
+
+// 监听搜索历史更新，重新应用字体大小
+var originalUpdateSearchHistory = window.updateSearchHistory;
+if (originalUpdateSearchHistory) {
+    window.updateSearchHistory = function() {
+        originalUpdateSearchHistory();
+        setTimeout(applyHistoryLinksFontSize, 50);
+    };
+}
+
+// 修改位置：在 updateSearchHistory 函数中，找到创建 linkElement 的代码
+
 function updateSearchHistory() {
+    // 添加IE兼容性检测
+    var isIE = false;
+    try {
+        isIE = /*@cc_on!@*/false || !!document.documentMode;
+    } catch(e) { isIE = false; }
+    
+    // 如果启用了历史记录在建议中显示，则不显示超链接历史记录
+    var showHistoryInSuggest = localStorage.getItem('searchHistoryInSuggestChecked') === 'true';
+    if (showHistoryInSuggest) {
+        var searchHistoryDiv = document.getElementById('searchHistory');
+        if (searchHistoryDiv) {
+            searchHistoryDiv.innerHTML = '';
+            searchHistoryDiv.style.display = 'none';
+            document.getElementById('clearHistoryBtn').style.display = 'none';
+        }
+        return;
+    }
+    // 如果启用了历史记录在建议中显示，则不显示超链接历史记录
+    var showHistoryInSuggest = localStorage.getItem('searchHistoryInSuggestChecked') === 'true';
+    if (showHistoryInSuggest) {
+        var searchHistoryDiv = document.getElementById('searchHistory');
+        if (searchHistoryDiv) {
+            searchHistoryDiv.innerHTML = '';
+            searchHistoryDiv.style.display = 'none';
+            document.getElementById('clearHistoryBtn').style.display = 'none';
+        }
+        return;
+    }
+    
     var searchHistoryDiv = document.getElementById('searchHistory');
     var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
     
@@ -2642,6 +7253,10 @@ function updateSearchHistory() {
     container.style.left = '0';
     container.style.right = '0';
     container.style.margin = '0 auto';
+    
+    // === 获取保存的历史记录链接颜色 ===
+    var savedHistoryLinkColor = localStorage.getItem('historyLinksColor');
+    var defaultHistoryColor = savedHistoryLinkColor ? savedHistoryLinkColor : '#0000ee';
     
     history.forEach(function(item, index) {
         var linkElement = document.createElement('a');
@@ -2667,7 +7282,10 @@ function updateSearchHistory() {
         
         document.body.removeChild(tempSpan);
         linkElement.textContent = displayText;
-        linkElement.title = item.text; // 添加title显示完整内容
+        linkElement.title = item.text;
+        
+        // === 设置历史记录链接颜色 ===
+        linkElement.style.color = defaultHistoryColor;
         
         linkElement.style.margin = '0 5px';
         linkElement.style.maxWidth = '150px';
@@ -2691,6 +7309,16 @@ function updateSearchHistory() {
     });
     
     searchHistoryDiv.appendChild(container);
+    
+    // === 添加 active 状态样式（红色）===
+    var styleId = 'historyLinksActiveStyle';
+    var existingStyle = document.getElementById(styleId);
+    if (!existingStyle) {
+        var styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        styleElement.textContent = '#searchHistory a:active { color: #ff0000 !important; }';
+        document.head.appendChild(styleElement);
+    }
 }
 
 // 保存和加载一言显示checkbox状态
@@ -2698,12 +7326,25 @@ var savedHitokotoState = localStorage.getItem('hitokotoChecked');
 if (savedHitokotoState === 'true') {
     document.getElementById('hitokotoCheckbox').checked = true;
     document.getElementById('hitokotoDisplay').style.display = 'block';
-    fetchHitokoto();
+    setTimeout(function() {
+        fetchHitokoto();
+    }, 0);
 }
 
 // 添加页面右键/长按恢复搜索框功能
 document.addEventListener('contextmenu', function(e) {
-    if (document.getElementById('hideSearchContainerCheckbox').checked) {
+    var target = e.target || e.srcElement;
+    var isAnchor = false;
+    var checkElem = target;
+    while (checkElem && checkElem !== document.body) {
+        if (checkElem.tagName && checkElem.tagName.toLowerCase() === 'a') {
+            isAnchor = true;
+            break;
+        }
+        checkElem = checkElem.parentNode;
+    }
+    
+    if (document.getElementById('hideSearchContainerCheckbox').checked && !isAnchor) {
         e = e || window.event;
         if (e.preventDefault) {
             e.preventDefault();
@@ -2718,13 +7359,13 @@ document.addEventListener('contextmenu', function(e) {
             document.getElementById('searchContainer').style.display = 'flex';
             document.getElementById('showLinkCheckbox').checked = true;
             localStorage.setItem('showLinkChecked', 'true');
+            localStorage.setItem('selectedEngine', 'showCheckbox');
             location.reload();
         }
         return false;
-    } else {
-        var target = e.target || e.srcElement;
+    } else if (!document.getElementById('hideSearchContainerCheckbox').checked) {
         var tagName = target.tagName.toLowerCase();
-        if (tagName === 'head' || tagName === 'p' || tagName === 'span' || tagName === 'label' || tagName === 'div' || tagName === 'select' || tagName === 'button' || tagName === 'body' || tagName === 'html' || target.id === 'quickLinks' || target.id === 'autoFillhttps' || target.className === 'search-container') {
+        if (tagName === 'head' || tagName === 'p' || tagName === 'span' || tagName === 'label' || tagName === 'div' || tagName === 'select' || tagName === 'button' || tagName === 'body' || tagName === 'html' || target.id === 'quickLinks' || target.id === 'showToolPanel' || target.className === 'search-container') {
             e = e || window.event;
             if (e.preventDefault) {
                 e.preventDefault();
@@ -2745,7 +7386,8 @@ document.getElementById('hitokotoDisplay').addEventListener('contextmenu', funct
         e.returnValue = false;
     }
     
-    var hitokotoText = this.getAttribute('data-hitokoto') || this.textContent;
+    // ========== 【修改位置】优先使用 data-fulltext 获取完整内容 ==========
+    var hitokotoText = this.getAttribute('data-fulltext') || this.textContent;
     if (hitokotoText && hitokotoText !== 'Network Error') {
         var confirmResult = confirm('是否复制此一言？');
         if (confirmResult) {
@@ -2775,43 +7417,1355 @@ document.getElementById('hitokotoDisplay').addEventListener('contextmenu', funct
 
 // 监听一言显示checkbox变化
 document.getElementById('hitokotoCheckbox').addEventListener('change', function() {
+    var hitokotoSizeLabel = document.querySelector('label[for="hitokotoSizePicker"]');
+    var hitokotoColorBtn = document.getElementById('hitokotoColorBtn');
+    var hitokotoStyleBtn = document.getElementById('hitokotoStyleBtn');
+    var typeBtn = document.querySelector('label[for="hitokotoTypeBtn"]');
+    var apiSelect = document.getElementById('hitokotoApiSelect');
+    
     if (this.checked) {
         showCustomConfirm('启用后，会加载一个额外接口，在下方显示随机生成一条一言，生成的一言内容与本网站无关', function(result) {
             if (result) {
                 localStorage.setItem('hitokotoChecked', 'true');
                 document.getElementById('hitokotoDisplay').style.display = 'block';
                 fetchHitokoto();
+                // 启用一言相关按钮
+                if (hitokotoColorBtn) {
+                    hitokotoColorBtn.style.opacity = '1';
+                    hitokotoColorBtn.style.cursor = 'pointer';
+                    hitokotoColorBtn.style.pointerEvents = 'auto';
+                }
+                if (hitokotoStyleBtn) {
+                    hitokotoStyleBtn.style.opacity = '1';
+                    hitokotoStyleBtn.style.cursor = 'pointer';
+                    hitokotoStyleBtn.style.pointerEvents = 'auto';
+                }
+                if (hitokotoSizeLabel) {
+                    hitokotoSizeLabel.style.opacity = '1';
+                    hitokotoSizeLabel.style.cursor = 'pointer';
+                    hitokotoSizeLabel.style.pointerEvents = 'auto';
+                }
+                // 修改位置：启用 typeBtn 和 apiSelect
+                if (typeBtn) {
+                    typeBtn.style.opacity = '1';
+                    typeBtn.style.cursor = 'pointer';
+                    typeBtn.style.pointerEvents = 'auto';
+                    typeBtn.removeAttribute('data-disabled');
+                    // 根据API选择状态更新
+                    var apiSelectElem = document.getElementById('hitokotoApiSelect');
+                    if (apiSelectElem && apiSelectElem.value === 'hitokApi_v1') {
+                        // V1时启用typeBtn
+                    } else if (apiSelectElem && apiSelectElem.value !== 'hitokApi_v1') {
+                        typeBtn.style.opacity = '0.7';
+                        typeBtn.style.cursor = 'not-allowed';
+                        typeBtn.style.pointerEvents = 'none';
+                        typeBtn.setAttribute('data-disabled', 'true');
+                    }
+                }
+                if (apiSelect) {
+                    apiSelect.disabled = false;
+                    apiSelect.style.opacity = '1';
+                    apiSelect.style.cursor = 'pointer';
+                }
+                // 更新下拉框禁用状态
+                updateTypeBtnState();
             } else {
+                // 修改位置：用户取消时，恢复复选框为未勾选状态并禁用相关按钮
                 document.getElementById('hitokotoCheckbox').checked = false;
+                localStorage.setItem('hitokotoChecked', 'false');
+                document.getElementById('hitokotoDisplay').style.display = 'none';
+                // 禁用一言相关按钮
+                if (hitokotoColorBtn) {
+                    hitokotoColorBtn.style.opacity = '0.7';
+                    hitokotoColorBtn.style.cursor = 'not-allowed';
+                    hitokotoColorBtn.style.pointerEvents = 'none';
+                }
+                if (hitokotoStyleBtn) {
+                    hitokotoStyleBtn.style.opacity = '0.7';
+                    hitokotoStyleBtn.style.cursor = 'not-allowed';
+                    hitokotoStyleBtn.style.pointerEvents = 'none';
+                }
+                if (hitokotoSizeLabel) {
+                    hitokotoSizeLabel.style.opacity = '0.7';
+                    hitokotoSizeLabel.style.cursor = 'not-allowed';
+                    hitokotoSizeLabel.style.pointerEvents = 'none';
+                }
+                // 修改位置：禁用 typeBtn 和 apiSelect
+                if (typeBtn) {
+                    typeBtn.style.opacity = '0.7';
+                    typeBtn.style.cursor = 'not-allowed';
+                    typeBtn.style.pointerEvents = 'none';
+                    typeBtn.setAttribute('data-disabled', 'true');
+                }
+                if (apiSelect) {
+                    apiSelect.disabled = true;
+                    apiSelect.style.opacity = '0.7';
+                    apiSelect.style.cursor = 'not-allowed';
+                }
             }
         });
     } else {
         localStorage.setItem('hitokotoChecked', 'false');
         document.getElementById('hitokotoDisplay').style.display = 'none';
+        // 禁用一言相关按钮
+        if (hitokotoColorBtn) {
+            hitokotoColorBtn.style.opacity = '0.7';
+            hitokotoColorBtn.style.cursor = 'not-allowed';
+            hitokotoColorBtn.style.pointerEvents = 'none';
+        }
+        if (hitokotoStyleBtn) {
+            hitokotoStyleBtn.style.opacity = '0.7';
+            hitokotoStyleBtn.style.cursor = 'not-allowed';
+            hitokotoStyleBtn.style.pointerEvents = 'none';
+        }
+        if (hitokotoSizeLabel) {
+            hitokotoSizeLabel.style.opacity = '0.7';
+            hitokotoSizeLabel.style.cursor = 'not-allowed';
+            hitokotoSizeLabel.style.pointerEvents = 'none';
+        }
+        // 修改位置：禁用 typeBtn 和 apiSelect
+        if (typeBtn) {
+            typeBtn.style.opacity = '0.7';
+            typeBtn.style.cursor = 'not-allowed';
+            typeBtn.style.pointerEvents = 'none';
+            typeBtn.setAttribute('data-disabled', 'true');
+        }
+        if (apiSelect) {
+            apiSelect.disabled = true;
+            apiSelect.style.opacity = '0.7';
+            apiSelect.style.cursor = 'not-allowed';
+        }
     }
 });
 
 // 获取一言数据
 function fetchHitokoto() {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'https://v1.hitokoto.cn/', true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4 && xhr.status === 200) {
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    if (!hitokotoDisplay) return;
+    
+    // 获取选中的API
+    var apiSelect = document.getElementById('hitokotoApiSelect');
+    var selectedApi = apiSelect ? apiSelect.value : 'hitokApi_v1';
+    
+    // 获取纯文本格式开关状态
+    var isPlainText = false;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            isPlainText = localStorage.getItem('hitokotoPlainTextChecked') === 'true';
+        }
+    } catch(e) {}
+    
+    // ========== 【修改位置】获取隐藏来源开关状态 ==========
+    var hideSource = false;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+        }
+    } catch(e) {}
+    
+    var url = '';
+    
+    // 修改位置：根据选择的API构建URL
+    if (selectedApi === 'hitokApi_v2') {
+        url = 'https://api.4qb.cn/api/yiyan?type=text';
+    } else if (selectedApi === 'hitokApi_v3') {
+        url = 'https://apis.jxcxin.cn/api/yiyan?type=json';
+    } else if (selectedApi === 'hitokApi_v4') {
+        url = 'https://api.vsuy.cn/ylapi/yulu/index.php';
+    } else if (selectedApi === 'hitokApi_v5') {
+        url = 'https://api.qemao.com/api/Verse/';
+    } else if (selectedApi === 'hitokApi_v6') {
+        url = 'https://api.kuleu.com/api/yiyan';
+    } else if (selectedApi === 'hitokApi_v7') {
+        url = 'http://api.xcvts.cn/api/yiyan?type=json';
+    } else if (selectedApi === 'hitokApi_v8') {
+        url = 'https://api.suyanw.cn/api/yiyan.php?type=json';
+    } else if (selectedApi === 'hitokApi_v9') {
+        url = 'https://v.api.aa1.cn/api/yiyan/index.php?type=json';
+    } else {
+        // V1 API：默认类型
+        var useDefault = true;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var val = localStorage.getItem('hitokotoUseDefault');
+                if (val !== null && val !== undefined) {
+                    useDefault = val === 'true';
+                }
+            }
+        } catch(e) {}
+        
+        if (useDefault) {
+            url = 'https://v1.hitokoto.cn/';
+        } else {
+            var selectedTypes = [];
             try {
-                var data = JSON.parse(xhr.responseText);
-                var hitokotoText = '「' + data.hitokoto + '」—— ' + data.from;
-                document.getElementById('hitokotoDisplay').textContent = hitokotoText;
-                document.getElementById('hitokotoDisplay').setAttribute('data-hitokoto', hitokotoText);
-            } catch (e) {
-                document.getElementById('hitokotoDisplay').textContent = 'Network Error';
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    var types = localStorage.getItem('hitokotoSelectedTypes');
+                    if (types) {
+                        selectedTypes = JSON.parse(types);
+                    }
+                }
+            } catch(e) {}
+            
+            if (selectedTypes.length === 0) {
+                url = 'https://v1.hitokoto.cn/';
+            } else {
+                var params = [];
+                for (var i = 0; i < selectedTypes.length; i++) {
+                    params.push('c=' + selectedTypes[i]);
+                }
+                url = 'https://v1.hitokoto.cn/?' + params.join('&');
+            }
+        }
+        
+        // 如果纯文本格式开关已勾选，添加 encode=text 参数
+        if (isPlainText) {
+            if (url.indexOf('?') !== -1) {
+                url += '&encode=text';
+            } else {
+                url += '?encode=text';
+            }
+        }
+    }
+    
+    var xhr = null;
+    try {
+        xhr = new XMLHttpRequest();
+    } catch(e) {
+        hitokotoDisplay.textContent = 'Network Error';
+        return;
+    }
+    
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                try {
+                    var responseText = xhr.responseText;
+                    if (selectedApi === 'hitokApi_v2' || selectedApi === 'hitokApi_v4' || selectedApi === 'hitokApi_v5'
+                     || selectedApi === 'hitokApi_v6') {
+                        hitokotoDisplay.textContent = responseText;
+                        hitokotoDisplay.setAttribute('data-hitokoto', responseText);
+                        // ========== 【修改位置】存储完整内容供复制 ==========
+                        hitokotoDisplay.setAttribute('data-fulltext', responseText);
+                    } else if (selectedApi === 'hitokApi_v3') {
+                        var data = JSON.parse(responseText);
+                        if (data && data.code === 200 && data.msg) {
+                            hitokotoDisplay.textContent = data.msg;
+                            hitokotoDisplay.setAttribute('data-hitokoto', data.msg);
+                            hitokotoDisplay.setAttribute('data-fulltext', data.msg);
+                        } else {
+                            hitokotoDisplay.textContent = 'Network Error';
+                        }
+                    } else if (selectedApi === 'hitokApi_v7') {
+                        var data = JSON.parse(responseText);
+                        if (data && data.code === 200 && data.line) {
+                            hitokotoDisplay.textContent = data.line;
+                            hitokotoDisplay.setAttribute('data-hitokoto', data.line);
+                            hitokotoDisplay.setAttribute('data-fulltext', data.line);
+                        } else {
+                            hitokotoDisplay.textContent = 'Network Error';
+                        }
+                    } else if (selectedApi === 'hitokApi_v8') {
+                        var data = JSON.parse(responseText);
+                        if (data && data.text) {
+                            hitokotoDisplay.textContent = data.text;
+                            hitokotoDisplay.setAttribute('data-hitokoto', data.text);
+                            hitokotoDisplay.setAttribute('data-fulltext', data.text);
+                        } else {
+                            hitokotoDisplay.textContent = 'Network Error';
+                        }
+                    } else if (selectedApi === 'hitokApi_v9') {
+                        var data = JSON.parse(responseText);
+                        if (data && data.yiyan) {
+                            hitokotoDisplay.textContent = data.yiyan;
+                            hitokotoDisplay.setAttribute('data-hitokoto', data.yiyan);
+                            hitokotoDisplay.setAttribute('data-fulltext', data.yiyan);
+                        } else {
+                            hitokotoDisplay.textContent = 'Network Error';
+                        }
+                    } else if (isPlainText) {
+                        hitokotoDisplay.textContent = responseText;
+                        hitokotoDisplay.setAttribute('data-hitokoto', responseText);
+                        hitokotoDisplay.setAttribute('data-fulltext', responseText);
+                    } else {
+                        var data = JSON.parse(responseText);
+                        // ========== 【修改位置】V1 API 显示逻辑 ==========
+                        var fullText = '「' + data.hitokoto + '」—— ' + data.from;
+                        var displayText = '';
+                        if (hideSource) {
+                            // 隐藏来源：仅显示「内容」
+                            displayText = '「' + data.hitokoto + '」';
+                            // 存储完整数据供悬停显示、点击切换和复制使用
+                            hitokotoDisplay.setAttribute('data-fulltext', fullText);
+                            hitokotoDisplay.setAttribute('data-source', data.from);
+                            hitokotoDisplay.setAttribute('data-hitokoto', data.hitokoto);
+                            hitokotoDisplay.setAttribute('data-displaytext', displayText);
+                            // ========== 【新增】存储 active 状态，用于点击切换 ==========
+                            hitokotoDisplay.setAttribute('data-active', 'false');
+                        } else {
+                            // 默认显示完整
+                            displayText = fullText;
+                            hitokotoDisplay.setAttribute('data-hitokoto', fullText);
+                            hitokotoDisplay.setAttribute('data-fulltext', fullText);
+                            hitokotoDisplay.setAttribute('data-displaytext', fullText);
+                            hitokotoDisplay.setAttribute('data-active', 'false');
+                        }
+                        hitokotoDisplay.textContent = displayText;
+                        // ========== 【修改结束】 ==========
+                    }
+                } catch (e) {
+                    hitokotoDisplay.textContent = 'Network Error';
+                }
+            } else {
+                hitokotoDisplay.textContent = 'Network Error';
             }
         }
     };
     xhr.onerror = function() {
-        document.getElementById('hitokotoDisplay').textContent = 'Network Error';
+        hitokotoDisplay.textContent = 'Network Error';
     };
-    xhr.send();
+    xhr.ontimeout = function() {
+        hitokotoDisplay.textContent = 'Network Error';
+    };
+    try {
+        xhr.send();
+    } catch(e) {
+        hitokotoDisplay.textContent = 'Network Error';
+    }
 }
+
+// 一言类型选择功能
+(function() {
+    var typeBtn = document.querySelector('label[for="hitokotoTypeBtn"]');
+    var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    
+    if (!typeBtn) return;
+    
+    // 类型列表（按字母排列）
+    var typeList = [
+        { id: 'a', label: '动画' },
+        { id: 'b', label: '漫画' },
+        { id: 'c', label: '游戏' },
+        { id: 'd', label: '文学' },
+        { id: 'e', label: '原创' },
+        { id: 'f', label: '来自网络' },
+        { id: 'g', label: '其他' },
+        { id: 'h', label: '影视' },
+        { id: 'i', label: '诗词' },
+        { id: 'j', label: '网易云' },
+        { id: 'k', label: '哲学' },
+        { id: 'l', label: '抖机灵' }
+    ];
+    
+    // 默认勾选类型
+    var defaultCheckedTypes = ['d', 'i', 'k'];
+    
+    // 加载保存的类型选择
+    var savedUseDefault = true;
+    var savedSelectedTypes = [];
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var useDefault = localStorage.getItem('hitokotoUseDefault');
+            if (useDefault !== null && useDefault !== undefined) {
+                savedUseDefault = useDefault === 'true';
+            }
+            var types = localStorage.getItem('hitokotoSelectedTypes');
+            if (types) {
+                savedSelectedTypes = JSON.parse(types);
+            }
+        }
+    } catch(e) {}
+    
+    // 获取当前选中的类型
+    function getSelectedTypes() {
+        if (savedUseDefault) {
+            return defaultCheckedTypes.slice();
+        }
+        return savedSelectedTypes.length > 0 ? savedSelectedTypes.slice() : defaultCheckedTypes.slice();
+    }
+    
+    // 修改位置：设置禁用状态函数
+    function setTypeBtnDisabled(disabled) {
+        if (disabled) {
+            typeBtn.style.opacity = '0.7';
+            typeBtn.style.cursor = 'not-allowed';
+            typeBtn.style.pointerEvents = 'none';
+            typeBtn.setAttribute('data-disabled', 'true');
+        } else {
+            typeBtn.style.opacity = '1';
+            typeBtn.style.cursor = 'pointer';
+            typeBtn.style.pointerEvents = 'auto';
+            typeBtn.removeAttribute('data-disabled');
+        }
+    }
+    
+    // 修改位置：初始禁用状态（未勾选hitokotoCheckbox时禁用）
+    if (hitokotoCheckbox) {
+        setTypeBtnDisabled(!hitokotoCheckbox.checked);
+    } else {
+        setTypeBtnDisabled(true);
+    }
+    
+    // 修改位置：监听 hitokotoCheckbox 变化
+    if (hitokotoCheckbox) {
+        if (hitokotoCheckbox.addEventListener) {
+            hitokotoCheckbox.addEventListener('change', function() {
+                setTypeBtnDisabled(!this.checked);
+            });
+        } else if (hitokotoCheckbox.attachEvent) {
+            hitokotoCheckbox.attachEvent('onchange', function() {
+                setTypeBtnDisabled(!this.checked);
+            });
+        }
+    }
+
+    // ========== 【修改位置】点击类型按钮 ==========
+    typeBtn.onclick = function() {
+        // 修改位置：如果按钮被禁用，不执行任何操作
+        if (this.getAttribute('data-disabled') === 'true') {
+            return;
+        }
+        // 检查一言是否启用
+        if (!hitokotoCheckbox || !hitokotoCheckbox.checked) {
+            return;
+        }
+        
+        // 获取当前纯文本格式开关状态
+        var plainTextChecked = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                plainTextChecked = localStorage.getItem('hitokotoPlainTextChecked') === 'true';
+            }
+        } catch(e) {}
+        
+        // ========== 【新增】获取悬停显示来源开关状态 ==========
+        var hideSourceChecked = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                hideSourceChecked = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+            }
+        } catch(e) {}
+        
+        var html = '<div style="text-align: left; font-size: 14px;">';
+        
+        html += '<div style="margin-top: 5px; margin-bottom: 5px;"><b style="font-size: 15px;">语句类型: </b></div>';
+        
+        // 第一行：默认类型单选项
+        html += '<div style="margin-bottom: 10px;">' +
+            '<input type="radio" name="hitokotoTypeMode" value="default" id="ht_default"' + (savedUseDefault ? ' checked' : '') + '>' +
+            '<label for="ht_default" style="margin-left: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent;">默认句子类型 (综合)</label>' +
+            '</div>';
+        
+        // 第二行：可选类型单选项
+        html += '<div style="margin-bottom: 8px;">' +
+            '<input type="radio" name="hitokotoTypeMode" value="custom" id="ht_custom"' + (!savedUseDefault ? ' checked' : '') + '>' +
+            '<label for="ht_custom" style="margin-left: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent;">可选句子类型</label>' +
+            '</div>';
+        
+        // checkbox列表
+        var isCustomMode = !savedUseDefault;
+        html += '<div id="hitokotoTypeList" style="margin-left: 20px; margin-bottom: 5px;">';
+        for (var i = 0; i < typeList.length; i++) {
+            var t = typeList[i];
+            var isChecked = false;
+            if (savedUseDefault) {
+                isChecked = defaultCheckedTypes.indexOf(t.id) !== -1;
+            } else {
+                isChecked = savedSelectedTypes.indexOf(t.id) !== -1;
+            }
+            var disabled = !isCustomMode ? 'disabled' : '';
+            var checkedAttr = isChecked ? 'checked' : '';
+            html += '<div style="display: inline-block; margin-right: 8px; margin-bottom: 4px; -webkit-tap-highlight-color: transparent;">' +
+                '<input type="checkbox" name="hitokotoType" value="' + t.id + '" id="ht_' + t.id + '" ' + checkedAttr + ' ' + disabled + '>' +
+                '<label for="ht_' + t.id + '" style="margin-left: 2px; cursor: ' + (isCustomMode ? 'pointer' : 'default') + ';">' + (i + 1) + '.' + t.label + '</label>' +
+                '</div>';
+        }
+        html += '</div>';
+        
+        html += '<div><b style="font-size: 15px;">显示设置: </b></div>';
+        
+        // 纯文本格式开关
+        html += '<div style="margin-top: 5px; margin-left: 10px; display: inline-block; -webkit-tap-highlight-color: transparent;">' +
+            '<input type="checkbox" id="ht_plainText" ' + (plainTextChecked ? 'checked' : '') + '>' +
+            '<label for="ht_plainText" style="margin-left: 5px; cursor: pointer;">纯文本显示</label>' +
+            '</div>';
+        
+        // ========== 【新增】悬停显示来源开关 ==========
+        html += '<div style="margin-top: 5px; margin-left: 10px; display: inline-block; -webkit-tap-highlight-color: transparent;">' +
+            '<input type="checkbox" id="ht_hideSource" ' + (hideSourceChecked ? 'checked' : '') + '>' +
+            '<label for="ht_hideSource" style="margin-left: 5px; cursor: pointer;">悬停显示来源</label>' +
+            '</div>';
+        // ========== 【新增结束】 ==========
+        
+        html += '</div>';
+        
+        // ========== 【修改位置】在 autoSaveHandler 中添加悬停显示来源保存逻辑 ==========
+        var autoSaveHandler = function(e) {
+            var target = e.target || e.srcElement;
+            if (!target) return;
+            
+            // ========== 【新增】获取两个开关元素 ==========
+            var plainTextCheckbox = document.getElementById('ht_plainText');
+            var hideSourceCheckbox = document.getElementById('ht_hideSource');
+            // ========== 【新增结束】 ==========
+            
+            // ========== 【新增】互斥逻辑：当勾选纯文本格式时，自动取消勾选悬停显示来源 ==========
+            if (target.id === 'ht_plainText' && target.checked) {
+                if (hideSourceCheckbox && hideSourceCheckbox.checked) {
+                    hideSourceCheckbox.checked = false;
+                }
+            }
+            // ========== 【新增结束】 ==========
+            
+            // ========== 【新增】互斥逻辑：当勾选悬停显示来源时，自动取消勾选纯文本格式 ==========
+            if (target.id === 'ht_hideSource' && target.checked) {
+                if (plainTextCheckbox && plainTextCheckbox.checked) {
+                    plainTextCheckbox.checked = false;
+                }
+            }
+            // ========== 【新增结束】 ==========
+            
+            // 获取选择的模式
+            var modeRadios = document.querySelectorAll('input[name="hitokotoTypeMode"]');
+            var useDefault = true;
+            for (var i = 0; i < modeRadios.length; i++) {
+                if (modeRadios[i].checked && modeRadios[i].value === 'custom') {
+                    useDefault = false;
+                    break;
+                }
+            }
+            
+            // 获取选中的类型
+            var selectedTypes = [];
+            if (!useDefault) {
+                var typeCheckboxes = document.querySelectorAll('input[name="hitokotoType"]');
+                for (var i = 0; i < typeCheckboxes.length; i++) {
+                    if (typeCheckboxes[i].checked) {
+                        selectedTypes.push(typeCheckboxes[i].value);
+                    }
+                }
+            }
+            
+            // 当选回默认模式时，重置checkbox为默认勾选
+            if (useDefault) {
+                selectedTypes = defaultCheckedTypes.slice();
+                var typeCheckboxes = document.querySelectorAll('input[name="hitokotoType"]');
+                for (var i = 0; i < typeCheckboxes.length; i++) {
+                    var checkbox = typeCheckboxes[i];
+                    var isDefaultChecked = defaultCheckedTypes.indexOf(checkbox.value) !== -1;
+                    checkbox.checked = isDefaultChecked;
+                    checkbox.disabled = true;
+                    var label = document.querySelector('label[for="' + checkbox.id + '"]');
+                    if (label) {
+                        label.style.cursor = 'default';
+                        label.style.opacity = '0.6';
+                    }
+                }
+                savedUseDefault = true;
+                savedSelectedTypes = selectedTypes;
+            } else {
+                if (selectedTypes.length === 0) {
+                    useDefault = true;
+                    selectedTypes = defaultCheckedTypes.slice();
+                    var defaultRadio = document.getElementById('ht_default');
+                    var customRadio = document.getElementById('ht_custom');
+                    if (defaultRadio) {
+                        defaultRadio.checked = true;
+                    }
+                    if (customRadio) {
+                        customRadio.checked = false;
+                    }
+                    var typeCheckboxes2 = document.querySelectorAll('input[name="hitokotoType"]');
+                    for (var i = 0; i < typeCheckboxes2.length; i++) {
+                        var checkbox = typeCheckboxes2[i];
+                        var isDefaultChecked = defaultCheckedTypes.indexOf(checkbox.value) !== -1;
+                        checkbox.checked = isDefaultChecked;
+                        checkbox.disabled = true;
+                        var label = document.querySelector('label[for="' + checkbox.id + '"]');
+                        if (label) {
+                            label.style.cursor = 'default';
+                            label.style.opacity = '0.6';
+                        }
+                    }
+                    savedUseDefault = true;
+                    savedSelectedTypes = selectedTypes;
+                } else {
+                    savedUseDefault = false;
+                    savedSelectedTypes = selectedTypes;
+                }
+            }
+            
+            // 获取纯文本格式开关状态并保存
+            var plainTextCheckbox = document.getElementById('ht_plainText');
+            var plainTextChecked = plainTextCheckbox ? plainTextCheckbox.checked : false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoUseDefault', savedUseDefault ? 'true' : 'false');
+                    localStorage.setItem('hitokotoSelectedTypes', JSON.stringify(savedSelectedTypes));
+                    localStorage.setItem('hitokotoPlainTextChecked', plainTextChecked ? 'true' : 'false');
+                }
+            } catch(e) {}
+            
+            // ========== 【新增】获取悬停显示来源开关状态并保存 ==========
+            var hideSourceCheckbox = document.getElementById('ht_hideSource');
+            var hideSourceChecked = hideSourceCheckbox ? hideSourceCheckbox.checked : false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoHideSourceChecked', hideSourceChecked ? 'true' : 'false');
+                }
+            } catch(e) {}
+            // ========== 【新增结束】 ==========
+            
+            // 更新页面上的纯文本格式开关状态
+            var mainPlainTextCheckbox = document.getElementById('hitokotoPlainTextCheckbox');
+            if (mainPlainTextCheckbox) {
+                mainPlainTextCheckbox.checked = plainTextChecked;
+            }
+            
+            // ========== 【新增】更新页面上的悬停显示来源开关状态（已删除，无需操作） ==========
+            // ========== 【新增结束】 ==========
+            
+            // 重新获取一言
+            if (hitokotoCheckbox && hitokotoCheckbox.checked && hitokotoDisplay) {
+                if (typeof window.fetchHitokoto === 'function') {
+                    window.fetchHitokoto();
+                }
+            }
+        };
+        // ========== 【修改结束】 ==========
+        
+        // 保存原始showCustomAlert函数引用
+        var originalShowCustomAlert = window.showCustomAlert;
+        window.showCustomAlert = function(title, content) {
+            originalShowCustomAlert(title, content);
+            setTimeout(function() {
+                var radios = document.querySelectorAll('input[name="hitokotoTypeMode"]');
+                for (var i = 0; i < radios.length; i++) {
+                    if (radios[i].addEventListener) {
+                        radios[i].addEventListener('change', autoSaveHandler);
+                    } else if (radios[i].attachEvent) {
+                        radios[i].attachEvent('onchange', autoSaveHandler);
+                    }
+                }
+                var checkboxes = document.querySelectorAll('input[name="hitokotoType"]');
+                for (var i = 0; i < checkboxes.length; i++) {
+                    if (checkboxes[i].addEventListener) {
+                        checkboxes[i].addEventListener('change', autoSaveHandler);
+                    } else if (checkboxes[i].attachEvent) {
+                        checkboxes[i].attachEvent('onchange', autoSaveHandler);
+                    }
+                }
+                // 为纯文本格式开关绑定change事件
+                var plainTextCheckbox = document.getElementById('ht_plainText');
+                if (plainTextCheckbox) {
+                    if (plainTextCheckbox.addEventListener) {
+                        plainTextCheckbox.addEventListener('change', autoSaveHandler);
+                    } else if (plainTextCheckbox.attachEvent) {
+                        plainTextCheckbox.attachEvent('onchange', autoSaveHandler);
+                    }
+                }
+                // ========== 【新增】为悬停显示来源开关绑定change事件 ==========
+                var hideSourceCheckbox = document.getElementById('ht_hideSource');
+                if (hideSourceCheckbox) {
+                    if (hideSourceCheckbox.addEventListener) {
+                        hideSourceCheckbox.addEventListener('change', autoSaveHandler);
+                    } else if (hideSourceCheckbox.attachEvent) {
+                        hideSourceCheckbox.attachEvent('onchange', autoSaveHandler);
+                    }
+                }
+                // ========== 【新增结束】 ==========
+                
+                var defaultRadio = document.getElementById('ht_default');
+                var customRadio = document.getElementById('ht_custom');
+                var typeCheckboxes = document.querySelectorAll('input[name="hitokotoType"]');
+                
+                function updateCheckboxState() {
+                    var isCustom = customRadio && customRadio.checked;
+                    for (var i = 0; i < typeCheckboxes.length; i++) {
+                        typeCheckboxes[i].disabled = !isCustom;
+                        var label = document.querySelector('label[for="' + typeCheckboxes[i].id + '"]');
+                        if (label) {
+                            label.style.cursor = isCustom ? 'pointer' : 'default';
+                            label.style.opacity = isCustom ? '1' : '0.6';
+                        }
+                    }
+                }
+                
+                if (defaultRadio && customRadio) {
+                    if (defaultRadio.addEventListener) {
+                        defaultRadio.addEventListener('change', updateCheckboxState);
+                        customRadio.addEventListener('change', updateCheckboxState);
+                    } else if (defaultRadio.attachEvent) {
+                        defaultRadio.attachEvent('onchange', updateCheckboxState);
+                        customRadio.attachEvent('onchange', updateCheckboxState);
+                    }
+                }
+                updateCheckboxState();
+            }, 50);
+        };
+        
+        showCustomAlert('一言的高级设置', html);
+        
+        setTimeout(function() {
+            window.showCustomAlert = originalShowCustomAlert;
+        }, 100);
+    };
+    // ========== 【修改结束】 ==========
+})();
+
+// 修改位置：在 一言类型选择功能 代码中添加 API 下拉框监听
+(function() {
+    var apiSelect = document.getElementById('hitokotoApiSelect');
+    var typeBtn = document.querySelector('label[for="hitokotoTypeBtn"]');
+    var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
+    
+    if (!apiSelect) return;
+    
+    // 加载保存的API选择
+    var savedApi = 'hitokApi_v1';
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var val = localStorage.getItem('hitokotoApiSelect');
+            if (val) savedApi = val;
+        }
+    } catch(e) {}
+    apiSelect.value = savedApi;
+    
+    function updateTypeBtnState() {
+        if (!typeBtn) return;
+        var isHitokotoChecked = hitokotoCheckbox ? hitokotoCheckbox.checked : false;
+        var isV1 = apiSelect.value === 'hitokApi_v1';
+        var disabled = !isV1 || !isHitokotoChecked;
+        
+        // 修改位置：控制 typeBtn 禁用状态
+        if (disabled) {
+            typeBtn.style.opacity = '0.7';
+            typeBtn.style.cursor = 'not-allowed';
+            typeBtn.style.pointerEvents = 'none';
+            typeBtn.setAttribute('data-disabled', 'true');
+        } else {
+            typeBtn.style.opacity = '1';
+            typeBtn.style.cursor = 'pointer';
+            typeBtn.style.pointerEvents = 'auto';
+            typeBtn.removeAttribute('data-disabled');
+        }
+        
+        // 修改位置：控制 hitokotoApiSelect 下拉框禁用状态
+        var apiSelectElem = document.getElementById('hitokotoApiSelect');
+        if (apiSelectElem) {
+            if (isHitokotoChecked) {
+                apiSelectElem.disabled = false;
+                apiSelectElem.style.opacity = '1';
+                apiSelectElem.style.cursor = 'pointer';
+            } else {
+                apiSelectElem.disabled = true;
+                apiSelectElem.style.opacity = '0.7';
+                apiSelectElem.style.cursor = 'not-allowed';
+            }
+        }
+    }
+    
+    // 初始更新状态
+    updateTypeBtnState();
+    
+    // 监听 API 下拉框变化
+    if (apiSelect.addEventListener) {
+        apiSelect.addEventListener('change', function() {
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoApiSelect', this.value);
+                }
+            } catch(e) {}
+            updateTypeBtnState();
+            // 重新获取一言
+            if (hitokotoCheckbox && hitokotoCheckbox.checked && document.getElementById('hitokotoDisplay')) {
+                if (typeof window.fetchHitokoto === 'function') {
+                    window.fetchHitokoto();
+                }
+            }
+        });
+    } else if (apiSelect.attachEvent) {
+        apiSelect.attachEvent('onchange', function() {
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoApiSelect', this.value);
+                }
+            } catch(e) {}
+            updateTypeBtnState();
+            if (hitokotoCheckbox && hitokotoCheckbox.checked && document.getElementById('hitokotoDisplay')) {
+                if (typeof window.fetchHitokoto === 'function') {
+                    window.fetchHitokoto();
+                }
+            }
+        });
+    }
+    
+    // 监听 hitokotoCheckbox 变化
+    if (hitokotoCheckbox) {
+        if (hitokotoCheckbox.addEventListener) {
+            hitokotoCheckbox.addEventListener('change', updateTypeBtnState);
+        } else if (hitokotoCheckbox.attachEvent) {
+            hitokotoCheckbox.attachEvent('onchange', updateTypeBtnState);
+        }
+    }
+})();
+
+// ========== 【修改位置】添加悬停显示来源功能 ==========
+(function() {
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    if (!hitokotoDisplay) return;
+    
+    if (isMobileAndroidApple()) {
+        hitokotoDisplay.addEventListener('touchstart', function(e) {
+            var hideSource = false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+                }
+            } catch(e) {}
+            
+            if (hideSource) {
+                var fullText = this.getAttribute('data-fulltext');
+                if (fullText) {
+                    this.textContent = fullText;
+                    this.setAttribute('data-touch-active', 'true');
+                }
+            }
+        });
+        hitokotoDisplay.addEventListener('touchend', function(e) {
+            var hideSource = false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+                }
+            } catch(e) {}
+            
+            if (hideSource) {
+                var displayText = this.getAttribute('data-displaytext');
+                if (displayText) {
+                    this.textContent = displayText;
+                }
+            }
+        });
+        hitokotoDisplay.addEventListener('mouseleave', function() {
+            var hideSource = false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+                }
+            } catch(e) {}
+            
+            if (hideSource) {
+                var displayText = this.getAttribute('data-displaytext');
+                if (displayText) {
+                    this.textContent = displayText;
+                }
+            }
+        });
+    } else {
+        // 鼠标悬停时显示完整内容
+        hitokotoDisplay.addEventListener('mouseenter', function() {
+            var hideSource = false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+                }
+            } catch(e) {}
+            
+            if (hideSource) {
+                var fullText = this.getAttribute('data-fulltext');
+                if (fullText) {
+                    this.textContent = fullText;
+                }
+            }
+        });
+        
+        // 鼠标离开时恢复显示
+        hitokotoDisplay.addEventListener('mouseleave', function() {
+            var hideSource = false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+                }
+            } catch(e) {}
+            
+            if (hideSource) {
+                var displayText = this.getAttribute('data-displaytext');
+                if (displayText) {
+                    this.textContent = displayText;
+                }
+            }
+        });
+    }
+})();
+// ========== 【修改结束】 ==========
+
+// 修改位置：在 一言类型选择功能 代码中添加纯文本格式功能
+(function() {
+    var plainTextCheckbox = document.getElementById('hitokotoPlainTextCheckbox');
+    var hitokotoCheckbox = document.getElementById('hitokotoCheckbox');
+    var hitokotoDisplay = document.getElementById('hitokotoDisplay');
+    
+    if (!plainTextCheckbox) return;
+    
+    // 加载保存的纯文本格式状态
+    var savedPlainText = false;
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            savedPlainText = localStorage.getItem('hitokotoPlainTextChecked') === 'true';
+        }
+    } catch(e) {}
+    plainTextCheckbox.checked = savedPlainText;
+    
+    // 修改 fetchHitokoto 函数以支持纯文本格式
+    var originalFetchHitokoto = window.fetchHitokoto;
+    window.fetchHitokoto = function() {
+        if (!hitokotoDisplay) return;
+        
+        var url = '';
+        var useDefault = true;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var val = localStorage.getItem('hitokotoUseDefault');
+                if (val !== null && val !== undefined) {
+                    useDefault = val === 'true';
+                }
+            }
+        } catch(e) {}
+        
+        
+        // 修改位置：如果纯文本格式开关已勾选，添加 encode=text 参数
+        var isPlainText = false;
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                isPlainText = localStorage.getItem('hitokotoPlainTextChecked') === 'true';
+            }
+        } catch(e) {}
+        
+        if (isPlainText) {
+            if (url.indexOf('?') !== -1) {
+                url += '&encode=text';
+            } else {
+                url += '?encode=text';
+            }
+        }
+        
+        var xhr = null;
+        try {
+            xhr = new XMLHttpRequest();
+        } catch(e) {
+            hitokotoDisplay.textContent = 'Network Error';
+            return;
+        }
+        
+        xhr.open('GET', url, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        var responseText = xhr.responseText;
+                        if (isPlainText) {
+                            // 纯文本格式：直接显示返回的文本
+                            hitokotoDisplay.textContent = responseText;
+                            hitokotoDisplay.setAttribute('data-hitokoto', responseText);
+                        } else {
+                            // JSON格式：解析后显示
+                            var data = JSON.parse(responseText);
+                            var hitokotoText = '「' + data.hitokoto + '」—— ' + data.from;
+                            hitokotoDisplay.textContent = hitokotoText;
+                            hitokotoDisplay.setAttribute('data-hitokoto', hitokotoText);
+                        }
+                    } catch (e) {
+                        hitokotoDisplay.textContent = 'Network Error';
+                    }
+                } else {
+                    hitokotoDisplay.textContent = 'Network Error';
+                }
+            }
+        };
+        xhr.onerror = function() {
+            hitokotoDisplay.textContent = 'Network Error';
+        };
+        xhr.ontimeout = function() {
+            hitokotoDisplay.textContent = 'Network Error';
+        };
+        try {
+            xhr.send();
+        } catch(e) {
+            hitokotoDisplay.textContent = 'Network Error';
+        }
+    };
+    
+    // 监听纯文本格式开关变化
+    if (plainTextCheckbox.addEventListener) {
+        plainTextCheckbox.addEventListener('change', function() {
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoPlainTextChecked', this.checked ? 'true' : 'false');
+                }
+            } catch(e) {}
+            // 重新获取一言
+            if (hitokotoCheckbox && hitokotoCheckbox.checked && hitokotoDisplay) {
+                if (typeof window.fetchHitokoto === 'function') {
+                    window.fetchHitokoto();
+                }
+            }
+        });
+    } else if (plainTextCheckbox.attachEvent) {
+        plainTextCheckbox.attachEvent('onchange', function() {
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    localStorage.setItem('hitokotoPlainTextChecked', this.checked ? 'true' : 'false');
+                }
+            } catch(e) {}
+            if (hitokotoCheckbox && hitokotoCheckbox.checked && hitokotoDisplay) {
+                if (typeof window.fetchHitokoto === 'function') {
+                    window.fetchHitokoto();
+                }
+            }
+        });
+    }
+})();
+
+// ========== 【修改位置】搜索框最大宽度调整功能（支持百分比） ==========
+(function() {
+    var maxWidthBtn = document.getElementById('searchContainerMaxWidthBtn');
+    if (!maxWidthBtn) return;
+    
+    var searchContainer = document.getElementById('searchContainer');
+    if (!searchContainer) return;
+    
+    // 加载保存的最大宽度设置
+    var savedMaxWidth = '800px';
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var val = localStorage.getItem('searchContainerMaxWidth');
+            if (val) savedMaxWidth = val;
+        }
+    } catch(e) {}
+    
+    // 应用保存的最大宽度
+    searchContainer.style.maxWidth = savedMaxWidth;
+    document.getElementById('searchContainerMaxWidthValue').textContent = savedMaxWidth;
+    
+    // 点击按钮弹出设置对话框
+    var label = document.querySelector('label[for="searchContainerMaxWidthBtn"]');
+    if (!label) return;
+    
+    label.onclick = function() {
+        var currentWidth = '800px';
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var val = localStorage.getItem('searchContainerMaxWidth');
+                if (val) currentWidth = val;
+            }
+        } catch(e) {}
+        
+        // ========== 【修改位置】支持 px 和 % 单位 ==========
+        showCustomModal('请输入搜索框最大宽度（如 800px 或 80%，输入空值恢复默认）：', 
+            currentWidth,
+            function(newWidth) {
+                if (newWidth === null) return;
+                
+                if (newWidth === '') {
+                    // 恢复默认
+                    var defaultWidth = '800px';
+                    searchContainer.style.maxWidth = defaultWidth;
+                    document.getElementById('searchContainerMaxWidthValue').textContent = defaultWidth;
+                    try {
+                        if (typeof localStorage !== 'undefined' && localStorage) {
+                            localStorage.setItem('searchContainerMaxWidth', defaultWidth);
+                        }
+                    } catch(e) {}
+                    return;
+                }
+                
+                // ========== 【修改位置】支持 px 和 % 单位验证 ==========
+                var matchPx = newWidth.match(/^(\d+)(px)$/);
+                var matchPercent = newWidth.match(/^(\d+)(%)$/);
+                
+                if (matchPx) {
+                    var value = parseInt(matchPx[1], 10);
+                    var unit = matchPx[2];
+                    // 验证范围 300-1000px
+                    if (value >= 300 && value <= 1000) {
+                        var finalWidth = value + unit;
+                        searchContainer.style.maxWidth = finalWidth;
+                        document.getElementById('searchContainerMaxWidthValue').textContent = finalWidth;
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('searchContainerMaxWidth', finalWidth);
+                            }
+                        } catch(e) {}
+                        truncateText('searchContainerMaxWidthValue', finalWidth, 80);
+                    }
+                } else if (matchPercent) {
+                    var value = parseInt(matchPercent[1], 10);
+                    var unit = matchPercent[2];
+                    // 验证范围 10%-100%
+                    if (value >= 10 && value <= 100) {
+                        var finalWidth = value + unit;
+                        searchContainer.style.maxWidth = finalWidth;
+                        document.getElementById('searchContainerMaxWidthValue').textContent = finalWidth;
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage) {
+                                localStorage.setItem('searchContainerMaxWidth', finalWidth);
+                            }
+                        } catch(e) {}
+                        truncateText('searchContainerMaxWidthValue', finalWidth, 80);
+                    }
+                }
+                // ========== 【修改结束】 ==========
+            }
+        );
+    };
+})();
+// ========== 【修改结束】 ==========
+
+// ========== 【修改位置】工具面板元素间距调整功能 ==========
+(function() {
+    var spacingBtn = document.getElementById('toolPanelSpacingBtn');
+    if (!spacingBtn) return;
+    
+    var toolPanel = document.getElementById('showToolPanel');
+    if (!toolPanel) return;
+    
+    // 加载保存的间距设置
+    var savedHorizontalSpacing = '0';
+    var savedVerticalSpacing = '0';
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+            var h = localStorage.getItem('toolPanelHorizontalSpacing');
+            var v = localStorage.getItem('toolPanelVerticalSpacing');
+            if (h) savedHorizontalSpacing = h;
+            if (v) savedVerticalSpacing = v;
+        }
+    } catch(e) {}
+    
+    // 需要排除的 label for 属性列表
+    var excludedLabels = [
+        'linkCreatorBtn',
+        'defaultLinksBtn',
+        'importLinksBtn',
+        'exportLinksBtn',
+        'clearLinksBtn',
+        'importSettingsBtn',
+        'exportSettingsBtn',
+        'quickLinksHeadName'
+    ];
+    
+    // ========== 【新增】需要排除的 div id 列表 ==========
+    var excludedDivIds = [
+        'browserInfosBlock'
+    ];
+    // ========== 【新增结束】 ==========
+    
+    // 检查元素是否在排除列表中
+    function isElementExcluded(element) {
+        if (!element) return false;
+        
+        // 检查 label 元素
+        if (element.tagName === 'LABEL') {
+            var forAttr = element.getAttribute('for');
+            if (forAttr) {
+                for (var j = 0; j < excludedLabels.length; j++) {
+                    if (forAttr === excludedLabels[j]) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        // ========== 【新增】检查 div 元素的 id 是否在排除列表中 ==========
+        if (element.tagName === 'DIV') {
+            var idAttr = element.id;
+            if (idAttr) {
+                for (var k = 0; k < excludedDivIds.length; k++) {
+                    if (idAttr === excludedDivIds[k]) {
+                        return true;
+                    }
+                }
+            }
+        }
+        // ========== 【新增结束】 ==========
+        
+        // 检查 span 元素（排除 linkCreatorBtn 内的 span）
+        if (element.tagName === 'SPAN') {
+            var parent = element.parentNode;
+            while (parent && parent !== toolPanel) {
+                if (parent.tagName === 'LABEL') {
+                    var forAttrParent = parent.getAttribute('for');
+                    if (forAttrParent) {
+                        for (var m = 0; m < excludedLabels.length; m++) {
+                            if (forAttrParent === excludedLabels[m]) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                parent = parent.parentNode;
+            }
+        }
+        
+        return false;
+    }
+    
+    // 清除所有间距时排除指定元素
+    function clearAllSpacing() {
+        var children = toolPanel.children;
+        for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            
+            // 检查是否在排除列表中
+            if (isElementExcluded(child)) {
+                continue; // 跳过排除的元素
+            }
+            
+            // 清除间距
+            child.style.marginLeft = '';
+            child.style.marginRight = '';
+            child.style.marginTop = '';
+            child.style.marginBottom = '';
+        }
+    }
+    
+    // 应用间距设置（覆盖已有间距）
+    function applyToolPanelSpacing(horizontal, vertical) {
+        var children = toolPanel.children;
+        var displayBlocks = [];
+        
+        // 收集所有需要应用间距的元素
+        for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            
+            // 检查是否在排除列表中
+            if (isElementExcluded(child)) {
+                continue; // 跳过排除的元素
+            }
+            
+            // 检查是否为 div
+            if (child.tagName === 'DIV') {
+                displayBlocks.push(child);
+            }
+            // 检查是否为 label 按钮
+            if (child.tagName === 'LABEL' && child.id !== 'showMoreSettingsBtn') {
+                displayBlocks.push(child);
+            }
+            // 检查是否为 select-wrapper
+            if (child.className === 'text-select-wrapper') {
+                displayBlocks.push(child);
+            }
+            // 检查是否为 span
+            if (child.tagName === 'SPAN') {
+                displayBlocks.push(child);
+            }
+            // 检查是否为 br 标签
+            if (child.tagName === 'BR') {
+                displayBlocks.push(child);
+            }
+        }
+        
+        // 应用间距到每个元素
+        for (var i = 0; i < displayBlocks.length; i++) {
+            var el = displayBlocks[i];
+            if (horizontal !== '0') {
+                el.style.marginLeft = horizontal;
+                el.style.marginRight = horizontal;
+            } else {
+                el.style.marginLeft = '';
+                el.style.marginRight = '';
+            }
+            if (vertical !== '0') {
+                el.style.marginTop = vertical;
+                el.style.marginBottom = vertical;
+            } else {
+                el.style.marginTop = '';
+                el.style.marginBottom = '';
+            }
+        }
+    }
+    
+    // 应用保存的间距
+    if (savedHorizontalSpacing !== '0' || savedVerticalSpacing !== '0') {
+        applyToolPanelSpacing(savedHorizontalSpacing, savedVerticalSpacing);
+    }
+    
+    // 点击按钮弹出设置对话框
+    var label = document.querySelector('label[for="toolPanelSpacingBtn"]');
+    if (!label) return;
+    
+    label.onclick = function() {
+        var currentHorizontal = '0';
+        var currentVertical = '0';
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage) {
+                var h = localStorage.getItem('toolPanelHorizontalSpacing');
+                var v = localStorage.getItem('toolPanelVerticalSpacing');
+                if (h) currentHorizontal = h;
+                if (v) currentVertical = v;
+            }
+        } catch(e) {}
+        
+        // 如果当前值为0，显示空字符串
+        var displayH = currentHorizontal === '0' ? '' : currentHorizontal;
+        var displayV = currentVertical === '0' ? '' : currentVertical;
+        
+        showCustomDoubleInput(
+            '设置工具面板元素间距',
+            '输入左右间距（如 10px 或 5.5px，输入空值恢复默认）',
+            '输入上下间距（如 5px 或 3.5px，输入空值恢复默认）',
+            displayH,
+            displayV,
+            function(horizontal, vertical) {
+                if (horizontal === null || vertical === null) return;
+                
+                var defaultH = '0';
+                var defaultV = '0';
+                
+                // 处理左右间距（支持小数）
+                if (horizontal === '') {
+                    horizontal = defaultH;
+                } else {
+                    var matchH = horizontal.match(/^(\d+\.?\d*)(px)$/);
+                    if (!matchH) return;
+                    var valueH = parseFloat(matchH[1]);
+                    if (valueH < 0) return;
+                    if (valueH > 100) return;
+                }
+                
+                // 处理上下间距（支持小数）
+                if (vertical === '') {
+                    vertical = defaultV;
+                } else {
+                    var matchV = vertical.match(/^(\d+\.?\d*)(px)$/);
+                    if (!matchV) return;
+                    var valueV = parseFloat(matchV[1]);
+                    if (valueV < 0) return;
+                    if (valueV > 100) return;
+                }
+                
+                // 直接保存新值，覆盖已有值
+                try {
+                    if (typeof localStorage !== 'undefined' && localStorage) {
+                        localStorage.setItem('toolPanelHorizontalSpacing', horizontal);
+                        localStorage.setItem('toolPanelVerticalSpacing', vertical);
+                    }
+                } catch(e) {}
+                
+                // 应用间距或清除间距时排除指定元素
+                if (horizontal === '0' && vertical === '0') {
+                    // 清除所有间距（排除指定元素）
+                    clearAllSpacing();
+                } else {
+                    applyToolPanelSpacing(horizontal, vertical);
+                }
+            }
+        );
+    };
+})();
+// ========== 【修改结束】 ==========
 
 // 保存和加载搜索引擎显示checkbox状态
 var savedSearchEngineDisplayState = localStorage.getItem('searchEngineDisplayChecked');
@@ -2848,13 +8802,13 @@ function hideSearchEngineOptions() {
     }
     
     // 隐藏特定选项值
-    var optionsToHide = ['yahooSearch',
+    var optionsToHide = ['yahooSearch', 'braveSearch',
         'sodouyinM', 'yzmsmM', 'sotoutiaoM', 'qksmSearch', 'baiduMEasy',
-        'metasosuoAI', 'baiduAI', '360namisoAI', 'zhihuZhiDaAI', 'quarkpcAI',
-        'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'quarkTranslateTools', 'fanyiSo', 'volcTranslate', 'transmartQQTs',
-        'taobaoWeb', 'jdWebPage',
-        'biliTv', 'dyIsWindows', 'haokanVideo', 'enUsYoutubeVideo',
-        'githubCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
+        'metasosuoAI', 'baiduAI', '360namisoAI', 'zhihuZhiDaAI', 'quarkpcAI', 'cKnowOfCsdn',
+        'googleTranslate', 'mcTranslator', 'yandexTranslate', 'sogouFanyi', 'oldBaiduFanyi', 'quarkTranslateTools', 'fanyiSo', 'transmartQQTs',
+        'taobaoWeb', 'jdWebPage', 'pddWebPage',
+        'biliTv', 'dyIsWindows', 'haokanVideo', 'fastHandVideo', 'hongshuVideo', 'soHuVideo', 'tencentTv', 'enUsYoutubeVideo',
+        'githubCode', 'gitCodeRepo', 'giteeCode', 'zhihuFriends', 'csdnWebPage', 'weiboFriends', 'bdZhidao',
         'kfBaidu', 'weixinSogou', 'baiduTw', 'iFrameFree', 'iFramePlus', 'httpsAutoFill'];
     for (var i = 0; i < engineSelect.options.length; i++) {
         if (optionsToHide.indexOf(engineSelect.options[i].value) !== -1 && engineSelect.options[i].id !== 'nullBaidu') {
@@ -2878,7 +8832,7 @@ function showAllSearchEngineOptions() {
             engineSelect.options[i].style.display = '';
         }
         // 添加特殊处理：在电脑端显示 tencentFanyi2，移动端隐藏
-        if (engineSelect.options[i].value === 'transmartQQTs') {
+        if (engineSelect.options[i].value === 'transmartQQTs' || engineSelect.options[i].value === 'fastHandVideo' || engineSelect.options[i].value === 'hongshuVideo') {
             if (isMobileAndroidApple()) {
                 engineSelect.options[i].style.display = 'none';
             } else {
@@ -2915,6 +8869,26 @@ if (localStorage.getItem('focusCheckboxChecked') === 'true') {
         document.getElementById('centerBoxDisplay').style.display = 'none';
         document.getElementById('hitokotoDisplay').style.display = 'none';
         document.getElementById('searchContainer').style.marginTop = '0';
+        // 添加classList兼容性修复函数
+        function addClass(element, className) {
+            if (element.classList) {
+                element.classList.add(className);
+            } else {
+                element.className += ' ' + className;
+            }
+        }
+        
+        function removeClass(element, className) {
+            if (element.classList) {
+                element.classList.remove(className);
+            } else {
+                element.className = element.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
+            }
+        }
+        
+        // 使用示例
+        addClass(document.body, 'focused');
+        addClass(document.querySelector('.search-container'), 'focused');
         var engineSelect = document.getElementById('engineSelect');
         if (engineSelect && engineSelect.value === 'iFramePlus') {
             var iframePlusSizeBtn = document.getElementById('iframePlusSizeBtn');
@@ -2940,14 +8914,25 @@ if (localStorage.getItem('focusCheckboxChecked') === 'true') {
                 document.body.classList.remove('focused');
                 document.querySelector('.search-container').classList.remove('focused');
                 document.getElementById('quickInputBtn').style.display = 'none';
-                document.getElementById('hitokotoDisplay').style.display = 'block';
+                var savedHitokotoChecking = document.getElementById('hitokotoCheckbox')
+                if (savedHitokotoChecking.checked) {
+                    document.getElementById('hitokotoDisplay').style.display = 'block';
+                }
                 document.getElementById('searchContainer').style.marginTop = savedSearchContainerMargin;
                 
                 if (document.getElementById('engineSelect').value === 'iFrameFree') {
                     document.getElementById('iframeContainer').style.display = 'block';
                 }
                 
-                // 新增：恢复 iFramePlus 相关元素的显示
+                if (document.getElementById('searchSuggestionsCheckbox').checked) {
+                    var searchSuggestions = document.getElementById('searchSuggestions');
+                    searchSuggestions.style.display = 'none';
+                    setTimeout(function() {
+                        searchSuggestions.style.display = 'none';
+                    }, 50);
+                };
+                
+                // 恢复 iFramePlus 相关元素的显示
                 var engineSelect = document.getElementById('engineSelect');
                 if (engineSelect && engineSelect.value === 'iFramePlus') {
                     var iframePlusSizeBtn = document.getElementById('iframePlusSizeBtn');
@@ -2980,7 +8965,7 @@ style.textContent = [
     '    background: white;',
     '}',
     '',
-    'body.focused #autoFillhttps,',
+    'body.focused #showToolPanel,',
     'body.focused a {',
     '    display: none !important;',
     '}',
@@ -3043,7 +9028,7 @@ function applyLayoutStyle(checked) {
         if (centerBox) {
             centerBox.style.textAlign = 'center';
             centerBox.style.display = 'block';
-            // 修改：使用保存的高度值而不是固定值
+            // 使用保存的高度值而不是固定值
             var savedHeightPercent = localStorage.getItem('heightPercent') || '25%';
             centerBox.style.height = savedHeightPercent;
             document.body.style.height = '90%';
@@ -3151,17 +9136,29 @@ if (savedSelectHttpsTextState === 'true') {
 }
 
 // 添加urlInput的focus事件处理，用于自动选择https文本
-document.getElementById('urlInput').addEventListener('focus', function() {
-    // 检查是否启用了自动选择https文本功能
-    var isSelectHttpsTextChecked = localStorage.getItem('selectHttpsTextChecked') === 'true';
-    var isAutoFillHttpsChecked = localStorage.getItem('autoFillHttpsChecked') === 'true';
-    
-    // 只有当所有条件满足且用户没有手动输入时才自动选择
-    if (isSelectHttpsTextChecked && isAutoFillHttpsChecked &&
-        this.value === 'https://' && !this.dataset.userInput) {
-        this.select(); // 自动选择所有文本
-    }
-});
+// 【修复】兼容 IE 等旧浏览器中 dataset 属性可能为 undefined 的问题
+var urlInputFocusElement = document.getElementById('urlInput');
+if (urlInputFocusElement) {
+    urlInputFocusElement.addEventListener('focus', function() {
+        // 检查是否启用了自动选择https文本功能
+        var isSelectHttpsTextChecked = localStorage.getItem('selectHttpsTextChecked') === 'true';
+        var isAutoFillHttpsChecked = localStorage.getItem('autoFillHttpsChecked') === 'true';
+        
+        // 兼容性获取 dataset.userInput 的值
+        var userInputFlag = '';
+        if (this.dataset) {
+            userInputFlag = this.dataset.userInput;
+        } else {
+            userInputFlag = this.getAttribute('data-user-input') || '';
+        }
+        
+        // 只有当所有条件满足且用户没有手动输入时才自动选择
+        if (isSelectHttpsTextChecked && isAutoFillHttpsChecked &&
+            this.value === 'https://' && !userInputFlag) {
+            this.select(); // 自动选择所有文本
+        }
+    });
+}
 
 // 右键控制
 document.getElementById('urlInput').addEventListener('contextmenu', function(e) {
@@ -3177,16 +9174,44 @@ document.getElementById('urlInput').addEventListener('contextmenu', function(e) 
 });
 
 // 监听urlInput的keydown事件来检测手动输入https://
-document.getElementById('urlInput').addEventListener('keydown', function(e) {
-    if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete') {
-        this.dataset.manualHttps = 'true';
-    }
-});
+// 【修复】兼容 IE 等旧浏览器中 dataset 属性可能为 undefined 的问题
+var manualHttpsInput = document.getElementById('urlInput');
+if (manualHttpsInput) {
+    manualHttpsInput.addEventListener('keydown', function(e) {
+        e = e || window.event;
+        var key = e.key;
+        // 兼容 IE 等旧浏览器中 e.key 可能为 undefined 的情况
+        if (!key) {
+            var keyCode = e.keyCode || e.which;
+            if (keyCode === 8) key = 'Backspace';
+            else if (keyCode === 46) key = 'Delete';
+            else if (keyCode >= 32 && keyCode <= 126) key = String.fromCharCode(keyCode);
+        }
+        if (key && (key.length === 1 || key === 'Backspace' || key === 'Delete')) {
+            // 兼容性处理：检查 dataset 是否存在
+            if (this.dataset) {
+                this.dataset.manualHttps = 'true';
+            } else {
+                this.setAttribute('data-manual-https', 'true');
+            }
+        }
+    });
+}
 
 // 监听urlInput的focus事件，重置manualHttps标记
-document.getElementById('urlInput').addEventListener('focus', function() {
-    this.dataset.manualHttps = '';
-});
+// 【修复】兼容 IE 等旧浏览器中 dataset 属性可能为 undefined 的问题
+var urlInputElement = document.getElementById('urlInput');
+if (urlInputElement) {
+    urlInputElement.addEventListener('focus', function() {
+        // 兼容性处理：检查 dataset 是否存在，不存在则手动创建
+        if (this.dataset) {
+            this.dataset.manualHttps = '';
+        } else {
+            // 对于不支持 dataset 的浏览器（如 IE10 以下），使用 setAttribute
+            this.setAttribute('data-manual-https', '');
+        }
+    });
+}
 
 // 保存和加载自动聚焦checkbox状态
 var savedAutoFocusState = localStorage.getItem('autoFocusChecked');
@@ -3196,6 +9221,35 @@ if (savedAutoFocusState === 'true') {
     setTimeout(function() {
         document.getElementById('urlInput').focus();
     }, 100);
+    // 修改位置：使用 document.activeElement 检查输入框是否获得焦点
+    var urlInputElement = document.getElementById('urlInput');
+    if (urlInputElement) {
+        var focusHandler = function() {
+            // 检查当前获得焦点的元素是否为 urlInput
+            if (document.activeElement === urlInputElement) {
+                setTimeout(function() {
+                    var historyChecked = document.getElementById('searchHistoryCheckbox').checked;
+                    var suggestionsChecked = document.getElementById('searchSuggestionsCheckbox').checked;
+                    var historyInSuggestChecked = document.getElementById('searchHistoryInSuggestCheckbox').checked;
+                    var engine = document.getElementById('engineSelect');
+                    var searchSuggestionsElem = document.getElementById('searchSuggestions');
+                    if (historyChecked && suggestionsChecked && historyInSuggestChecked) {
+                        if (engine.value !== 'iFrameFree' && engine.value !== 'iFramePlus' && engine.value !== 'showCheckbox') {
+                            showSearchSuggestions([]);
+                        } else {
+                            searchSuggestionsElem.style.display = 'none';
+                        }
+                    }
+                }, 0);
+            }
+        };
+        // 兼容所有浏览器版本的事件绑定
+        if (urlInputElement.addEventListener) {
+            urlInputElement.addEventListener('focus', focusHandler);
+        } else if (urlInputElement.attachEvent) {
+            urlInputElement.attachEvent('onfocus', focusHandler);
+        }
+    }
 }
 
 // 监听自动聚焦checkbox变化
@@ -3225,14 +9279,18 @@ document.querySelector('label[for="executeCssBtn"]').addEventListener('click', f
             // 输入为空时恢复默认，移除自定义样式
             var existingStyle = document.getElementById('customCssStyle');
             if (existingStyle) {
-                existingStyle.remove();
+                if (existingStyle && existingStyle.parentNode) {
+                    existingStyle.parentNode.removeChild(existingStyle);
+                }
             }
             localStorage.removeItem('customCss');
         } else {
             // 移除现有自定义样式
             var existingStyle = document.getElementById('customCssStyle');
             if (existingStyle) {
-                existingStyle.remove();
+                if (existingStyle && existingStyle.parentNode) {
+                    existingStyle.parentNode.removeChild(existingStyle);
+                }
             }
             
             // 创建新的样式元素
@@ -3274,26 +9332,74 @@ if (savedCss) {
 }
 
 // 监听urlInput输入事件，当用户开始输入时记录状态
-document.getElementById('urlInput').addEventListener('input', function() {
-    // 记录用户已经开始输入，禁用自动选择
-    if (this.value !== 'https://') {
-        this.dataset.userInput = 'true';
-    } else {
-        // 当值恢复为https://时，重置用户输入状态（除非是手动输入的）
-        if (!this.dataset.manualHttps) {
-            this.dataset.userInput = '';
+// 【修复】兼容 IE 等旧浏览器中 dataset 属性可能为 undefined 的问题
+var inputEventElement = document.getElementById('urlInput');
+if (inputEventElement) {
+    inputEventElement.addEventListener('input', function() {
+        // 兼容性获取 manualHttps 标记
+        var manualHttpsFlag = '';
+        if (this.dataset) {
+            manualHttpsFlag = this.dataset.manualHttps;
+        } else {
+            manualHttpsFlag = this.getAttribute('data-manual-https') || '';
         }
-    }
-    
-    if (document.getElementById('saveInputCheckbox').checked) {
-        localStorage.setItem('savedInputText', this.value);
-    }
-});
+        
+        // 记录用户已经开始输入，禁用自动选择
+        if (this.value !== 'https://') {
+            if (this.dataset) {
+                this.dataset.userInput = 'true';
+            } else {
+                this.setAttribute('data-user-input', 'true');
+            }
+        } else {
+            // 当值恢复为https://时，重置用户输入状态（除非是手动输入的）
+            if (!manualHttpsFlag) {
+                if (this.dataset) {
+                    this.dataset.userInput = '';
+                } else {
+                    this.setAttribute('data-user-input', '');
+                }
+            }
+        }
+        
+        if (document.getElementById('saveInputCheckbox') && document.getElementById('saveInputCheckbox').checked) {
+            localStorage.setItem('savedInputText', this.value);
+        }
+    });
+}
 
 var savedEngine = localStorage.getItem('selectedEngine');
-if (savedEngine) {
-    document.getElementById('engineSelect').value = savedEngine;
+// ========== 【修复】localStorage安全访问辅助函数 ==========
+function safeLocalStorageGet(key, defaultValue) {
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
+            var value = localStorage.getItem(key);
+            return value !== null && value !== undefined ? value : defaultValue;
+        }
+    } catch(e) {}
+    return defaultValue;
 }
+
+function safeLocalStorageSet(key, value) {
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.setItem === 'function') {
+            localStorage.setItem(key, value);
+            return true;
+        }
+    } catch(e) {}
+    return false;
+}
+
+function safeLocalStorageRemove(key) {
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.removeItem === 'function') {
+            localStorage.removeItem(key);
+            return true;
+        }
+    } catch(e) {}
+    return false;
+}
+// ========== localStorage安全访问辅助函数结束 ==========
 
 // 显示/隐藏链接的checkbox
 document.getElementById('showLinkCheckbox').addEventListener('change', function() {
@@ -3357,14 +9463,23 @@ if (savedShowSendCheckboxState === 'true') {
 }
 
 // 加载保存的隐藏搜索框状态
-var savedHideSearchContainerState = localStorage.getItem('hideSearchContainerChecked');
-if (savedHideSearchContainerState === 'true') {
-    document.getElementById('hideSearchContainerCheckbox').checked = true;
-    document.getElementById('searchContainer').style.display = 'none';
-    document.title = '导航页';
+var savedHideSearchContainerState = false;
+try { if (typeof localStorage !== 'undefined' && localStorage) savedHideSearchContainerState = localStorage.getItem('hideSearchContainerChecked') === 'true'; } catch(e) {}
+var searchContainerElem = document.getElementById('searchContainer');
+var hideSearchCheckboxElem = document.getElementById('hideSearchContainerCheckbox');
+if (savedHideSearchContainerState) {
+    if (hideSearchCheckboxElem) hideSearchCheckboxElem.checked = true;
+    if (searchContainerElem) {
+        try { searchContainerElem.style.display = 'none'; } catch(e) {}
+        try { searchContainerElem.style.visibility = 'hidden'; } catch(e) {}
+        try { searchContainerElem.style.position = 'absolute'; } catch(e) {}
+    }
+    if (document.title) document.title = '导航页';
 } else {
-    document.getElementById('hideSearchContainerCheckbox').checked = false;
-    document.getElementById('searchContainer').style.display = 'flex';
+    if (hideSearchCheckboxElem) hideSearchCheckboxElem.checked = false;
+    if (searchContainerElem) {
+        try { searchContainerElem.style.display = 'flex'; } catch(e) { try { searchContainerElem.style.display = 'block'; } catch(e2) {} }
+    }
 }
 
 // 监听showSendCheckbox变化
@@ -3394,6 +9509,12 @@ document.getElementById('hideSearchContainerCheckbox').addEventListener('change'
                 document.getElementById('hitokotoCheckbox').checked = false;
                 localStorage.setItem('hitokotoChecked', 'false');
                 document.getElementById('hitokotoDisplay').style.display = 'none';
+                // 取消勾选autoFocusCheckbox
+                var autoFocusCheckbox = document.getElementById('autoFocusCheckbox');
+                if (autoFocusCheckbox) {
+                    autoFocusCheckbox.checked = false;
+                    localStorage.setItem('autoFocusChecked', 'false');
+                }
                 // 清空搜索历史记录
                 localStorage.removeItem('searchHistory');
                 document.getElementById('searchHistory').innerHTML = '';
@@ -3418,6 +9539,7 @@ if (savedBackgroundImage) {
         document.body.style.backgroundColor = '';
         document.body.style.backgroundImage = 'url("' + savedBackgroundImage + '")';
         document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
         document.body.style.backgroundRepeat = 'no-repeat';
         document.body.style.backgroundAttachment = 'fixed';
         document.getElementById('searchContainer').style.background = '';
@@ -3448,11 +9570,12 @@ document.querySelector('label[for="bgColorPicker"]').addEventListener('click', f
     if (savedBackgroundImage) {
         // 当前使用图片，直接弹出图片URL输入框
         var currentImage = localStorage.getItem('backgroundImage') || '';
-        showCustomModal('请输入图片URL：', currentImage, function(imageUrl) {
+        showCustomModal('请输入图片URL（输入为空时取消使用图片）：', currentImage, function(imageUrl) {
             if (imageUrl && imageUrl.trim() !== '') {
                 document.body.style.backgroundColor = '';
                 document.body.style.backgroundImage = 'url("' + imageUrl + '")';
                 document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
                 document.body.style.backgroundRepeat = 'no-repeat';
                 document.body.style.backgroundAttachment = 'fixed';
                 document.getElementById('searchContainer').style.background = '';
@@ -3473,7 +9596,7 @@ document.querySelector('label[for="bgColorPicker"]').addEventListener('click', f
     }
     var currentColor = localStorage.getItem('backgroundColor') || '#ffffff';
     var currentBgValue = localStorage.getItem('backgroundColor') || '#ffffff';
-    showCustomModal('请输入颜色值（如 #ffffff 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}colorPicker.style.position=\'fixed\';colorPicker.style.left=\'0\';colorPicker.style.top=\'0\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a>。或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){input.value=\'image url\';var labels=document.querySelectorAll(\'label[onclick*=\\\'modalCallback_\\\']\');if(labels.length>0){labels[labels.length-1].click();}}}return false;">图片</a> <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentBgValue, function(newValue) {
+    showCustomModal('请输入颜色值（如 #ffffff 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}var btnRect=this.getBoundingClientRect();colorPicker.style.position=\'fixed\';colorPicker.style.left=btnRect.left+\'px\';colorPicker.style.top=(btnRect.bottom+5)+\'px\';colorPicker.style.width=\'0px\';colorPicker.style.height=\'0px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10002\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a>。或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){input.value=\'image url\';var labels=document.querySelectorAll(\'label[onclick*=\\\'modalCallback_\\\']\');if(labels.length>0){labels[labels.length-1].click();}}}return false;">图片</a> <span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-left: 5px;margin-bottom: 1px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentBgValue, function(newValue) {
         if (newValue === null) {
             return;
         }
@@ -3494,6 +9617,7 @@ document.querySelector('label[for="bgColorPicker"]').addEventListener('click', f
                     document.body.style.backgroundColor = '';
                     document.body.style.backgroundImage = 'url("' + imageUrl + '")';
                     document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundPosition = 'center';
                     document.body.style.backgroundRepeat = 'no-repeat';
                     document.body.style.backgroundAttachment = 'fixed';
                     document.getElementById('searchContainer').style.background = '';
@@ -3539,20 +9663,24 @@ if (savedCheckboxState === 'true') {
 // 字体颜色控制
 document.querySelector('label[for="fontColorPicker"]').addEventListener('click', function() {
     var currentColor = localStorage.getItem('fontColor') || '#000000';
-    showCustomModal('请输入字体颜色值（如 #000000 或 black）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}colorPicker.style.position=\'fixed\';colorPicker.style.left=\'0\';colorPicker.style.top=\'0\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;margin-left:2px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newColor) {
+    showCustomModal('请输入字体颜色值（如 #000000 或 black）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}var btnRect=this.getBoundingClientRect();colorPicker.style.position=\'fixed\';colorPicker.style.left=btnRect.left+\'px\';colorPicker.style.top=(btnRect.bottom+5)+\'px\';colorPicker.style.width=\'0px\';colorPicker.style.height=\'0px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10002\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;margin-left:2px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newColor) {
         if (newColor === null) {
             return;
         }
         if (newColor === '') {
             // 输入为空时恢复默认颜色
             var defaultColor = '#000000';
-            document.getElementById('autoFillhttps').style.color = defaultColor;
+            document.getElementById('showToolPanel').style.color = defaultColor;
             document.getElementById('iframeContainer').style.color = defaultColor;
+            document.getElementById('iframePlusSizeBtn').style.color = defaultColor;
+            document.getElementById('clearHistoryBtn').style.color = defaultColor;
             document.getElementById('fontColorValue').textContent = defaultColor;
             localStorage.setItem('fontColor', defaultColor);
         } else if (/^#([0-9A-F]{3,6})$/i.test(newColor) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newColor) || /^[a-z]+$/i.test(newColor) || /^hsla?\(\s*\d+\s*,\s*\d+%?\s*,\s*\d+%?\s*(,\s*[\d.]+\s*)?\)$/i.test(newColor)) {
-            document.getElementById('autoFillhttps').style.color = newColor;
+            document.getElementById('showToolPanel').style.color = newColor;
             document.getElementById('iframeContainer').style.color = newColor;
+            document.getElementById('iframePlusSizeBtn').style.color = newColor;
+            document.getElementById('clearHistoryBtn').style.color = newColor;
             document.getElementById('fontColorValue').textContent = newColor;
             localStorage.setItem('fontColor', newColor);
             truncateText('fontColorValue', newColor, 80);
@@ -3563,13 +9691,15 @@ document.querySelector('label[for="fontColorPicker"]').addEventListener('click',
 // 加载保存的字体颜色
 var savedFontColor = localStorage.getItem('fontColor');
 if (savedFontColor) {
-    document.getElementById('autoFillhttps').style.color = savedFontColor;
+    document.getElementById('showToolPanel').style.color = savedFontColor;
     document.getElementById('iframeContainer').style.color = savedFontColor;
+    document.getElementById('iframePlusSizeBtn').style.color = savedFontColor;
+    document.getElementById('clearHistoryBtn').style.color = savedFontColor;
     document.getElementById('fontColorValue').textContent = savedFontColor;
 }
 
 // 超链接快捷跳转功能
-document.querySelector('label[for="linkCreatorBtn0"]').addEventListener('click', function() {
+document.querySelector('label[for="linkCreatorBtn"]').addEventListener('click', function() {
     showCustomDoubleInput(
         '创建快捷链接',
         '输入链接显示文本',
@@ -3640,6 +9770,7 @@ document.querySelector('label[for="fontSizePicker"]').addEventListener('click', 
             document.getElementById('submitBtn').style.fontSize = newSize;
             document.getElementById('fontSizeValue').textContent = newSize;
             localStorage.setItem('urlInputFontSize', newSize);
+            truncateText('fontSizeValue', newSize, 80);
         }
     });
 });
@@ -3671,6 +9802,7 @@ document.querySelector('label[for="heightPicker"]').addEventListener('click', fu
             document.getElementById('submitBtn').style.height = newHeight;
             document.getElementById('heightValue').textContent = newHeight;
             localStorage.setItem('elementHeight', newHeight);
+            truncateText('heightValue', newHeight, 80);
         }
     });
 });
@@ -3691,6 +9823,7 @@ document.querySelector('label[for="widthPicker"]').addEventListener('click', fun
             document.getElementById('submitBtn').style.width = newWidth;
             document.getElementById('widthValue').textContent = newWidth;
             localStorage.setItem('buttonWidth', newWidth);
+            truncateText('widthValue', newWidth, 80);
         }
     });
 });
@@ -3721,6 +9854,29 @@ document.querySelector('label[for="exportSettingsBtn"]').addEventListener('click
 });
 
 function exportSettingsData() {
+    // ========== 新增：IE 兼容性检测 ==========
+    var isIE = false;
+    var ieVersion = 0;
+    try {
+        var ua = navigator.userAgent;
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            isIE = true;
+            ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        }
+        var trident = ua.indexOf('Trident/');
+        if (trident > 0) {
+            isIE = true;
+            var rv = ua.indexOf('rv:');
+            if (rv > 0) {
+                ieVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+            }
+        }
+    } catch(e) {
+        isIE = false;
+    }
+    // ========== 新增结束 ==========
+    
     var settings = {
         autoFillHttpsChecked: localStorage.getItem('autoFillHttpsChecked') || 'false',
         focusCheckboxChecked: localStorage.getItem('focusCheckboxChecked') || 'false',
@@ -3783,19 +9939,193 @@ function exportSettingsData() {
         showSecondsChecked: localStorage.getItem('showSecondsChecked') || 'false',
         '36156798756549916136': localStorage.getItem('36156798756549916136') || 'false',
         hideOrder0Search: localStorage.getItem('hideOrder0Search') || 'false',
+        searchHistoryInSuggestChecked: localStorage.getItem('searchHistoryInSuggestChecked') || 'false',
+        historyLinksFontSize: localStorage.getItem('historyLinksFontSize'),
+        historyLinksColor: localStorage.getItem('historyLinksColor') || '#0000ee',
         iframePlusWidth: localStorage.getItem('iframePlusWidth'),
         iframePlusHeight: localStorage.getItem('iframePlusHeight'),
-        moreSettingsExpanded: localStorage.getItem('moreSettingsExpanded') || 'false'
+        rightClickAction: localStorage.getItem('rightClickAction') || 'disabled',
+        swipeSwitchChecked: localStorage.getItem('swipeSwitchChecked') || 'false',
+        hitokotoColor: localStorage.getItem('hitokotoColor') || '#000000',
+        hitokotoFontStyle: localStorage.getItem('hitokotoFontStyle') || 'italic',
+        hitokotoFontSize: localStorage.getItem('hitokotoFontSize') || '14px',
+        moreSettingsExpanded: localStorage.getItem('moreSettingsExpanded') || 'false',
+        quickInputRowSelection: localStorage.getItem('quickInputRowSelection') || 'all',
+        wheelScrollChecked: localStorage.getItem('wheelScrollChecked') || 'false',
+        hitokotoSelectedTypes: localStorage.getItem('hitokotoSelectedTypes') || '[\"d\",\"i\",\"k\"]',
+        hitokotoPlainTextChecked: localStorage.getItem('hitokotoPlainTextChecked') || 'false',
+        hitokotoUseDefault: localStorage.getItem('hitokotoUseDefault') || 'true',
+        hitokotoApiSelect: localStorage.getItem('hitokotoApiSelect') || 'hitokApi_v1',
+        toolPanelHorizontalSpacing: localStorage.getItem('toolPanelHorizontalSpacing') || '0',
+        toolPanelVerticalSpacing: localStorage.getItem('toolPanelVerticalSpacing') || '0',
+        searchContainerMaxWidth: localStorage.getItem('searchContainerMaxWidth') || '800px',
+        previousEngine: localStorage.getItem('previousEngine') || 'showCheckbox',
+        enableExperimentalFeature: localStorage.getItem('enableExperimentalFeature') || 'false'
     };
     
-    var jsonContent = JSON.stringify(settings, null, 2);
-    var base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
-    var dataUrl = 'data:application/json;base64,' + base64Content;
+    // ========== 新增：动态遍历 localStorage 捕获遗漏项 ==========
+    try {
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && !settings.hasOwnProperty(key)) {
+                if (key.indexOf('_temp') === -1 && 
+                    key.indexOf('modalCallback_') === -1 &&
+                    key.indexOf('doubleInputCallback_') === -1 &&
+                    key.indexOf('alertCallback_') === -1 &&
+                    key.indexOf('codeCallback_') === -1 &&
+                    key.indexOf('confirmCallback_') === -1) {
+                    var value = localStorage.getItem(key);
+                    if (value !== null && value !== undefined) {
+                        settings[key] = value;
+                    }
+                }
+            }
+        }
+    } catch(e) {
+        // IE 兼容：遍历失败时手动添加已知遗漏项
+        var knownMissingKeys = [
+            'iframePlusWidth', 'iframePlusHeight',
+            'rightClickAction', 'swipeSwitchChecked',
+            'hitokotoColor', 'hitokotoFontStyle', 'hitokotoFontSize',
+            'moreSettingsExpanded', 'previousEngine',
+            'searchHistoryInSuggestChecked', 'historyLinksFontSize', 'historyLinksColor'
+        ];
+        for (var k = 0; k < knownMissingKeys.length; k++) {
+            var key = knownMissingKeys[k];
+            if (!settings.hasOwnProperty(key)) {
+                var value = localStorage.getItem(key);
+                if (value !== null && value !== undefined) {
+                    settings[key] = value;
+                }
+            }
+        }
+    }
+    // ========== 新增结束 ==========
     
-    var a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = 'search_settings.json';
-    a.click();
+    var jsonContent = JSON.stringify(settings, null, 2);
+    
+    // ========== 修改：IE9+ 兼容的文件导出逻辑 ==========
+    // ========== 新增：生成带日期时间的文件名（兼容 IE9+）==========
+    function getFormattedDateTime() {
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = now.getMonth() + 1;
+        var day = now.getDate();
+        var hours = now.getHours();
+        var minutes = now.getMinutes();
+        var seconds = now.getSeconds();
+        
+        // 补零函数（兼容 IE9）
+        function padZero(num) {
+            return (num < 10 ? '0' : '') + num;
+        }
+        
+        // 格式：20250115_143052
+        var dateTimeStr = year + 
+                          padZero(month) + 
+                          padZero(day) + 
+                          '_' + 
+                          padZero(hours) + 
+                          padZero(minutes) + 
+                          padZero(seconds);
+        
+        return dateTimeStr;
+    }
+    
+    // 生成带日期时间的文件名
+    var dateTimeStr = getFormattedDateTime();
+    var fileName = 'search_settings_' + dateTimeStr + '.json';
+    // ========== 新增结束 ==========
+    
+    // 方法1：尝试使用 Blob（IE10+ 支持）
+    var blobSupported = false;
+    try {
+        blobSupported = typeof Blob !== 'undefined' && typeof URL !== 'undefined';
+    } catch(e) {
+        blobSupported = false;
+    }
+    
+    if (blobSupported) {
+        // IE10+ 和其他现代浏览器使用 Blob + URL.createObjectURL
+        try {
+            var blob = new Blob([jsonContent], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            
+            if (a.click) {
+                a.click();
+            } else if (a.fireEvent) {
+                a.fireEvent('onclick');
+            }
+            
+            setTimeout(function() {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            return;
+        } catch(e) {
+            // Blob 方式失败，继续使用备用方案
+        }
+    }
+    
+    // 方法2：IE9 及以下使用 msSaveBlob（IE10+ 也支持）
+    if (typeof navigator !== 'undefined' && navigator.msSaveBlob) {
+        try {
+            var blob = new Blob([jsonContent], { type: 'application/json' });
+            navigator.msSaveBlob(blob, fileName);
+            return;
+        } catch(e) {
+            // msSaveBlob 失败，继续使用备用方案
+        }
+    }
+    
+    // 方法3：使用 data URL（所有浏览器通用，但 IE 有 URL 长度限制）
+    try {
+        var base64Content = '';
+        // 尝试 base64 编码
+        try {
+            if (typeof btoa === 'function') {
+                base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
+            } else {
+                // IE9 不支持 btoa 时的降级方案
+                base64Content = encodeURIComponent(jsonContent);
+            }
+        } catch(e) {
+            base64Content = encodeURIComponent(jsonContent);
+        }
+        
+        var dataUrl = 'data:application/json;charset=utf-8,' + base64Content;
+        var a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        
+        if (a.click) {
+            a.click();
+        } else if (a.fireEvent) {
+            a.fireEvent('onclick');
+        }
+        
+        setTimeout(function() {
+            document.body.removeChild(a);
+        }, 100);
+    } catch(e) {
+        // 方法4：最后的降级方案 - 使用 prompt 显示 JSON 内容让用户手动保存
+        try {
+            var fallbackMsg = '无法自动下载文件，请手动复制以下内容并保存为 ' + fileName + '：\n\n';
+            if (confirm(fallbackMsg + '确定后显示文件内容')) {
+                prompt('请复制以下内容并保存为 ' + fileName, jsonContent);
+            }
+        } catch(e2) {
+            alert('导出失败：' + e2.message);
+        }
+    }
+    // ========== 修改结束 ==========
 }
 
 // 导入设置功能
@@ -3948,19 +10278,250 @@ document.querySelector('label[for="heightAdjustBtn"]').addEventListener('click',
 // 搜索建议功能
 var searchSuggestions = document.getElementById('searchSuggestions');
 
+// ========== 显示搜索建议（完全兼容 IE9/10，保持原有布局和高度控制） ==========
 function showSearchSuggestions(suggestions) {
-    if (!document.getElementById('searchSuggestionsCheckbox').checked || document.getElementById('engineSelect').value === 'httpsAutoFill') return;
+    var searchSuggestionsCheckbox = document.getElementById('searchSuggestionsCheckbox');
+    var engineSelect = document.getElementById('engineSelect');
     
-    // 检测输入内容是否包含网址格式
-    var inputText = document.getElementById('urlInput').value.trim();
-    var isUrlPattern = false;
+    if (!searchSuggestionsCheckbox || !engineSelect) return;
+    if (!searchSuggestionsCheckbox.checked || engineSelect.value === 'httpsAutoFill' || engineSelect.value === 'newtabpageHttp1' || engineSelect.value === 'newtabpageHttps' || engineSelect.value === 'autofillHttp1' || engineSelect.value === 'autofillHttps') return;
     
-    // 排除纯数字、小数、负数等非网址格式
-    var isNumberPattern = /^[+-]?\d+(\.\d+)?$/;
-    if (isNumberPattern.test(inputText)) {
-        isUrlPattern = false;
+    var urlInput = document.getElementById('urlInput');
+    var searchSuggestions = document.getElementById('searchSuggestions');
+    if (!urlInput || !searchSuggestions) return;
+    
+    var inputText = urlInput.value.trim();
+    
+    // ========== 输入为空时，判断是否需要显示历史记录 ==========
+    if (inputText === '') {
+        // 检查是否启用历史记录在建议中显示
+        var showHistoryInSuggest = false;
+        var searchHistoryChecked = false;
+        var hasHistory = false;
+        try {
+            showHistoryInSuggest = localStorage.getItem('searchHistoryInSuggestChecked') === 'true';
+            var historyCheckboxElem = document.getElementById('searchHistoryCheckbox');
+            searchHistoryChecked = historyCheckboxElem && historyCheckboxElem.checked;
+            if (showHistoryInSuggest && searchHistoryChecked) {
+                var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                hasHistory = history.length > 0;
+            }
+        } catch(e) {}
+        
+        // 如果启用了历史记录建议且有历史记录，则显示历史记录（不隐藏）
+        if (showHistoryInSuggest && searchHistoryChecked && hasHistory) {
+            // 继续执行后续代码显示历史记录
+        } else {
+            searchSuggestions.style.display = 'none';
+            return;
+        }
+    }
+    
+    // 预先计算 isDesktop 结果，避免重复调用（IE9 兼容）
+    var isDesktopFlag = false;
+    try {
+        isDesktopFlag = typeof isDesktop === 'function' ? isDesktop() : false;
+    } catch(e) {
+        isDesktopFlag = !/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+    
+    // 设置搜索建议框的最大高度（保持原有逻辑）
+    if (isDesktopFlag) {
+        searchSuggestions.style.maxHeight = '800px';
     } else {
-        // 检测网址格式：要求域名后缀至少为2个字母，且域名部分不全是数字
+        searchSuggestions.style.maxHeight = '200px';
+    }
+    searchSuggestions.style.overflowY = 'auto';
+    searchSuggestions.style.overflowX = 'hidden';
+    
+    // 检查是否为空且启用了历史记录在建议中显示
+    var showHistoryInSuggest = false;
+    var searchHistoryChecked = false;
+    try {
+        showHistoryInSuggest = localStorage.getItem('searchHistoryInSuggestChecked') === 'true';
+        var historyCheckbox = document.getElementById('searchHistoryCheckbox');
+        searchHistoryChecked = historyCheckbox && historyCheckbox.checked;
+    } catch(e) {}
+    
+    var isInputEmpty = inputText === '';
+    
+    // ========== 检查输入框是否获得焦点 ==========
+    var isInputFocused = false;
+    var urlInputElement = document.getElementById('urlInput');
+    if (urlInputElement) {
+        isInputFocused = (document.activeElement === urlInputElement);
+    }
+    
+    // 清空建议框（IE9 兼容：使用 while 循环而非 innerHTML）
+        // 清空建议框（IE9 兼容：使用 while 循环而非 innerHTML）
+    while (searchSuggestions.firstChild) {
+        searchSuggestions.removeChild(searchSuggestions.firstChild);
+    }
+    
+    // 重置滚动位置到顶部（兼容所有浏览器）
+    searchSuggestions.scrollTop = 0;
+    
+    // ========== 显示历史记录（输入为空时） ==========
+    if (isInputEmpty && showHistoryInSuggest && searchHistoryChecked && isInputFocused) {
+        var history = [];
+        try {
+            history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+        } catch(e) {}
+        var displayHistory = history.slice(0, 10);
+        
+        if (displayHistory.length > 0) {
+            // ========== 添加清空历史记录列 ==========
+            var clearDiv = document.createElement('div');
+            clearDiv.id = 'suggestion_clear_history';
+            
+            // 使用 innerHTML 添加图标和文字（兼容 IE9）
+            clearDiv.innerHTML = '<i class="fa fa-trash-o" style="margin-left: -2px; margin-right: 5px;"></i>清空历史记录';
+            
+            // 应用样式（保持原有布局）
+            clearDiv.style.padding = isDesktopFlag ? '6px 10px' : '5px 10px';
+            clearDiv.style.cursor = 'pointer';
+            clearDiv.style.borderBottom = '1px solid #eee';
+            clearDiv.style.fontWeight = 'bold';
+            clearDiv.style.backgroundColor = '#F8F8F8';
+            clearDiv.style.fontSize = isDesktopFlag ? '11px' : '13px';
+            clearDiv.style.textAlign = 'left';
+            clearDiv.style.userSelect = 'none';
+            
+            // 清空历史记录点击事件（兼容 IE9）
+            clearDiv.onclick = function() {
+                try {
+                    localStorage.removeItem('searchHistory');
+                    if (typeof updateSearchHistory === 'function') {
+                        updateSearchHistory();
+                    }
+                    
+                    // ========== 【修改位置】清空历史记录后重置 quickInputUi 位置 ==========
+                    var searchSuggestionsElem = document.getElementById('searchSuggestions');
+                    if (searchSuggestionsElem) {
+                        searchSuggestionsElem.style.display = 'none';
+                    }
+                    if (typeof resetQuickInputPosition === 'function') {
+                        resetQuickInputPosition();
+                    } else {
+                        var quickInputBtn = document.getElementById('quickInputBtn');
+                        if (quickInputBtn) {
+                            quickInputBtn.style.marginTop = '0px';
+                        }
+                    }
+                    // ========== 【修改结束】 ==========
+                    
+                } catch(e) {}
+                
+                // 刷新建议列表
+                var currentValue = urlInput.value;
+                if (currentValue === '') {
+                    searchSuggestions.style.display = 'none';
+                } else if (typeof fetchSearchSuggestions === 'function') {
+                    fetchSearchSuggestions(currentValue);
+                }
+            };
+            
+            clearDiv.onmouseover = function() { this.style.backgroundColor = '#e0e0e0'; };
+            clearDiv.onmouseout = function() { this.style.backgroundColor = '#F8F8F8'; };
+            searchSuggestions.appendChild(clearDiv);
+            
+            // ========== 显示历史记录列表 ==========
+            for (var i = 0; i < displayHistory.length; i++) {
+                var historyDiv = document.createElement('div');
+                historyDiv.id = 'suggestion_history_' + i;
+                var historyText = displayHistory[i].text;
+                
+                // 应用原有样式
+                historyDiv.style.padding = isDesktopFlag ? '7px 10px' : '6px 10px';
+                historyDiv.style.fontSize = isDesktopFlag ? '12.4px' : '';
+                historyDiv.style.cursor = 'pointer';
+                historyDiv.style.borderBottom = '1px solid #eee';
+                historyDiv.style.overflow = 'hidden';
+                historyDiv.style.textOverflow = 'ellipsis';
+                historyDiv.style.whiteSpace = 'nowrap';
+                
+                // 截断过长文本（兼容 IE9）
+                var maxDisplayLength = 50;
+                var displayText = historyText;
+                if (historyText.length > maxDisplayLength) {
+                    displayText = historyText.substring(0, maxDisplayLength) + '...';
+                }
+                historyDiv.textContent = displayText;
+                historyDiv.setAttribute('data-fulltext', historyText);
+                historyDiv.title = historyText;
+                
+                // 点击历史记录项（兼容 IE9）
+                (function(fullText) {
+                    historyDiv.onclick = function() {
+                        var autoFillAndJump = false;
+                        try {
+                            autoFillAndJump = document.getElementById('autoFillAndJumpCheckbox') && 
+                                              document.getElementById('autoFillAndJumpCheckbox').checked;
+                        } catch(e) {}
+                        
+                        if (autoFillAndJump) {
+                            urlInput.value = fullText;
+                            try {
+                                if (document.getElementById('saveInputCheckbox') && 
+                                    document.getElementById('saveInputCheckbox').checked) {
+                                    localStorage.setItem('savedInputText', fullText);
+                                }
+                            } catch(e) {}
+                            var submitBtn = document.getElementById('submitBtn');
+                            if (submitBtn && submitBtn.click) submitBtn.click();
+                            urlInput.blur();
+                            searchSuggestions.style.display = 'none';
+                        } else {
+                            urlInput.value = fullText;
+                            try {
+                                if (document.getElementById('saveInputCheckbox') && 
+                                    document.getElementById('saveInputCheckbox').checked) {
+                                    localStorage.setItem('savedInputText', fullText);
+                                }
+                            } catch(e) {}
+                            urlInput.focus();
+                            setTimeout(function() {
+                                if (searchSuggestionsCheckbox && searchSuggestionsCheckbox.checked && 
+                                    typeof fetchSearchSuggestions === 'function') {
+                                    fetchSearchSuggestions(fullText);
+                                }
+                            }, 10);
+                        }
+                    };
+                })(historyText);
+                
+                historyDiv.onmouseover = function() { this.style.backgroundColor = '#f0f0f0'; };
+                historyDiv.onmouseout = function() { this.style.backgroundColor = ''; };
+                searchSuggestions.appendChild(historyDiv);
+            }
+            
+            // 定位建议框
+            var inputRect = urlInput.getBoundingClientRect();
+            var scrollTop = document.documentElement.scrollTop || document.body.scrollTop || 0;
+            var scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft || 0;
+            searchSuggestions.style.top = (inputRect.bottom + scrollTop) + 'px';
+            searchSuggestions.style.left = (inputRect.left + scrollLeft) + 'px';
+            searchSuggestions.style.width = (inputRect.width - 2) + 'px';
+            searchSuggestions.style.display = 'block';
+            
+            // ========== 【修改位置】历史记录显示时更新 quickInputUi 避让 ==========
+    if (document.getElementById('quickInputCheckbox') && document.getElementById('quickInputCheckbox').checked) {
+        var quickInputBtn = document.getElementById('quickInputBtn');
+        if (quickInputBtn) {
+            var suggestionsHeight = searchSuggestions.offsetHeight;
+            quickInputBtn.style.marginTop = (suggestionsHeight + 10) + 'px';
+        }
+    }
+    // ========== 【修改结束】 ==========
+            
+            return;
+        }
+    }
+    
+    // ========== 检测输入内容是否包含网址格式 ==========
+    var isUrlPattern = false;
+    var isNumberPattern = /^[+-]?\d+(\.\d+)?$/;
+    if (!isNumberPattern.test(inputText) && inputText.length > 0) {
         var urlPatterns = [
             /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(?:\/|$)/,
             /^https?:\/\//,
@@ -3968,97 +10529,67 @@ function showSearchSuggestions(suggestions) {
             /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}\.[a-zA-Z]{2,}/,
             /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?::\d+)?(?:\/|$)/
         ];
-        
-        for (var i = 0; i < urlPatterns.length; i++) {
-            if (urlPatterns[i].test(inputText)) {
+        for (var p = 0; p < urlPatterns.length; p++) {
+            if (urlPatterns[p].test(inputText)) {
                 isUrlPattern = true;
                 break;
             }
         }
     }
     
-    // 额外检测包含斜杠的网址格式（如 m.baidu.com/xxx）
+    // 额外检测包含斜杠的网址格式
     if (!isUrlPattern && inputText.indexOf('/') !== -1) {
         var slashIndex = inputText.indexOf('/');
         var beforeSlash = inputText.substring(0, slashIndex);
-        
-        // 检查斜杠前的内容是否符合网址格式
-        for (var i = 0; i < urlPatterns.length; i++) {
-            if (urlPatterns[i].test(beforeSlash)) {
+        for (var p = 0; p < urlPatterns.length; p++) {
+            if (urlPatterns[p].test(beforeSlash)) {
                 isUrlPattern = true;
                 break;
             }
         }
     }
     
-    // 如果检测到非英文字符（除了在/或=之后的英文），则不视为网址格式
-    if (isUrlPattern) {
-        // 检查整个字符串中是否包含非ASCII字符（中文字符等）
-        var hasNonAscii = /[^\x00-\x7F]/.test(inputText);
-        
-        if (hasNonAscii) {
-            // 如果包含非ASCII字符，进一步检查是否在路径或查询参数中
-            // 检查是否有协议部分
-            var protocolIndex = inputText.indexOf('://');
-            var checkText = inputText;
-            
-            if (protocolIndex !== -1) {
-                // 如果有协议，检查协议后面的部分
-                var afterProtocol = inputText.substring(protocolIndex + 3);
-                var firstSlashIndex = afterProtocol.indexOf('/');
-                
-                if (firstSlashIndex !== -1) {
-                    // 检查域名部分（协议后到第一个斜杠之间）
-                    var domainPart = afterProtocol.substring(0, firstSlashIndex);
-                    var pathPart = afterProtocol.substring(firstSlashIndex);
-                    
-                    // 如果域名部分包含非ASCII字符，则不是有效网址
-                    if (/[^\x00-\x7F]/.test(domainPart)) {
-                        isUrlPattern = false;
-                    }
-                    // 路径部分可以包含非ASCII字符，所以不做检查
-                } else {
-                    // 没有路径，整个协议后面的部分都是域名
-                    if (/[^\x00-\x7F]/.test(afterProtocol)) {
-                        isUrlPattern = false;
-                    }
-                }
+    // 如果检测到非英文字符，不视为网址格式
+    if (isUrlPattern && /[^\x00-\x7F]/.test(inputText)) {
+        var protocolIndex = inputText.indexOf('://');
+        if (protocolIndex !== -1) {
+            var afterProtocol = inputText.substring(protocolIndex + 3);
+            var firstSlashIndex = afterProtocol.indexOf('/');
+            if (firstSlashIndex !== -1) {
+                var domainPart = afterProtocol.substring(0, firstSlashIndex);
+                if (/[^\x00-\x7F]/.test(domainPart)) isUrlPattern = false;
             } else {
-                // 没有协议，检查是否有斜杠
-                var slashIndex = inputText.indexOf('/');
-                if (slashIndex !== -1) {
-                   // 检查斜杠前的部分（可能是域名）
-                    var beforeSlash = inputText.substring(0, slashIndex);
-                    if (/[^\x00-\x7F]/.test(beforeSlash)) {
-                        isUrlPattern = false;
-                    }
-                } else {
-                    // 没有斜杠，整个字符串应该是域名
-                    if (/[^\x00-\x7F]/.test(inputText)) {
-                        isUrlPattern = false;
-                    }
-                }
+                if (/[^\x00-\x7F]/.test(afterProtocol)) isUrlPattern = false;
+            }
+        } else {
+            var slashIdx = inputText.indexOf('/');
+            if (slashIdx !== -1) {
+                var beforeSlashUrl = inputText.substring(0, slashIdx);
+                if (/[^\x00-\x7F]/.test(beforeSlashUrl)) isUrlPattern = false;
+            } else {
+                if (/[^\x00-\x7F]/.test(inputText)) isUrlPattern = false;
             }
         }
     }
     
-    searchSuggestions.innerHTML = '';
+    // ========== 添加访问网站建议 ==========
+    var showVisitWebsite = false;
+    try {
+        showVisitWebsite = document.getElementById('showVisitWebsiteCheckbox') && 
+                           document.getElementById('showVisitWebsiteCheckbox').checked;
+    } catch(e) {}
     
-    if (document.getElementById('searchSuggestionsCheckbox').checked && isDesktop()) {
-        searchSuggestions.style.maxHeight = '800px';
-    }
-    
-    // 如果检测到网址格式，在建议列表第一位添加访问网站选项
-    if (isUrlPattern && inputText.length > 0 && document.getElementById('showVisitWebsiteCheckbox').checked) {
+    if (isUrlPattern && inputText.length > 0 && showVisitWebsite) {
         var visitDiv = document.createElement('div');
+        visitDiv.id = 'suggestion_visit_website';
         
         // 创建文本内容
         var visitText = document.createElement('span');
         visitText.textContent = '访问: ' + inputText;
         
-        // 电脑端时添加Alt+Enter提示
+        // 电脑端时添加Alt+Enter提示（保持原有逻辑）
         var altEnterText = null;
-        if (isDesktop()) {
+        if (isDesktopFlag) {
             altEnterText = document.createElement('span');
             altEnterText.textContent = 'Alt+Enter';
             altEnterText.style.color = '#666';
@@ -4072,15 +10603,18 @@ function showSearchSuggestions(suggestions) {
             visitDiv.appendChild(altEnterText);
         }
         
-        visitDiv.style.padding = isDesktop() ? '6px 10px' : '5px 10px';
+        // 应用原有样式
+        visitDiv.style.padding = isDesktopFlag ? '6px 10px' : '5px 10px';
         visitDiv.style.cursor = 'pointer';
         visitDiv.style.borderBottom = '1px solid #eee';
         visitDiv.style.fontWeight = 'bold';
-        visitDiv.style.fontSize = isDesktop() ? '11px' : '13px';
+        visitDiv.style.fontSize = isDesktopFlag ? '11px' : '13px';
         visitDiv.style.backgroundColor = '#f8f8f8';
         visitDiv.style.display = 'block';
         visitDiv.style.overflow = 'hidden';
         visitDiv.style.position = 'relative';
+        visitDiv.style.whiteSpace = 'nowrap';
+        visitDiv.style.textOverflow = 'ellipsis';
         
         visitText.style.overflow = 'hidden';
         visitText.style.textOverflow = 'ellipsis';
@@ -4091,160 +10625,136 @@ function showSearchSuggestions(suggestions) {
         visitText.style.maxWidth = '70%';
         
         visitDiv.onclick = function() {
-            var engine = document.getElementById('engineSelect').value;
-            var url = inputText;
-            
-            // 检查是否已包含协议
-            var hasProtocol = url.indexOf('://') !== -1;
-            var isRelativePath = url.indexOf('/') === 0;
-            
-            // 根据选择的引擎处理URL
-            if (!hasProtocol && !isRelativePath) {
-                // 如果没有协议前缀且不是相对路径，根据选择的引擎添加
-                if (engine === 'autofillHttp1') {
-                    url = 'http://' + url;
-                } else if (engine === 'autofillHttps') {
-                    url = 'https://' + url;
-                } else if (engine === 'iFrameFree') {
-                    url = 'https://' + url;
-                } else {
-                    // 默认添加https://
-                    url = 'https://' + url;
-                }
+            var finalUrl = inputText;
+            if (finalUrl.indexOf('://') === -1 && finalUrl.indexOf('/') !== 0) {
+                finalUrl = 'https://' + finalUrl;
             }
             
-            // 记录搜索历史（如果启用了searchHistoryCheckbox）
-            if (inputText && document.getElementById('searchHistoryCheckbox').checked) {
-                var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-                if (inputText === 'https://' || inputText === 'http://') {
-                    // 不记录空协议
-                } else {
-                    // 移除重复项
-                    var filteredHistory = history.filter(function(item) {
-                        return item.text !== inputText;
-                    });
-                    // 添加到开头
-                    filteredHistory.unshift({ text: inputText });
-                    // 限制最多10条记录
-                    var limitedHistory = filteredHistory.slice(0, 10);
-                    localStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
-                    updateSearchHistory();
-                }
-            }
-            
-            // 如果是iFrameFree，在iframe中打开
-            if (engine === 'iFrameFree') {
-                document.getElementById('webFrame').src = url;
-                document.getElementById('iframeContainer').style.display = 'block';
-                searchSuggestions.style.display = 'none';
-            } else {
-                window.open(url, '_blank');
-                urlInput.blur();
-            }
-            
-            // 搜索后清空输入功能
-            if (document.getElementById('clearOnSearchCheckbox').checked && engine !== 'iFrameFree') {
-                setTimeout(function() {
-                    document.getElementById('urlInput').value = '';
-                    // 如果保存输入文本复选框被勾选，同时清空保存的文本
-                    if (document.getElementById('saveInputCheckbox').checked) {
-                        localStorage.removeItem('savedInputText');
+            // 保存历史记录
+            if (inputText) {
+                try {
+                    var searchHistoryCheckbox = document.getElementById('searchHistoryCheckbox');
+                    if (searchHistoryCheckbox && searchHistoryCheckbox.checked) {
+                        var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                        if (inputText !== 'https://' && inputText !== 'http://') {
+                            var filteredHistory = [];
+                            for (var h = 0; h < history.length; h++) {
+                                if (history[h].text !== inputText) {
+                                    filteredHistory.push(history[h]);
+                                }
+                            }
+                            filteredHistory.unshift({ text: inputText });
+                            var limitedHistory = filteredHistory.slice(0, 10);
+                            localStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
+                            if (typeof updateSearchHistory === 'function') updateSearchHistory();
+                        }
                     }
-                }, 0);
+                } catch(e) {}
             }
+            
+            window.open(finalUrl, '_blank');
+            urlInput.blur();
         };
         
-        var visitUrl = inputText;
-        var visitEngine = document.getElementById('engineSelect').value;
-        
-        visitDiv.onmouseover = function() {
-            this.style.backgroundColor = '#e0e0e0';
-        };
-        visitDiv.onmouseout = function() {
-            this.style.backgroundColor = '#f8f8f8';
-        };
-        
+        visitDiv.onmouseover = function() { this.style.backgroundColor = '#e0e0e0'; };
+        visitDiv.onmouseout = function() { this.style.backgroundColor = '#f8f8f8'; };
         searchSuggestions.appendChild(visitDiv);
     }
     
-    // 原有的建议显示代码（保持原样）
+    // ========== 显示搜索建议 ==========
     if (suggestions && suggestions.length > 0) {
         for (var i = 0; i < suggestions.length; i++) {
-            var div = document.createElement('div');
-            div.textContent = suggestions[i];
-            div.style.padding = isDesktop() ? '7px 10px' : '6px 10px';
-            div.style.fontSize = isDesktop() ? '12.4px' : '';
-            div.style.cursor = 'pointer';
-            div.style.borderBottom = '1px solid #eee';
-            div.style.overflow = 'hidden';
-            div.style.textOverflow = 'ellipsis';
+            var sugDiv = document.createElement('div');
+            sugDiv.id = 'suggestion_normal_' + i;
+            sugDiv.textContent = suggestions[i];
+            
+            // 应用原有样式
+            sugDiv.style.padding = isDesktopFlag ? '7px 10px' : '6px 10px';
+            sugDiv.style.fontSize = isDesktopFlag ? '12.4px' : '';
+            sugDiv.style.cursor = 'pointer';
+            sugDiv.style.borderBottom = '1px solid #eee';
+            sugDiv.style.overflow = 'hidden';
+            sugDiv.style.textOverflow = 'ellipsis';
+            sugDiv.style.whiteSpace = 'nowrap';
             
             (function(suggestion) {
-                div.onclick = function() {
-                    if (document.getElementById('autoFillAndJumpCheckbox').checked) {
-                        // 自动填充并跳转
-                        document.getElementById('urlInput').value = suggestion;
-                        // 如果保存输入文本复选框被勾选，保存当前输入
-                        if (document.getElementById('saveInputCheckbox').checked) {
-                            localStorage.setItem('savedInputText', suggestion);
-                        }
-                        // 触发搜索跳转
-                        document.getElementById('submitBtn').click();
-                        document.getElementById('urlInput').blur();
-                        if (document.getElementById('clearOnSearchCheckbox').checked && engine !== 'iFrameFree') {
-                            setTimeout(function() {
-                                document.getElementById('urlInput').value = '';
-                                // 如果保存输入文本复选框被勾选，同时清空保存的文本
-                                if (document.getElementById('saveInputCheckbox').checked) {
-                                    localStorage.removeItem('savedInputText');
-                                }
-                            }, 0);
-                        }
+                sugDiv.onclick = function() {
+                    var autoFillAndJump = false;
+                    try {
+                        autoFillAndJump = document.getElementById('autoFillAndJumpCheckbox') && 
+                                          document.getElementById('autoFillAndJumpCheckbox').checked;
+                    } catch(e) {}
+                    
+                    if (autoFillAndJump) {
+                        urlInput.value = suggestion;
+                        try {
+                            if (document.getElementById('saveInputCheckbox') && 
+                                document.getElementById('saveInputCheckbox').checked) {
+                                localStorage.setItem('savedInputText', suggestion);
+                            }
+                        } catch(e) {}
+                        var submitBtn = document.getElementById('submitBtn');
+                        if (submitBtn && submitBtn.click) submitBtn.click();
+                        urlInput.blur();
+                        searchSuggestions.style.display = 'none';
                     } else {
-                        // 原有逻辑：仅填充不跳转
-                        document.getElementById('urlInput').value = suggestion;
-                        // 如果保存输入文本复选框被勾选，保存当前输入
-                        if (document.getElementById('saveInputCheckbox').checked) {
-                            localStorage.setItem('savedInputText', suggestion);
-                        }
-                        // 不隐藏搜索建议列表，保持显示
-                        // 自动更新搜索建议
-                        fetchSearchSuggestions(suggestion);
-                        // 保持输入框焦点
-                        document.getElementById('urlInput').focus();
+                        urlInput.value = suggestion;
+                        try {
+                            if (document.getElementById('saveInputCheckbox') && 
+                                document.getElementById('saveInputCheckbox').checked) {
+                                localStorage.setItem('savedInputText', suggestion);
+                            }
+                        } catch(e) {}
+                        setTimeout(function() {
+                            if (searchSuggestionsCheckbox && searchSuggestionsCheckbox.checked && 
+                                typeof fetchSearchSuggestions === 'function') {
+                                fetchSearchSuggestions(suggestion);
+                            }
+                        }, 10);
+                        urlInput.focus();
                     }
                 };
             })(suggestions[i]);
             
-            div.onmouseover = function() {
-                this.style.backgroundColor = '#f0f0f0';
-            };
-            div.onmouseout = function() {
-                this.style.backgroundColor = '';
-            };
-            searchSuggestions.appendChild(div);
+            sugDiv.onmouseover = function() { this.style.backgroundColor = '#f0f0f0'; };
+            sugDiv.onmouseout = function() { this.style.backgroundColor = ''; };
+            searchSuggestions.appendChild(sugDiv);
         }
-        if (document.getElementById('urlInput').value !== '' && document.activeElement === document.getElementById('urlInput')) {
-            searchSuggestions.style.display = 'block';
+    }
+    
+    // ========== 显示或隐藏建议框 ==========
+    if (searchSuggestions.children.length > 0) {
+        var inputRect = urlInput.getBoundingClientRect();
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop || 0;
+        var scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft || 0;
+        searchSuggestions.style.top = (inputRect.bottom + scrollTop) + 'px';
+        searchSuggestions.style.left = (inputRect.left + scrollLeft) + 'px';
+        searchSuggestions.style.width = (inputRect.width - 2) + 'px';
+        searchSuggestions.style.display = 'block';
+        
+        // ========== 【修改位置】更新 quickInputUi 避让搜索建议 ==========
+        if (document.getElementById('quickInputCheckbox') && document.getElementById('quickInputCheckbox').checked) {
+            var quickInputBtn = document.getElementById('quickInputBtn');
+            if (quickInputBtn) {
+                var suggestionsHeight = searchSuggestions.offsetHeight;
+                quickInputBtn.style.marginTop = (suggestionsHeight + 10) + 'px';
+            }
         }
-        updateSuggestionsPosition();
+        // ========== 【修改结束】 ==========
+        
     } else {
-        // 只有网址选项时也显示
-        if (isUrlPattern) {
-            searchSuggestions.style.display = 'block';
-            updateSuggestionsPosition();
-        } else {
-            searchSuggestions.style.display = 'none';
-            // 隐藏搜索建议时恢复quickInputUi位置
-            resetQuickInputPosition();
-            // 隐藏搜索建议时恢复quickInputUi位置
-            if (document.getElementById('quickInputCheckbox').checked) {
-                var quickInputBtn = document.getElementById('quickInputBtn');
+        searchSuggestions.style.display = 'none';
+        // ========== 【修改位置】隐藏建议时恢复 quickInputUi 位置 ==========
+        if (document.getElementById('quickInputCheckbox') && document.getElementById('quickInputCheckbox').checked) {
+            var quickInputBtn = document.getElementById('quickInputBtn');
+            if (quickInputBtn) {
                 quickInputBtn.style.marginTop = '0px';
             }
         }
+        // ========== 【修改结束】 ==========
     }
 }
+// ========== 显示搜索建议函数结束 ==========
 
 // 监听autoFillAndJumpCheckbox变化
 document.getElementById('autoFillAndJumpCheckbox').addEventListener('change', function() {
@@ -4272,9 +10782,13 @@ document.getElementById('urlInput').addEventListener('keydown', function(e) {
                 // 获取当前输入框的值
                 var inputText = this.value.trim();
                 if (inputText) {
+                    localStorage.setItem('isSuggestionSelected', 'true');
                     // 模拟点击访问建议
                     firstSuggestion.click();
                     e.preventDefault();
+                    setTimeout(function() {
+                    localStorage.removeItem('isSuggestionSelected');
+                    }, 100);
                     return false;
                 }
             }
@@ -4282,24 +10796,85 @@ document.getElementById('urlInput').addEventListener('keydown', function(e) {
     }
 });
 
-// 获取搜索建议
+// ========== 获取搜索建议（兼容 IE9/10） ==========
 function fetchSearchSuggestions(query) {
-    // 检查是否启用搜索建议功能
-    var currentEngine = document.getElementById('engineSelect').value;
-    if (!document.getElementById('searchSuggestionsCheckbox').checked || currentEngine === 'iFrameFree' || currentEngine === 'iFramePlus') return;
+    var searchSuggestionsCheckbox = document.getElementById('searchSuggestionsCheckbox');
+    var engineSelect = document.getElementById('engineSelect');
+    
+    if (!searchSuggestionsCheckbox || !engineSelect) return;
+    if (!searchSuggestionsCheckbox.checked || engineSelect.value === 'iFrameFree' || engineSelect.value === 'iFramePlus') return;
+    setTimeout(function() {
+        if (engineSelect.value === 'showCheckbox') { searchSuggestions.style.display = 'none'; };
+    }, 10);
+    
+    var searchSuggestions = document.getElementById('searchSuggestions');
+    if (!searchSuggestions) return;
+    
+    // 检查输入框是否获得焦点
+    var urlInputElement = document.getElementById('urlInput');
+    var isInputFocused = false;
+    if (urlInputElement) {
+        isInputFocused = (document.activeElement === urlInputElement);
+    }
+    
+    if (!isInputFocused) {
+        searchSuggestions.style.display = 'none';
+        return;
+    }
+    if (typeof localStorage !== 'undefined' && localStorage) try { 
+        if (localStorage.getItem('isSuggestionSelected')) {
+            setTimeout(function() {
+                if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {}
+            }, 10);
+        }
+    } catch(e) {}
+    // ========== 输入为空时，判断是否需要显示历史记录 ==========
+    if (!query || query.trim() === '') {
+        // 检查是否启用历史记录在建议中显示
+        var showHistoryInSuggest = false;
+        var searchHistoryChecked = false;
+        var hasHistory = false;
+        try {
+            showHistoryInSuggest = localStorage.getItem('searchHistoryInSuggestChecked') === 'true';
+            var historyCheckboxElem = document.getElementById('searchHistoryCheckbox');
+            searchHistoryChecked = historyCheckboxElem && historyCheckboxElem.checked;
+            if (showHistoryInSuggest && searchHistoryChecked) {
+                var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                hasHistory = history.length > 0;
+            }
+        } catch(e) {}
+        
+        // 如果启用了历史记录建议且有历史记录，则调用 showSearchSuggestions 显示历史记录
+        if (showHistoryInSuggest && searchHistoryChecked && hasHistory) {
+            if (typeof showSearchSuggestions === 'function') {
+                showSearchSuggestions([]);
+            }
+            return;
+        } else {
+            searchSuggestions.style.display = 'none';
+            return;
+        }
+    }
     
     if (!query || query.trim() === '') {
-        // 空查询时显示搜索热词
+        var showHistoryInSuggest = false;
+        var searchHistoryChecked = false;
+        try {
+            showHistoryInSuggest = getHistoryInSuggestState() === 'true';
+            var historyCheckboxElem = document.getElementById('searchHistoryCheckbox');
+            searchHistoryChecked = historyCheckboxElem && historyCheckboxElem.checked;
+        } catch(e) {}
+        
+        if (showHistoryInSuggest && searchHistoryChecked) {
+            if (typeof showSearchSuggestions === 'function') {
+                showSearchSuggestions([]);
+            }
+            return;
+        }
         searchSuggestions.style.display = 'none';
-        resetQuickInputPosition();
-        setTimeout(function() {
-            searchSuggestions.style.display = 'none';
-            resetQuickInputPosition();
-        }, 100);
         return;
     }
     
-    // 根据选择的API源构建请求URL
     var apiSelect = document.getElementById('searchApiSelect');
     var apiType = apiSelect ? apiSelect.value : 'baidu_sugrec';
     var apiUrl = '';
@@ -4308,32 +10883,61 @@ function fetchSearchSuggestions(query) {
         apiUrl = 'https://www.baidu.com/sugrec?prod=pc&wd=' + encodeURIComponent(query) + '&cb=window.handleSuggestion';
     } else if (apiType === 'baidu_su') {
         apiUrl = 'https://suggestion.baidu.com/su?wd=' + encodeURIComponent(query) + '&cb=window.handleSuggestion&t=' + new Date().getTime();
+    } else if (apiType === 'so_sug') {
+        apiUrl = 'https://sug.so.360.cn/suggest?word=' + encodeURIComponent(query) + '&callback=window.handleSuggestion&_=' + new Date().getTime();
+    } else if (apiType === 'google_sug') {
+        apiUrl = 'https://www.google.com/complete/search?q=' + encodeURIComponent(query) + '&client=chrome&callback=window.handleSuggestion';
     }
     
-    // 创建script标签进行JSONP请求（兼容所有浏览器）
+    // 移除旧的 script 标签
+    var oldScripts = document.head.getElementsByTagName('script');
+    for (var i = oldScripts.length - 1; i >= 0; i--) {
+        if (oldScripts[i].src && oldScripts[i].src.indexOf('sug') !== -1) {
+            try {
+                if (oldScripts[i].parentNode) {
+                    oldScripts[i].parentNode.removeChild(oldScripts[i]);
+                }
+            } catch(e) {}
+        }
+    }
+    
     var script = document.createElement('script');
     script.src = apiUrl;
+    script.onerror = function() {
+        if (typeof showSearchSuggestions === 'function') {
+            showSearchSuggestions([query]);
+        }
+        // 清理自身
+        if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+        }
+        script.onerror = null;
+        script.onload = null;
+    };
+    script.onload = function() {
+        // 加载完成后清理 script 标签
+        setTimeout(function() {
+            if (script && script.parentNode) {
+                script.parentNode.removeChild(script);
+            }
+            script.onerror = null;
+            script.onload = null;
+        }, 100);
+    };
     document.head.appendChild(script);
     
-    // 设置超时处理
-    setTimeout(function() {
-        // 检查输入框是否失焦，如果失焦则不再执行后续代码
-        if (document.activeElement !== document.getElementById('urlInput')) {
-            // 如果输入框没有焦点，清理script标签但不执行本地建议
-            if (script.parentNode === document.head) {
-                document.head.removeChild(script);
+    // 设置超时清理
+    ResourceManager.setTimeout(function() {
+        try {
+            if (script && script.parentNode) {
+                script.parentNode.removeChild(script);
             }
-            return;
-        }
-        
-        if (script.parentNode === document.head) {
-            document.head.removeChild(script);
-            // 如果API失败，显示本地建议
-            var localSuggestions = [query];
-            showSearchSuggestions(localSuggestions);
-        }
-    }, 3000);
+            script.onerror = null;
+            script.onload = null;
+        } catch(e) {}
+    }, 5000);
 }
+// ========== 获取搜索建议函数结束 ==========
 
 // 监听API源选择变化
 document.getElementById('searchApiSelect').addEventListener('change', function() {
@@ -4351,7 +10955,7 @@ window.handleSuggestion = function(data) {
     // 移除script标签
     var scripts = document.head.getElementsByTagName('script');
     for (var i = scripts.length - 1; i >= 0; i--) {
-        if (scripts[i].src.indexOf('sugrec') > -1 || scripts[i].src.indexOf('suggestion.baidu.com') > -1) {
+        if (scripts[i].src.indexOf('sugrec') > -1 || scripts[i].src.indexOf('suggestion.baidu.com') > -1 || scripts[i].src.indexOf('sug.so.360.cn') > -1) {
             document.head.removeChild(scripts[i]);
         }
     }
@@ -4393,6 +10997,51 @@ window.handleSuggestion = function(data) {
         } catch (e) {
             // 解析失败，使用备用方案
         }
+    } else if (apiType === 'so_sug') {
+        try {
+            // 360搜索返回格式: { result: [{word: "关键词"}, ...] } 或直接数组
+            if (data && data.result && data.result.length > 0) {
+                for (var k = 0; k < data.result.length; k++) {
+                    if (data.result[k].word) {
+                        suggestions.push(data.result[k].word);
+                    }
+                }
+            } else if (data && Array.isArray(data)) {
+                suggestions = data;
+            } else if (data && data.s && data.s.length > 0) {
+                suggestions = data.s;
+            }
+        } catch (e) {
+            // 解析失败
+        }
+    } else if (apiType === 'google_sug') {
+        // 解析谷歌搜索建议格式
+        try {
+            // 谷歌返回格式: 数组 [原始查询词, [建议列表], ...]
+            if (data && Array.isArray(data) && data[1] && data[1].length > 0) {
+                for (var k = 0; k < data[1].length; k++) {
+                    if (data[1][k]) {
+                        suggestions.push(data[1][k]);
+                    }
+                }
+            }
+            // 处理可能的JSONP字符串格式
+            else if (typeof data === 'string') {
+                var match = data.match(/window\.handleSuggestion\((.+)\)/);
+                if (match && match[1]) {
+                    var parsedData = JSON.parse(match[1]);
+                    if (parsedData && Array.isArray(parsedData) && parsedData[1] && parsedData[1].length > 0) {
+                        for (var k = 0; k < parsedData[1].length; k++) {
+                            if (parsedData[1][k]) {
+                                suggestions.push(parsedData[1][k]);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            // 解析失败
+        }
     }
     
     if (suggestions.length > 0) {
@@ -4420,6 +11069,13 @@ document.getElementById('urlInput').addEventListener('focus', function() {
 
 // 输入框输入事件
 document.getElementById('urlInput').addEventListener('input', function() {
+    // 修改位置：当选择搜索建议后再输入文字时，重置选择搜索建议初始位置
+    if (suggestionIndex !== -1 && typeof suggestionIndex !== 'undefined') {
+        suggestionIndex = -1;
+        // 恢复输入框当前输入文字（保持当前输入不变）
+        // 不需要额外操作，因为 input 事件已经更新了输入框的值
+    }
+    
     if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
     
     var query = this.value.trim();
@@ -4431,14 +11087,11 @@ document.getElementById('urlInput').addEventListener('input', function() {
             updateSuggestionsPosition();
         }
         if (document.getElementById('urlInput').value === '') {
-            searchSuggestions.style.display = 'none';
             resetQuickInputPosition();
             setTimeout(function() {
-                searchSuggestions.style.display = 'none';
                 resetQuickInputPosition();
             }, 100);
             setTimeout(function() {
-                searchSuggestions.style.display = 'none';
                 resetQuickInputPosition();
             }, 150);
         }
@@ -4447,12 +11100,20 @@ document.getElementById('urlInput').addEventListener('input', function() {
 
 // 输入框失焦事件
 document.getElementById('urlInput').addEventListener('blur', function() {
+    // ========== 【修改位置】如果正在跳转导航中，不隐藏搜索建议（让切换引擎时能正常显示） ==========
+    if (window._isNavigating) {
+        window._isNavigating = false;
+    }
+    // ========== 【修改结束】 ==========
+    setTimeout(function() {
+        localStorage.removeItem('isSuggestionSelected');
+    }, 0);
     setTimeout(function() {
         searchSuggestions.style.display = 'none';
     }, 100);
     setTimeout(function() {
         searchSuggestions.style.display = 'none';
-    }, 150);
+    }, 120);
 });
 
 // 点击搜索建议时阻止失焦
@@ -4476,11 +11137,19 @@ if (savedSearchSuggestionsState === 'true') {
         }, 100);
     }
     document.getElementById('showVisitWebsiteCheckbox').disabled = !document.getElementById('searchSuggestionsCheckbox').checked;
+    document.getElementById('searchApiSelect').disabled = !document.getElementById('searchSuggestionsCheckbox').checked;
     document.getElementById('autoFillAndJumpCheckbox').disabled = !document.getElementById('searchSuggestionsCheckbox').checked;
 }
 
 // 输入框焦点事件
 document.getElementById('urlInput').addEventListener('focus', function() {
+    // ========== 【修改位置】聚焦时清除导航标记 ==========
+    if (window._clearNavigationFlagTimer) {
+        clearTimeout(window._clearNavigationFlagTimer);
+    }
+    window._isNavigating = false;
+    // ========== 【修改结束】 ==========
+    
     if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
     
     var query = this.value.trim();
@@ -4509,13 +11178,49 @@ function updateSuggestionsPosition() {
     }
 }
 
-// 恢复quickInputUi位置
+// ========== 【修改位置】修改 resetQuickInputPosition 函数，增加历史记录显示检测 ==========
 function resetQuickInputPosition() {
-    if (document.getElementById('quickInputCheckbox').checked) {
+    if (document.getElementById('quickInputCheckbox') && document.getElementById('quickInputCheckbox').checked) {
+        // 检查是否启用了历史记录在建议中显示且输入框为空
+        var showHistoryInSuggest = false;
+        var searchHistoryChecked = false;
+        var isInputEmpty = false;
+        var isHistoryVisible = false;
+        
+        try {
+            showHistoryInSuggest = localStorage.getItem('searchHistoryInSuggestChecked') === 'true';
+            var historyCheckbox = document.getElementById('searchHistoryCheckbox');
+            searchHistoryChecked = historyCheckbox && historyCheckbox.checked;
+        } catch(e) {}
+        
+        var urlInputElem = document.getElementById('urlInput');
+        if (urlInputElem) {
+            isInputEmpty = urlInputElem.value.trim() === '';
+        }
+        
+        // 检查历史记录建议是否正在显示
+        var searchSuggestionsElem = document.getElementById('searchSuggestions');
+        if (searchSuggestionsElem && searchSuggestionsElem.style.display === 'block') {
+            // 检查是否显示的是历史记录（第一个子元素可能是清空历史记录按钮）
+            var firstChild = searchSuggestionsElem.firstChild;
+            if (firstChild && (firstChild.id === 'suggestion_clear_history' || 
+                (firstChild.id && firstChild.id.indexOf('suggestion_history_') === 0))) {
+                isHistoryVisible = true;
+            }
+        }
+        
+        // 如果满足条件（启用了历史记录建议 + 输入为空 + 历史记录可见），则不重置位置
+        if (showHistoryInSuggest && searchHistoryChecked && isInputEmpty && isHistoryVisible) {
+            return;
+        }
+        
         var quickInputBtn = document.getElementById('quickInputBtn');
-        quickInputBtn.style.marginTop = '0px';
+        if (quickInputBtn) {
+            quickInputBtn.style.marginTop = '0px';
+        }
     }
 }
+// ========== 【修改结束】 ==========
 
 // 监听搜索建议checkbox变化
 document.getElementById('searchSuggestionsCheckbox').addEventListener('change', function() {
@@ -4527,6 +11232,7 @@ document.getElementById('searchSuggestionsCheckbox').addEventListener('change', 
     }
     // 控制showVisitWebsiteCheckbox的disabled状态
     document.getElementById('showVisitWebsiteCheckbox').disabled = !this.checked;
+    document.getElementById('searchApiSelect').disabled = !this.checked;
     if (!this.checked) {
         searchSuggestions.style.display = 'none';
     }
@@ -4723,6 +11429,7 @@ document.querySelector('label[for="quickLinksSizePicker"]').addEventListener('cl
                 }
                 document.getElementById('quickLinksSizeValue').textContent = newSize;
                 localStorage.setItem('quickLinksFontSize', newSize);
+                truncateText('quickLinksSizeValue', newSize, 80);
             }
         });
 });
@@ -4773,55 +11480,71 @@ document.querySelector('label[for="linkSpacingBtn"]').addEventListener('click', 
     );
 });
 
-// 应用超链接间距的函数
 function applyLinkSpacing() {
-    var horizontalSpacing = localStorage.getItem('linkHorizontalSpacing') || '0';
-    var verticalSpacing = localStorage.getItem('linkVerticalSpacing') || '0';
-    
-    var quickLinks = document.getElementById('quickLinks');
-    if (quickLinks) {
-        var linkContainers = quickLinks.querySelectorAll('span');
+    try {
+        var horizontalSpacing = localStorage.getItem('linkHorizontalSpacing') || '0';
+        var verticalSpacing = localStorage.getItem('linkVerticalSpacing') || '0';
+        
+        var quickLinks = document.getElementById('quickLinks');
+        if (!quickLinks) return;
+        
+        var linkContainers = [];
+        try {
+            linkContainers = quickLinks.querySelectorAll('span');
+        } catch(e) {
+            // IE8及以下不支持querySelectorAll
+            var allSpans = quickLinks.getElementsByTagName('span');
+            for (var i = 0; i < allSpans.length; i++) {
+                linkContainers.push(allSpans[i]);
+            }
+        }
+        
         var links = quickLinks.getElementsByTagName('a');
         
         // 设置每个链接容器的间距
         for (var i = 0; i < linkContainers.length; i++) {
-            if (horizontalSpacing !== '0') {
-                linkContainers[i].style.marginLeft = horizontalSpacing;
-            } else {
-                linkContainers[i].style.marginLeft = '';
-            }
-            
-            if (verticalSpacing !== '0') {
-                linkContainers[i].style.marginTop = verticalSpacing;
-                linkContainers[i].style.marginBottom = verticalSpacing;
-            } else {
-                linkContainers[i].style.marginTop = '';
-                linkContainers[i].style.marginBottom = '';
+            if (linkContainers[i]) {
+                if (horizontalSpacing !== '0') {
+                    linkContainers[i].style.marginLeft = horizontalSpacing;
+                } else {
+                    linkContainers[i].style.marginLeft = '';
+                }
+                
+                if (verticalSpacing !== '0') {
+                    linkContainers[i].style.marginTop = verticalSpacing;
+                    linkContainers[i].style.marginBottom = verticalSpacing;
+                } else {
+                    linkContainers[i].style.marginTop = '';
+                    linkContainers[i].style.marginBottom = '';
+                }
             }
         }
         
         // 设置每个链接的间距
         for (var j = 0; j < links.length; j++) {
-            if (horizontalSpacing !== '0') {
-                links[j].style.marginLeft = horizontalSpacing;
-            } else {
-                links[j].style.marginLeft = '5px';
-            }
-            
-            if (verticalSpacing !== '0') {
-                links[j].style.marginTop = verticalSpacing;
-                links[j].style.marginBottom = verticalSpacing;
-            } else {
-                links[j].style.marginTop = '';
-                links[j].style.marginBottom = '';
+            if (links[j]) {
+                if (horizontalSpacing !== '0') {
+                    links[j].style.marginLeft = horizontalSpacing;
+                } else {
+                    links[j].style.marginLeft = '5px';
+                }
+                
+                if (verticalSpacing !== '0') {
+                    links[j].style.marginTop = verticalSpacing;
+                    links[j].style.marginBottom = verticalSpacing;
+                } else {
+                    links[j].style.marginTop = '';
+                    links[j].style.marginBottom = '';
+                }
             }
         }
+    } catch(e) {
+        // 静默处理错误，不影响主要功能
     }
 }
-
 document.querySelector('label[for="quickLinksColorPicker"]').addEventListener('click', function() {
     var currentColor = localStorage.getItem('quickLinksColor') || '#0000ee';
-    showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}colorPicker.style.position=\'fixed\';colorPicker.style.left=\'0\';colorPicker.style.top=\'0\';colorPicker.style.width=\'1px\';colorPicker.style.height=\'1px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10001\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;margin-left:2px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
+    showCustomModal('请输入快捷链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}var btnRect=this.getBoundingClientRect();colorPicker.style.position=\'fixed\';colorPicker.style.left=btnRect.left+\'px\';colorPicker.style.top=(btnRect.bottom+5)+\'px\';colorPicker.style.width=\'0px\';colorPicker.style.height=\'0px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10002\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;margin-left:2px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
         if (newValue !== null) {
             if (newValue === '') {
                 // 输入为空时恢复默认颜色
@@ -4840,6 +11563,79 @@ document.querySelector('label[for="quickLinksColorPicker"]').addEventListener('c
         }
     });
 });
+
+// 修改位置：找到历史记录链接颜色调整功能的 click 事件监听器
+
+var historyLinksColorLabel = document.querySelector('label[for="historyLinksColorPicker"]');
+if (historyLinksColorLabel) {
+    historyLinksColorLabel.addEventListener('click', function() {
+        var currentColor = localStorage.getItem('historyLinksColor') || '#0000ee';
+        showCustomModal('请输入历史记录链接颜色值（如 #0000ee 或 red）或者rgba(255,255,255,1.0)，hsl(0,100%,50%) 或使用<a href="javascript:void(0)" onclick="var modalKeys=[];for(var key in window){if(window.hasOwnProperty(key)&&key.indexOf(\'modalCallback_\')===0){modalKeys.push(key);}}if(modalKeys.length>0){var input=document.getElementById(\'modalInput_\'+modalKeys[0]);if(input){var colorPicker=document.createElement(\'input\');colorPicker.type=\'color\';var currentColor=input.value;if(currentColor&&/^#([0-9A-F]{3,6})$/i.test(currentColor)){colorPicker.value=currentColor;}var btnRect=this.getBoundingClientRect();colorPicker.style.position=\'fixed\';colorPicker.style.left=btnRect.left+\'px\';colorPicker.style.top=(btnRect.bottom+5)+\'px\';colorPicker.style.width=\'0px\';colorPicker.style.height=\'0px\';colorPicker.style.opacity=\'0\';colorPicker.style.zIndex=\'10002\';colorPicker.onchange=function(){if(input){input.value=this.value;var colorPreview=document.getElementById(\'colorPreview\');if(colorPreview){colorPreview.style.background=this.value;}}setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};colorPicker.onblur=function(){setTimeout(function(){if(colorPicker&&colorPicker.parentNode){colorPicker.parentNode.removeChild(colorPicker);}},100);};document.body.appendChild(colorPicker);setTimeout(function(){if(colorPicker.focus)colorPicker.focus();if(colorPicker.click)colorPicker.click();},50);}}return false;">调色盘</a><span id="colorPreview" style="display:inline-block;width:17px;height:17px;background:' + currentColor + ';margin-bottom: 1px;margin-left:2px;border:0.5px solid #000;vertical-align:middle;"></span> ：', currentColor, function(newValue) {
+            if (newValue !== null) {
+                if (newValue === '') {
+                    var defaultColor = '#0000ee';
+                    updateHistoryLinksColor(defaultColor);
+                    localStorage.setItem('historyLinksColor', defaultColor);
+                    // === 修复：更新 span 颜色值显示 ===
+                    var historyLinksColorValueSpan = document.getElementById('historyLinksColorValue');
+                    if (historyLinksColorValueSpan) {
+                        historyLinksColorValueSpan.textContent = defaultColor;
+                        truncateText('historyLinksColorValue', defaultColor, 80);
+                    }
+                    // === 修复代码结束 ===
+                } else if (/^#([0-9A-F]{3,6})$/i.test(newValue) || /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/i.test(newValue) || /^[a-z]+$/i.test(newValue) || /^hsla?\(\s*\d+\s*,\s*\d+%?\s*,\s*\d+%?\s*(,\s*[\d.]+\s*)?\)$/i.test(newValue)) {
+                    updateHistoryLinksColor(newValue);
+                    localStorage.setItem('historyLinksColor', newValue);
+                    // === 修复：更新 span 颜色值显示 ===
+                    var historyLinksColorValueSpan = document.getElementById('historyLinksColorValue');
+                    if (historyLinksColorValueSpan) {
+                        historyLinksColorValueSpan.textContent = newValue;
+                        truncateText('historyLinksColorValue', newValue, 80);
+                    }
+                    // === 修复代码结束 ===
+                }
+            }
+        });
+    });
+}
+
+// 更新历史记录链接颜色的函数
+function updateHistoryLinksColor(color) {
+    var historyLinks = document.querySelectorAll('#searchHistory a');
+    for (var i = 0; i < historyLinks.length; i++) {
+        historyLinks[i].style.color = color;
+    }
+}
+
+// 加载保存的历史记录链接颜色
+// ========== 【IE8修复】添加localStorage存在性检查 ==========
+if (typeof localStorage !== 'undefined' && localStorage !== null) {
+    var savedHistoryLinksColor = localStorage.getItem('historyLinksColor');
+    if (savedHistoryLinksColor) {
+        var historyLinksColorValueSpan = document.getElementById('historyLinksColorValue');
+        if (historyLinksColorValueSpan) {
+            historyLinksColorValueSpan.textContent = savedHistoryLinksColor;
+            truncateText('historyLinksColorValue', savedHistoryLinksColor, 80);
+        }
+        setTimeout(function() {
+            updateHistoryLinksColor(savedHistoryLinksColor);
+        }, 100);
+    } else {
+        // === 修复：如果没有保存的颜色，确保显示默认颜色 ===
+        var historyLinksColorValueSpan = document.getElementById('historyLinksColorValue');
+        if (historyLinksColorValueSpan) {
+            historyLinksColorValueSpan.textContent = '#0000ee';
+        }
+        // === 修复代码结束 ===
+    }
+} else {
+    // localStorage不可用时，显示默认颜色
+    var historyLinksColorValueSpan = document.getElementById('historyLinksColorValue');
+    if (historyLinksColorValueSpan) {
+        historyLinksColorValueSpan.textContent = '#0000ee';
+    }
+}
+// ========== 【IE8修复结束】 ==========
 
 // 更新快捷链接颜色的函数
 function updateQuickLinksColor(color) {
@@ -5020,6 +11816,16 @@ function showCustomConfirm(title, callback) {
     // 创建唯一的回调函数名称以避免冲突
     var callbackName = 'confirmCallback_' + Date.now();
     window[callbackName] = function(result) {
+        // 修改位置：在回调执行前移除键盘事件
+        if (modal._keyHandler) {
+            if (document.removeEventListener) {
+                document.removeEventListener('keydown', modal._keyHandler);
+            } else if (document.detachEvent) {
+                document.detachEvent('onkeydown', modal._keyHandler);
+            }
+            modal._keyHandler = null;
+        }
+        
         if (modal.parentNode) {
             modal.parentNode.removeChild(modal);
         }
@@ -5053,14 +11859,16 @@ function showCustomConfirm(title, callback) {
         '</div>'
     ].join('');
     
-    // 添加键盘事件处理函数
+    // 修改位置：创建键盘事件处理函数并保存引用
     modal._keyHandler = function(e) {
         e = e || window.event;
         var keyCode = e.keyCode || e.which;
         
         // 按Esc键 (keyCode 27) 关闭
         if (keyCode === 27) {
-            window[callbackName](false);
+            if (typeof window[callbackName] === 'function') {
+                window[callbackName](false);
+            }
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
@@ -5071,7 +11879,9 @@ function showCustomConfirm(title, callback) {
         
         // 按N键 (keyCode 78) 或 n键 (keyCode 110) 为取消
         if (keyCode === 78 || keyCode === 110) {
-            window[callbackName](false);
+            if (typeof window[callbackName] === 'function') {
+                window[callbackName](false);
+            }
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
@@ -5082,12 +11892,14 @@ function showCustomConfirm(title, callback) {
         
         // 按Y键 (keyCode 89) 或 y键 (keyCode 121) 为确定
         if (keyCode === 89 || keyCode === 121) {
-            window[callbackName](true);
+            if (typeof window[callbackName] === 'function') {
+                window[callbackName](true);
+            }
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
                 e.returnValue = false;
-                }
+            }
             return false;
         }
     };
@@ -5196,8 +12008,8 @@ function showCustomDoubleInput(title, label1, label2, currentValue1, currentValu
                 e.preventDefault();
                 return false;
             }
-            // Alt+Shift+Y 确定
-            if (keyCode === 89 && e.altKey && e.shiftKey) {
+            // Alt+Y 确定
+            if (keyCode === 89 && e.altKey) {
                 var input1 = document.getElementById('doubleInput1_' + callbackName);
                 var input2 = document.getElementById('doubleInput2_' + callbackName);
                 window[callbackName](input1 ? input1.value : null, input2 ? input2.value : null);
@@ -5371,7 +12183,7 @@ document.querySelector('label[for="customSearchListBtn"]').addEventListener('cli
     html += '<span style="display: table-cell; vertical-align: middle; text-align: right; white-space: nowrap;">';
     html += '<input type="checkbox" id="hideOrder0Checkbox" ' + (isOrder0Hidden ? 'checked' : '') + ' style="margin-right: 5px;">';
     html += '<label for="hideOrder0Checkbox" style="margin-right: 8px; position: relative; bottom: 2px; user-select: none;">隐藏此项</label>';
-    html += '<button id="clearAllCustomSearchesBtn" style="background: #ffffff; float: right; border: 1px solid #ccc; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'">一键清空</button>';
+    html += '<button id="clearAllCustomSearchesBtn" style="background: #ffffff; float: right; border: 1px solid #ccc; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'">一键清空<i class="fa fa-trash-o" style="margin-left: 3px;"></i></button>';
     html += '</span>';
     html += '</div>';
     
@@ -5408,11 +12220,11 @@ document.querySelector('label[for="customSearchListBtn"]').addEventListener('cli
             var url = item.url;
             
             html += '<div style="display: table; width: 100%; padding: 8px 0; border-bottom: 1px solid #eee;">';
-            html += '<span style="display: table-cell; vertical-align: middle; text-align: left;"><strong>' + order + '.</strong> ' + name + '</span>';
+            html += '<span style="display: table-cell; vertical-align: middle; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; max-width: 100px;"><strong>' + order + '.</strong> ' + name + '</span>';
             html += '<span style="display: table-cell; vertical-align: middle; text-align: right; white-space: nowrap;">';
 
             // 修改order按钮
-            html += '<button onclick="var btn=this; var newOrder=prompt(\'修改排序ID\', this.getAttribute(\'data-order\')); if(newOrder!==null && !isNaN(newOrder) && parseInt(newOrder)>0){var searches=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); var targetOrder=parseInt(newOrder); var currentOrder=' + order + '; var targetIndex=-1; var currentIndex=-1; for(var j=0;j<searches.length;j++){if(searches[j].order===targetOrder){targetIndex=j;} if(searches[j].order===currentOrder){currentIndex=j;}} if(targetIndex!==-1 && targetIndex!==currentIndex){if(confirm(\'排序ID \'+targetOrder+\' 已存在，是否替换？\')){var tempOrder=searches[currentIndex].order; searches[currentIndex].order=searches[targetIndex].order; searches[targetIndex].order=tempOrder; searches.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches)); updateCustomSearchOptions(); location.reload(true); }}else if(targetIndex===-1){searches[currentIndex].order=targetOrder; searches.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches)); updateCustomSearchOptions(); btn.setAttribute(\'data-order\', targetOrder); var parentRow=this.parentNode.parentNode; var leftSpan=null; for(var m=0;m<parentRow.childNodes.length;m++){if(parentRow.childNodes[m].nodeType===1&&parentRow.childNodes[m].tagName===\'SPAN\'){leftSpan=parentRow.childNodes[m];break;}} if(leftSpan){var nameText=\'\'; for(var n=0;n<leftSpan.childNodes.length;n++){if(leftSpan.childNodes[n].nodeType===3){nameText=leftSpan.childNodes[n].nodeValue;break;}} if(!nameText){nameText=leftSpan.innerHTML.replace(/<[^>]+>/g,\'\');} leftSpan.innerHTML=\'<strong>\'+targetOrder+\'.</strong> \'+nameText;} btn.onclick = function(){var btn2=this; var newOrder2=prompt(\'修改排序ID\', this.getAttribute(\'data-order\')); if(newOrder2!==null && !isNaN(newOrder2) && parseInt(newOrder2)>0){var searches2=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); var targetOrder2=parseInt(newOrder2); var currentOrder2=parseInt(btn2.getAttribute(\'data-order\')); var targetIndex2=-1; var currentIndex2=-1; for(var p=0;p<searches2.length;p++){if(searches2[p].order===targetOrder2){targetIndex2=p;} if(searches2[p].order===currentOrder2){currentIndex2=p;}} if(targetIndex2!==-1 && targetIndex2!==currentIndex2){if(confirm(\'排序ID \'+targetOrder2+\' 已存在，是否替换？\')){var tempOrder2=searches2[currentIndex2].order; searches2[currentIndex2].order=searches2[targetIndex2].order; searches2[targetIndex2].order=tempOrder2; searches2.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches2)); updateCustomSearchOptions(); location.reload(true); }}else if(targetIndex2===-1){searches2[currentIndex2].order=targetOrder2; searches2.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches2)); updateCustomSearchOptions(); btn2.setAttribute(\'data-order\', targetOrder2); var parentRow2=btn2.parentNode.parentNode; var leftSpan2=null; for(var r=0;r<parentRow2.childNodes.length;r++){if(parentRow2.childNodes[r].nodeType===1&&parentRow2.childNodes[r].tagName===\'SPAN\'){leftSpan2=parentRow2.childNodes[r];break;}} if(leftSpan2){var nameText2=\'\'; for(var s=0;s<leftSpan2.childNodes.length;s++){if(leftSpan2.childNodes[s].nodeType===3){nameText2=leftSpan2.childNodes[s].nodeValue;break;}} if(!nameText2){nameText2=leftSpan2.innerHTML.replace(/<[^>]+>/g,\'\');} leftSpan2.innerHTML=\'<strong>\'+targetOrder2+\'.</strong> \'+nameText2;} btn2.onclick = arguments.callee; }}}; } }" style="background: #ffffff; border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; margin-right: 5px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'" data-order="' + order + '"><i class="fa fa-caret-up"></i></button>';
+            html += '<button onclick="var btn=this; var newOrder=prompt(\'修改排序ID\', this.getAttribute(\'data-order\')); if(newOrder!==null && !isNaN(newOrder) && parseInt(newOrder)>0){var searches=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); var targetOrder=parseInt(newOrder); var currentOrder=' + order + '; var targetIndex=-1; var currentIndex=-1; for(var j=0;j<searches.length;j++){if(searches[j].order===targetOrder){targetIndex=j;} if(searches[j].order===currentOrder){currentIndex=j;}} if(targetIndex!==-1 && targetIndex!==currentIndex){if(confirm(\'排序ID \'+targetOrder+\' 已存在，是否替换？\')){var tempOrder=searches[currentIndex].order; searches[currentIndex].order=searches[targetIndex].order; searches[targetIndex].order=tempOrder; searches.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches)); updateCustomSearchOptions(); location.reload(true); }}else if(targetIndex===-1){searches[currentIndex].order=targetOrder; searches.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches)); updateCustomSearchOptions(); btn.setAttribute(\'data-order\', targetOrder); var parentRow=this.parentNode.parentNode; var leftSpan=null; for(var m=0;m<parentRow.childNodes.length;m++){if(parentRow.childNodes[m].nodeType===1&&parentRow.childNodes[m].tagName===\'SPAN\'){leftSpan=parentRow.childNodes[m];break;}} if(leftSpan){var nameText=\'\'; for(var n=0;n<leftSpan.childNodes.length;n++){if(leftSpan.childNodes[n].nodeType===3){nameText=leftSpan.childNodes[n].nodeValue;break;}} if(!nameText){nameText=leftSpan.innerHTML.replace(/<[^>]+>/g,\'\');} leftSpan.innerHTML=\'<strong>\'+targetOrder+\'.</strong> \'+nameText;} btn.onclick = function(){var btn2=this; var newOrder2=prompt(\'修改排序ID\', this.getAttribute(\'data-order\')); if(newOrder2!==null && !isNaN(newOrder2) && parseInt(newOrder2)>0){var searches2=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); var targetOrder2=parseInt(newOrder2); var currentOrder2=parseInt(btn2.getAttribute(\'data-order\')); var targetIndex2=-1; var currentIndex2=-1; for(var p=0;p<searches2.length;p++){if(searches2[p].order===targetOrder2){targetIndex2=p;} if(searches2[p].order===currentOrder2){currentIndex2=p;}} if(targetIndex2!==-1 && targetIndex2!==currentIndex2){if(confirm(\'排序ID \'+targetOrder2+\' 已存在，是否替换？\')){var tempOrder2=searches2[currentIndex2].order; searches2[currentIndex2].order=searches2[targetIndex2].order; searches2[targetIndex2].order=tempOrder2; searches2.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches2)); updateCustomSearchOptions(); location.reload(true); }}else if(targetIndex2===-1){searches2[currentIndex2].order=targetOrder2; searches2.sort(function(a,b){return a.order-b.order;}); localStorage.setItem(\'customSearches\', JSON.stringify(searches2)); updateCustomSearchOptions(); btn2.setAttribute(\'data-order\', targetOrder2); var parentRow2=btn2.parentNode.parentNode; var leftSpan2=null; for(var r=0;r<parentRow2.childNodes.length;r++){if(parentRow2.childNodes[r].nodeType===1&&parentRow2.childNodes[r].tagName===\'SPAN\'){leftSpan2=parentRow2.childNodes[r];break;}} if(leftSpan2){var nameText2=\'\'; for(var s=0;s<leftSpan2.childNodes.length;s++){if(leftSpan2.childNodes[s].nodeType===3){nameText2=leftSpan2.childNodes[s].nodeValue;break;}} if(!nameText2){nameText2=leftSpan2.innerHTML.replace(/<[^>]+>/g,\'\');} leftSpan2.innerHTML=\'<strong>\'+targetOrder2+\'.</strong> \'+nameText2;} btn2.onclick = arguments.callee; }}}; } }" style="background: #ffffff; border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; margin-right: 5px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'" data-order="' + order + '"><i class="fa fa-th-list"></i></button>';
             
             // 修改名称按钮
             html += '<button onclick="var btn=this; var newName=prompt(\'修改搜索引擎名称\', this.getAttribute(\'data-name\')); if(newName!==null){var searches=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); for(var j=0;j<searches.length;j++){if(searches[j].order===' + order + '){searches[j].name=newName;break;}} localStorage.setItem(\'customSearches\', JSON.stringify(searches)); updateCustomSearchOptions(); btn.setAttribute(\'data-name\', newName); var parentSpan=this.parentNode.parentNode; var leftSpan=null; for(var k=0;k<parentSpan.childNodes.length;k++){if(parentSpan.childNodes[k].nodeType===1&&parentSpan.childNodes[k].tagName===\'SPAN\'){leftSpan=parentSpan.childNodes[k];break;}} if(leftSpan){leftSpan.innerHTML=\'<strong>' + order + '.</strong> \'+newName;} btn.onclick = function(){var btn2=this; var newName2=prompt(\'修改搜索引擎名称\', this.getAttribute(\'data-name\')); if(newName2!==null){var searches2=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); for(var m=0;m<searches2.length;m++){if(searches2[m].order===' + order + '){searches2[m].name=newName2;break;}} localStorage.setItem(\'customSearches\', JSON.stringify(searches2)); updateCustomSearchOptions(); btn2.setAttribute(\'data-name\', newName2); var parentSpan2=btn2.parentNode.parentNode; var leftSpan2=null; for(var n=0;n<parentSpan2.childNodes.length;n++){if(parentSpan2.childNodes[n].nodeType===1&&parentSpan2.childNodes[n].tagName===\'SPAN\'){leftSpan2=parentSpan2.childNodes[n];break;}} if(leftSpan2){leftSpan2.innerHTML=\'<strong>' + order + '.</strong> \'+newName2;} btn2.onclick = arguments.callee; }}; }" style="background: #ffffff; border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; margin-right: 5px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'" data-name="' + name.replace(/"/g, '&quot;') + '"><i class="fa fa-tags"></i></button>';
@@ -5421,7 +12233,7 @@ document.querySelector('label[for="customSearchListBtn"]').addEventListener('cli
             html += '<button onclick="var btn=this; var newUrl=prompt(\'修改搜索引擎网址 (使用{keywords}作为占位符)\', \'' + url.replace(/'/g, "\\'") + '\'); if(newUrl!==null && newUrl.indexOf(\'{keywords}\')!==-1){var searches=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); for(var j=0;j<searches.length;j++){if(searches[j].order===' + order + '){searches[j].url=newUrl;break;}} localStorage.setItem(\'customSearches\', JSON.stringify(searches)); updateCustomSearchOptions(); btn.setAttribute(\'data-url\', newUrl); btn.onclick = function(){var btn2=this; var newUrl2=prompt(\'修改搜索引擎网址 (使用{keywords}作为占位符)\', this.getAttribute(\'data-url\')); if(newUrl2!==null && newUrl2.indexOf(\'{keywords}\')!==-1){var searches2=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); for(var k=0;k<searches2.length;k++){if(searches2[k].order===' + order + '){searches2[k].url=newUrl2;break;}} localStorage.setItem(\'customSearches\', JSON.stringify(searches2)); updateCustomSearchOptions(); btn2.setAttribute(\'data-url\', newUrl2); btn2.onclick = arguments.callee; }}; }" style="background: #ffffff; border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; margin-right: 5px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'" data-url="' + url.replace(/"/g, '&quot;') + '"><i class="fa fa-pencil"></i></button>';
             
             // 删除按钮
-            html += '<button onclick="var searches=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); var filtered=[]; for(var j=0;j<searches.length;j++){if(searches[j].order!==' + order + '){filtered.push(searches[j]);}} localStorage.setItem(\'customSearches\', JSON.stringify(filtered)); updateCustomSearchOptions(); this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode);" style="background: #ffffff; border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'"><i class="fa fa-trash-o"></i></button>';
+            html += '<button onclick="var searches=JSON.parse(localStorage.getItem(\'customSearches\')||\'[]\'); var filtered=[]; for(var j=0;j<searches.length;j++){if(searches[j].order!==' + order + '){filtered.push(searches[j]);}} localStorage.setItem(\'customSearches\', JSON.stringify(filtered)); updateCustomSearchOptions(); this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode);" style="background: #ffffff; border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px;" onmouseover="this.style.background=\'#f0f0f0\'" onmouseout="this.style.background=\'#ffffff\'"><i class="fa fa-remove"></i></button>';
             
             html += '</span>';
             html += '</div>';
@@ -5435,7 +12247,7 @@ document.querySelector('label[for="customSearchListBtn"]').addEventListener('cli
 // 更多设置折叠/展开功能（兼容所有浏览器）
 (function() {
     // 获取需要控制的元素集合
-    var container = document.getElementById('autoFillhttps');
+    var container = document.getElementById('showToolPanel');
     if (!container) return;
     
     // 收集所有需要隐藏/显示的元素
@@ -5548,10 +12360,44 @@ document.querySelector('label[for="customSearchListBtn"]').addEventListener('cli
 document.querySelector('label[for="clearAllSettingsBtn"]').addEventListener('click', function() {
     showCustomConfirm('确定要重置设置吗？此操作将清除所有已保存设置，并清除所有快捷链接和自定义搜索，请在进行此操作前备份本地数据。', function(result) {
         if (result) {
-            // 第一个确认框点击确定后，保持滚动禁止状态，直接显示第二个输入框
-            showCustomModal('请输入 "Clear All" 继续操作：', '', function(inputText) {
-                // 验证输入内容（不区分大小写）
-                if (inputText && inputText.toLowerCase() === 'clear all') {
+            // 生成6位随机数字
+            var randomCode = '';
+            for (var i = 0; i < 6; i++) {
+                randomCode += Math.floor(Math.random() * 10);
+            }
+            
+            var timeoutId = null;
+            var originalTitle = null;
+            
+            // 存储原始的 showCustomModal 函数
+            var originalShowCustomModal = window.showCustomModal;
+            
+            // 临时包装 showCustomModal 以实现延迟更新标题
+            window.showCustomModal = function(title, currentValue, callback) {
+                originalTitle = title;
+                // 调用原始函数，标题先显示占位符
+                originalShowCustomModal('请输入 ... 继续操作：', currentValue, function(inputText) {
+                    // 恢复原始函数
+                    window.showCustomModal = originalShowCustomModal;
+                    if (timeoutId) clearTimeout(timeoutId);
+                    if (callback) callback(inputText);
+                });
+                
+                // 3秒后更新标题显示随机数字
+                timeoutId = setTimeout(function() {
+                    var modalP = document.querySelector('#userSelectModalDisabled p');
+                    if (modalP && modalP.innerHTML.indexOf('...') !== -1) {
+                        modalP.innerHTML = '请输入 <span style="color: #ff0000; font-weight: bold;">' + randomCode + '</span> 继续操作：';
+                    }
+                }, 3000);
+            };
+            
+            // 调用修改后的 showCustomModal
+            window.showCustomModal('请输入 ... 继续操作：', '', function(inputText) {
+                // 恢复原始函数
+                window.showCustomModal = originalShowCustomModal;
+                if (timeoutId) clearTimeout(timeoutId);
+                if (inputText && inputText === randomCode) {
                     clearAllSettingsThreeConfirm();
                 }
             });
@@ -5576,13 +12422,19 @@ function clearAllSettingsThreeConfirm() {
                 document.body.innerHTML = '<p>重置完成，若没有自动刷新，请手动<a href="javascript:void(0)" onclick="javascript:location.reload(true);">刷新</a></p>';
             }, 100);
             setTimeout(function() {
-                window.location.reload(true);
-            }, 200);
+    // IE中reload(true)可能有问题，使用标准reload
+    try {
+        window.location.reload();
+    } catch(e) {
+        window.location.href = window.location.href;
+    }
+}, 200);
         }
     });
 }
 
 // 导出链接功能
+// 兼容 IE 所有版本及旧版浏览器正常导出文件
 document.querySelector('label[for="exportLinksBtn"]').addEventListener('click', function() {
     var links = JSON.parse(localStorage.getItem('quickLinks') || '[]');
     if (links.length === 0) {
@@ -5590,13 +12442,74 @@ document.querySelector('label[for="exportLinksBtn"]').addEventListener('click', 
     }
     
     var jsonContent = JSON.stringify(links, null, 2);
-    var base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
-    var dataUrl = 'data:application/json;base64,' + base64Content;
     
-    var a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = 'quick_links_backup.json';
-    a.click();
+    // 生成带日期时间的文件名
+    function getFormattedDateTime() {
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = (now.getMonth() + 1);
+        var day = now.getDate();
+        var hours = now.getHours();
+        var minutes = now.getMinutes();
+        var seconds = now.getSeconds();
+        
+        function padZero(num) {
+            return (num < 10 ? '0' : '') + num;
+        }
+        
+        return year + padZero(month) + padZero(day) + '_' + padZero(hours) + padZero(minutes) + padZero(seconds);
+    }
+    
+    var fileName = 'quick_links_' + getFormattedDateTime() + '.json';
+    
+    // 方法1：尝试使用 Blob（IE10+ 支持）
+    var blobSupported = false;
+    try {
+        blobSupported = typeof Blob !== 'undefined' && typeof URL !== 'undefined';
+    } catch(e) {
+        blobSupported = false;
+    }
+    
+    if (blobSupported) {
+        try {
+            var blob = new Blob([jsonContent], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            if (a.click) {
+                a.click();
+            } else if (a.fireEvent) {
+                a.fireEvent('onclick');
+            }
+            setTimeout(function() {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            return;
+        } catch(e) {}
+    }
+    
+    // 方法2：IE9 及以下使用 msSaveBlob
+    if (typeof navigator !== 'undefined' && navigator.msSaveBlob) {
+        try {
+            var blob = new Blob([jsonContent], { type: 'application/json' });
+            navigator.msSaveBlob(blob, fileName);
+            return;
+        } catch(e) {}
+    }
+    
+    // 方法3：使用 prompt 降级方案（所有浏览器通用）
+    try {
+        var fallbackMsg = '无法自动下载文件，请手动复制以下内容并保存为 ' + fileName + '：';
+        if (confirm(fallbackMsg)) {
+            prompt('请复制以下内容并保存为 ' + fileName, jsonContent);
+        }
+    } catch(e) {
+        alert('导出失败：' + e.message);
+    }
 });
 
 // 导入链接功能
@@ -5658,68 +12571,98 @@ document.getElementById('85727544071588039023').addEventListener('click', functi
     }
 });
 
-// 时间链接功能
+// ========== 时间链接功能（修复内存泄漏） ==========
 var timeLinkElement = document.getElementById('85727544071588039023');
 var timeLinkImage = null;
 var timeLinkInterval = null;
+var colonBlinkInterval = null;  // 【修复】冒号闪烁定时器变量提升到全局
+var colonVisible = true;
 
-// 更新时间显示函数
+// ========== 更新时间显示函数（修复内存泄漏） ==========
 function updateTimeDisplay() {
+    // 【修复】添加安全检测，防止定时器在元素不存在时继续运行
+    if (!timeLinkElement) {
+        // 重新获取元素
+        timeLinkElement = document.getElementById('85727544071588039023');
+        if (!timeLinkElement) {
+            // 如果仍然不存在，停止定时器
+            if (timeLinkInterval) {
+                clearInterval(timeLinkInterval);
+                timeLinkInterval = null;
+            }
+            return;
+        }
+    }
+    
     // 检查是否启用了冒号闪烁
-    var isColonBlinkEnabled = document.getElementById('colonBlinkCheckbox').checked;
+    var colonBlinkCheckbox = document.getElementById('colonBlinkCheckbox');
+    var isColonBlinkEnabled = colonBlinkCheckbox ? colonBlinkCheckbox.checked : false;
     
     if (isColonBlinkEnabled) {
         updateTimeDisplayWithBlink();
     } else {
-        // 原有的时间显示逻辑（不闪烁，使用文本）
         if (!timeLinkElement) return;
         
         var now = new Date();
-        var timeFormat = localStorage.getItem('timeFormat') || '24hours';
+        var timeFormat = '24hours';
+        try {
+            timeFormat = localStorage.getItem('timeFormat') || '24hours';
+        } catch(e) {}
         var timeStr;
         
-        // 检查是否显示秒数
-        var showSeconds = document.getElementById('showSecondsCheckbox').checked;
+        var showSecondsCheckbox = document.getElementById('showSecondsCheckbox');
+        var showSeconds = showSecondsCheckbox ? showSecondsCheckbox.checked : false;
+        
+        function padZero(num) {
+            return (num < 10 ? '0' : '') + num;
+        }
         
         if (timeFormat === '24hours') {
-            // 24小时制
             var hours = now.getHours();
             var minutes = now.getMinutes();
-            
-            function padZero(num) {
-                return (num < 10 ? '0' : '') + num;
-            }
-            
             timeStr = padZero(hours) + ':' + padZero(minutes);
-            
-            // 添加秒数（包含第二个冒号）
             if (showSeconds) {
                 var seconds = now.getSeconds();
                 timeStr += ':' + padZero(seconds);
             }
         } else {
-            // 12小时制（删除 AM/PM）
             var hours = now.getHours();
             hours = hours % 12;
             hours = hours ? hours : 12;
             var minutes = now.getMinutes();
-            
-            function padZero(num) {
-                return (num < 10 ? '0' : '') + num;
-            }
-            
             timeStr = hours + ':' + padZero(minutes);
-            
-            // 添加秒数（包含第二个冒号）
             if (showSeconds) {
                 var seconds = now.getSeconds();
                 timeStr += ':' + padZero(seconds);
             }
         }
         
-        // 使用textContent而不是innerHTML，确保纯文本显示
         timeLinkElement.textContent = timeStr;
-        timeLinkElement.style.fontSize = localStorage.getItem('linkSize') || '30px';
+        var linkSize = '30px';
+        try {
+            linkSize = localStorage.getItem('linkSize') || '30px';
+        } catch(e) {}
+        timeLinkElement.style.fontSize = linkSize;
+    }
+}
+
+// ========== 启动和停止时间更新（修复内存泄漏） ==========
+function startTimeUpdate() {
+    // 停止已有的定时器
+    if (timeLinkInterval) {
+        clearInterval(timeLinkInterval);
+        timeLinkInterval = null;
+    }
+    // 启动新的定时器
+    timeLinkInterval = setInterval(function() {
+        updateTimeDisplay();
+    }, 1000);
+}
+
+function stopTimeUpdate() {
+    if (timeLinkInterval) {
+        clearInterval(timeLinkInterval);
+        timeLinkInterval = null;
     }
 }
 
@@ -5731,7 +12674,7 @@ if (savedShowTimeState === 'true') {
     document.getElementById('colonBlinkCheckbox').disabled = false;
     document.getElementById('timeFormatSelect').disabled = false;
     
-    // 【修复】Safari 5 兼容：延迟执行时间链接显示，确保 DOM 完全加载
+    // Safari 5 兼容：延迟执行时间链接显示，确保 DOM 完全加载
     setTimeout(function() {
         updateTimeDisplay();
         if (document.getElementById('showTimeCheckbox') && document.getElementById('showTimeCheckbox').checked) {
@@ -5794,32 +12737,40 @@ if (savedShowTimeState === 'true') {
     }, 0);
 }
 
-// 冒号闪烁相关变量
-var colonBlinkInterval = null;
-var colonVisible = true;
-
-// 启动冒号闪烁效果
+// ========== 冒号闪烁效果（修复内存泄漏） ==========
 function startColonBlink() {
+    // 【修复】停止已有的定时器
     if (colonBlinkInterval) {
         clearInterval(colonBlinkInterval);
+        colonBlinkInterval = null;
     }
     
     colonVisible = true;
+    // 【修复】使用安全的定时器，添加 try-catch
     colonBlinkInterval = setInterval(function() {
-        colonVisible = !colonVisible;
-        updateTimeDisplayWithBlink();
-    }, 1000); // 每秒闪烁一次
+        try {
+            colonVisible = !colonVisible;
+            updateTimeDisplayWithBlink();
+        } catch(e) {
+            // 出错时停止闪烁
+            if (colonBlinkInterval) {
+                clearInterval(colonBlinkInterval);
+                colonBlinkInterval = null;
+            }
+        }
+    }, 1000);
 }
 
-// 停止冒号闪烁效果
 function stopColonBlink() {
     if (colonBlinkInterval) {
         clearInterval(colonBlinkInterval);
         colonBlinkInterval = null;
     }
     colonVisible = true;
-    // 恢复显示冒号（完全可见）
-    updateTimeDisplayWithBlink();
+    // 【修复】添加安全检测，避免在元素不存在时调用
+    if (typeof updateTimeDisplayWithBlink === 'function') {
+        updateTimeDisplayWithBlink();
+    }
 }
 
 // 带闪烁效果的时间显示函数
@@ -5884,85 +12835,105 @@ function updateTimeDisplayWithBlink() {
     timeLinkElement.style.fontSize = localStorage.getItem('linkSize') || '30px';
 }
 
-// 显示时间链接
+// ========== 显示时间链接（修复内存泄漏） ==========
 function showTimeLink() {
-    if (!timeLinkElement) return;
+    if (!timeLinkElement) {
+        timeLinkElement = document.getElementById('85727544071588039023');
+        if (!timeLinkElement) return;
+    }
+    
+    // 【修复】先停止所有已有的定时器
+    if (timeLinkInterval) {
+        clearInterval(timeLinkInterval);
+        timeLinkInterval = null;
+    }
+    if (colonBlinkInterval) {
+        clearInterval(colonBlinkInterval);
+        colonBlinkInterval = null;
+    }
     
     // 保存当前图片链接（如果有）
-    var savedLinkImage = localStorage.getItem('linkImage');
-    if (savedLinkImage) {
-        // 修改这里：将图片链接保存到专门的时间链接图片存储
-        localStorage.setItem('timeLinkOriginalImage', savedLinkImage);
-        localStorage.removeItem('linkImage');
-    }
+    try {
+        var savedLinkImage = localStorage.getItem('linkImage');
+        if (savedLinkImage) {
+            localStorage.setItem('timeLinkOriginalImage', savedLinkImage);
+            localStorage.removeItem('linkImage');
+        }
+    } catch(e) {}
     
     // 清除图片显示
     timeLinkElement.innerHTML = '';
     
-    // 开始更新时间 - 使用更兼容的方式
+    // 开始更新时间
     updateTimeDisplay();
-    if (timeLinkInterval) {
-        try {
-            clearInterval(timeLinkInterval);
-        } catch (e) {
-            // 兼容低版本浏览器的错误处理
-        }
-    }
     
     // 检查是否启用了冒号闪烁
-    var isColonBlinkEnabled = document.getElementById('colonBlinkCheckbox').checked;
+    var colonBlinkCheckbox = document.getElementById('colonBlinkCheckbox');
+    var isColonBlinkEnabled = colonBlinkCheckbox ? colonBlinkCheckbox.checked : false;
     if (isColonBlinkEnabled) {
         startColonBlink();
     }
     
-    // 使用更兼容的方式设置定时器
-    timeLinkInterval = window.setInterval(function() {
+    // 【修复】使用安全的定时器
+    timeLinkInterval = setInterval(function() {
         try {
             updateTimeDisplay();
         } catch (e) {
             // 出错时停止定时器
             if (timeLinkInterval) {
-                try {
-                    clearInterval(timeLinkInterval);
-                } catch (e2) {}
+                clearInterval(timeLinkInterval);
                 timeLinkInterval = null;
             }
         }
     }, 1000);
 }
 
-// 隐藏时间链接
+// ========== 隐藏时间链接（修复内存泄漏） ==========
 function hideTimeLink() {
-    if (!timeLinkElement) return;
+    if (!timeLinkElement) {
+        timeLinkElement = document.getElementById('85727544071588039023');
+        if (!timeLinkElement) return;
+    }
     
-    // 停止更新时间
+    // 【修复】停止所有定时器
     if (timeLinkInterval) {
-        try {
-            clearInterval(timeLinkInterval);
-        } catch (e) {
-            // 兼容低版本浏览器的错误处理
-        }
+        clearInterval(timeLinkInterval);
         timeLinkInterval = null;
     }
     
     stopColonBlink();
     
     // 恢复图片或文字
-    var savedOriginalImage = localStorage.getItem('timeLinkOriginalImage');
-    if (savedOriginalImage) {
-        // 恢复图片
-        var linkSize = localStorage.getItem('linkSize') || '30px';
-        timeLinkElement.innerHTML = '<img src="' + savedOriginalImage + '" style="width: auto; height: auto; max-width: ' + linkSize + '; max-height: ' + linkSize + '; display: block; left: 0; right: 0; margin: 0 auto;">';
-        localStorage.setItem('linkImage', savedOriginalImage);
-        localStorage.removeItem('timeLinkOriginalImage');
-        document.getElementById('linkColorValue').textContent = 'Image';
-    } else {
-        // 恢复文字
-        var savedLinkName = localStorage.getItem('linkName') || 'Baidu.com';
-        timeLinkElement.textContent = savedLinkName;
-        timeLinkElement.style.color = localStorage.getItem('linkColor') || '#0000ee';
-        timeLinkElement.style.fontSize = localStorage.getItem('linkSize') || '30px';
-    }
+    try {
+        var savedOriginalImage = localStorage.getItem('timeLinkOriginalImage');
+        if (savedOriginalImage) {
+            var linkSize = '30px';
+            try {
+                linkSize = localStorage.getItem('linkSize') || '30px';
+            } catch(e) {}
+            timeLinkElement.innerHTML = '<img src="' + savedOriginalImage + '" style="width: auto; height: auto; max-width: ' + linkSize + '; max-height: ' + linkSize + '; display: block; left: 0; right: 0; margin: 0 auto;">';
+            localStorage.setItem('linkImage', savedOriginalImage);
+            localStorage.removeItem('timeLinkOriginalImage');
+            var linkColorValueSpan = document.getElementById('linkColorValue');
+            if (linkColorValueSpan) linkColorValueSpan.textContent = 'Image';
+        } else {
+            var savedLinkName = 'Baidu.com';
+            try {
+                savedLinkName = localStorage.getItem('linkName') || 'Baidu.com';
+            } catch(e) {}
+            timeLinkElement.textContent = savedLinkName;
+            var linkColor = '#0000ee';
+            try {
+                linkColor = localStorage.getItem('linkColor') || '#0000ee';
+            } catch(e) {}
+            timeLinkElement.style.color = linkColor;
+            var linkSize = '30px';
+            try {
+                linkSize = localStorage.getItem('linkSize') || '30px';
+            } catch(e) {}
+            timeLinkElement.style.fontSize = linkSize;
+        }
+    } catch(e) {}
 }
 
 // 加载保存的时间链接设置
@@ -6155,7 +13126,7 @@ if (iframePlusSizeBtn) {
         sizeLabel.onclick = function() {
             // 修复窗口检测逻辑，使用 window.iframePlusWindows
             var currentWindows = window.iframePlusWindows || [];
-            var currentWidth = localStorage.getItem('iframePlusWidth') || '390px';
+            var currentWidth = localStorage.getItem('iframePlusWidth') || '98%';
             var currentHeight = localStorage.getItem('iframePlusHeight') || '500px';
             showCustomDoubleInput(
                 '设置所有iFrame窗口尺寸',
@@ -6166,7 +13137,7 @@ if (iframePlusSizeBtn) {
                 function(width, height) {
                     if (width !== null && height !== null) {
                         var isMobile = typeof isMobileAndroidApple === 'function' ? isMobileAndroidApple() : false;
-                        var defaultWidth = isMobile ? '98%' : '390px';
+                        var defaultWidth = isMobile ? '98%' : '750px';
                         var defaultHeight = isMobile ? '500px' : '500px';
                         
                         if (width === '') {
@@ -6252,6 +13223,33 @@ function getBrowserInfo() {
     };
 }
 
+var engineType = 'Unknown', engineVersion = 'Unknown';
+var ua = navigator.userAgent;
+// 检测 WebKit 内核 (Chrome, Safari, Edge, 旧版 Opera 等)
+var webkitMatch = ua.match(/AppleWebKit\/([\d.]+)/);
+if (webkitMatch) {
+    engineType = 'WebKit';
+    engineVersion = webkitMatch[1];
+}
+// 检测 Gecko 内核 (Firefox)
+var geckoMatch = ua.match(/Gecko\/([\d.]+)/);
+if (geckoMatch && ua.indexOf('KHTML') === -1) {
+    engineType = 'Gecko';
+    engineVersion = geckoMatch[1];
+}
+// 检测 Trident 内核 (IE)
+var tridentMatch = ua.match(/Trident\/([\d.]+)/);
+if (tridentMatch) {
+    engineType = 'Trident';
+    engineVersion = tridentMatch[1];
+}
+// 检测 Presto 内核 (旧版 Opera)
+if (ua.indexOf('Presto') !== -1) {
+    var prestoMatch = ua.match(/Presto\/([\d.]+)/);
+    engineType = 'Presto';
+    engineVersion = prestoMatch ? prestoMatch[1] : 'Unknown';
+}
+
 // 修改browserInfo的显示代码，将innerHTML赋值改为textContent，并添加点击事件
 window.onload = function() {
     var browserInfo = getBrowserInfo();
@@ -6268,23 +13266,62 @@ window.onload = function() {
         var showBrowserAlert = function() {
             var browserInfo = getBrowserInfo();
             var tips = [
-                '本网页早已不支持IE浏览器，除了v2版本以下',
                 '如果你电脑点击浏览器信息没有弹出这个弹窗，你换鼠标右键点击试试',
                 '如果你的是移动设备不能鼠标右键的话，可以在鼠标右键的地方长按就可以了',
                 '如果想用快捷键关闭双输入框弹窗的话，按 Shift + Esc 可以关闭',
-                '你可以按 Alt + Shift + N 可以快速切换下一个搜索引擎，向反按 Alt + Shift + P 可以切换上一个搜索引擎',
+                '你可以按 Alt + N 可以快速切换下一个搜索引擎，向反按 Alt + P 可以切换上一个搜索引擎',
                 '如果你想复制一言的话，鼠标右键一言即可复制',
                 '如果要停用搜索框的话，请在停用输入框弹出弹窗认真阅读此提示，你会知道怎么恢复搜索框的',
                 '你可以自定义设置你喜欢的搜索主页',
                 '有些搜索引擎搜索后会记录你的搜索历史记录，如果你不是无痕浏览模式又只是删除浏览器搜索浏览记录或本站历史搜索历史，请检查你使用过的搜索引擎并删除搜索引擎记录的搜索历史记录。如果不想留搜索浏览历史记录建议使用无痕模式搜索(也有部分浏览器写为隐身模式、隐私浏览等)',
-                '有些搜索引擎并不适应手机或电脑，这就是为什么禁用部分搜索引擎的原因了'
+                '有些搜索引擎并不适应手机或电脑，这就是为什么禁用部分搜索引擎的原因了',
+                '部分外国网站在中国大陆可能无法访问，所以需要代理网络',
+                '系统版本显示不一定准确，取决于你的浏览器的User-Agent'
              ];
             if (!window._lastTipIndex) window._lastTipIndex = -1;
             var newIndex;
-            do { newIndex = Math.floor(Math.random() * 10); } while (newIndex === window._lastTipIndex && tips.length > 1);
+            do { newIndex = Math.floor(Math.random() * 11); } while (newIndex === window._lastTipIndex && tips.length > 1);
             window._lastTipIndex = newIndex;
             var randomTip = tips[newIndex];
-            showCustomAlert('关于', '<div style="font-size: 15px; margin-top: 12px;">搜索Easy<br>' + '<p>当前版本: v7.2<br></p>' + '<p>浏览器内核: ' + browserInfo.version + '<br></p>' + '<p>此设备版本: ' + browserInfo.deviceVersion + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<p><b>小提示: </b>' + randomTip + '<div>Github源码: <button onclick="window.open(&#39;https://github.com/wugdu27376/setsearchbox/&#39;, &#39;_blank&#39;);" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div><div style="margin-top: 20px;">扩展下载: <div style="display: inline-block; width: 100%; max-width: 150px; float: right;"><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126071_Beta.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Beta</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126069.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">ZIP</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126070.crx&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126072.zip&#39;" style="margin-left: 4px; margin-top: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX-ZIP</button></div><!-- <div style="display: inline-block; margin-top: 20px; width: 100%;">Github源码: <button onclick="window.location.href=&#39;https://github.com/wugdu27376/setsearchbox/&#39;" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div> --></div>' + '</div>');
+                        var deviceVersionDisplay = browserInfo.deviceVersion;
+            if (ua.indexOf('Windows') !== -1) {
+                try {
+                    var winVer = 'Unknown';
+                    if (typeof navigator !== 'undefined' && navigator && typeof navigator.userAgent === 'string') {
+                        var winMatch = navigator.userAgent.match(/Windows\s+NT\s+([0-9.]+)/);
+                        if (winMatch && winMatch[1]) {
+                            var ntVersion = parseFloat(winMatch[1]);
+                            if (ntVersion >= 10.0) winVer = '10/11';
+                            else if (ntVersion >= 6.3) winVer = '8.1';
+                            else if (ntVersion >= 6.2) winVer = '8';
+                            else if (ntVersion >= 6.1) winVer = '7';
+                            else if (ntVersion >= 6.0) winVer = 'Vista';
+                            else if (ntVersion >= 5.2) winVer = 'XP x64/Server 2003';
+                            else if (ntVersion >= 5.1) winVer = 'XP';
+                            else if (ntVersion >= 5.0) winVer = '2000';
+                            else winVer = 'NT ' + winMatch[1];
+                        } else {
+                            var winMatch2 = navigator.userAgent.match(/Windows\s+(?:NT\s+)?([0-9.]+)/);
+                            if (winMatch2 && winMatch2[1]) {
+                                var ntVer2 = parseFloat(winMatch2[1]);
+                                if (ntVer2 >= 10.0) winVer = '10/11';
+                                else if (ntVer2 >= 6.3) winVer = '8.1';
+                                else if (ntVer2 >= 6.2) winVer = '8';
+                                else if (ntVer2 >= 6.1) winVer = '7';
+                                else if (ntVer2 >= 6.0) winVer = 'Vista';
+                                else if (ntVer2 >= 5.2) winVer = 'XP x64/Server 2003';
+                                else if (ntVer2 >= 5.1) winVer = 'XP';
+                                else if (ntVer2 >= 5.0) winVer = '2000';
+                                else winVer = 'NT ' + winMatch2[1];
+                            }
+                        }
+                    }
+                    deviceVersionDisplay = 'Windows ' + winVer;
+                } catch(e) {
+                    deviceVersionDisplay = browserInfo.deviceVersion;
+                }
+            }
+            showCustomAlert('关于', '<div style="font-size: 15px; margin-top: 12px;">搜索Easy<br>' + '<p>网页版本号: v7.3<br></p>' + '<p>浏览器: ' + browserInfo.name + '<br></p>' + '<p>浏览器版本: ' + browserInfo.version + '<br></p>' + '<p>内核: ' + engineType + ' ' + engineVersion + '<br></p>' + '<p>系统版本: ' + deviceVersionDisplay + '<br></p>' + '<span style="font-weight: bold;">User-Agent: </span>' + navigator.userAgent + '<p><b>小提示: </b>' + randomTip + '<div>Github源码: <button onclick="window.open(&#39;https://github.com/wugdu27376/setsearchbox/&#39;, &#39;_blank&#39;);" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">点击跳转</button></div><div style="margin-top: 20px;">扩展下载: <div style="display: inline-block; width: 100%; max-width: 150px; float: right;"><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126071_Beta.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Beta</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126069.zip&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">ZIP</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126070.crx&#39;" style="margin-left: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX</button><button onclick="window.location.href=&#39;https://wugdu27376.github.io/setsearchbox/plugin/soSuoEasy126072.zip&#39;" style="margin-left: 4px; margin-top: 4px; float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">CRX-ZIP</button></div></div><div style="margin-top: 40px;">Experiment: <button onclick="localStorage.setItem(\'enableExperimentalFeature\', \'true\');" style="float: right; margin-left: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent;">Enabled</button><button onclick="localStorage.setItem(\'enableExperimentalFeature\', \'false\');" style="float: right; cursor: pointer; -webkit-tap-highlight-color: transparent;">Disabled</button></div>' + '</div>');
         };
         
         // 判断是否为移动端
@@ -6309,69 +13346,420 @@ window.onload = function() {
     }
 };
 
-// 支持按Enter键提交
-document.getElementById('urlInput').addEventListener('keypress', function(e) {
-    e = e || window.event;
-    var keyCode = e.keyCode || e.which;
-    if (keyCode === 13) {
-        if (document.getElementById('urlInput').value === '') return;
-        document.getElementById('submitBtn').click();
-        if (this.value.trim() !== '') {
-            this.blur();
+// ========== Enter 键提交（兼容所有 IE 版本） ==========
+(function() {
+    var urlInput = document.getElementById('urlInput');
+    var submitBtn = document.getElementById('submitBtn');
+    
+    if (!urlInput || !submitBtn) return;
+    
+    // 检测 IE 浏览器
+    var isIE = false;
+    var ieVersion = 0;
+    var ua = navigator.userAgent;
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        isIE = true;
+        ieVersion = parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+    }
+    var trident = ua.indexOf('Trident/');
+    if (trident > 0) {
+        isIE = true;
+        var rv = ua.indexOf('rv:');
+        if (rv > 0) {
+            ieVersion = parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
         }
     }
-});
+    
+    // Enter 键处理函数
+    function handleEnterKey(e) {
+        // 获取事件对象（兼容 IE）
+        e = e || window.event;
+        
+        // 获取按键码（兼容 IE）
+        var keyCode = e.keyCode || e.which || e.charCode;
+        
+        // 检查是否按下了 Enter 键（13）
+        if (keyCode === 13) {
+            // 阻止默认行为（如表单提交）
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+            }
+            
+            // 获取输入框值
+            var inputValue = urlInput.value;
+            
+            // 如果输入为空，不执行跳转
+            if (inputValue === '' || inputValue === 'https://') {
+                return false;
+            }
+            
+            // 触发跳转按钮点击
+            if (submitBtn.click) {
+                submitBtn.click();
+            } else if (submitBtn.fireEvent) {
+                // IE 兼容：使用 fireEvent 触发点击
+                submitBtn.fireEvent('onclick');
+            }
+            
+            // 可选：失焦（IE 兼容）
+            try {
+                if (document.getElementById('autoFillAndJumpCheckbox').checked) { if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {} };
+                try { if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function' && localStorage.getItem('isSuggestionSelected')) return; } catch(e) {}
+                if (document.getElementById('searchSuggestionsCheckbox').checked) {
+                    var searchSuggestions = document.getElementById('searchSuggestions');
+                    searchSuggestions.style.display = 'none';
+                };
+                urlInput.blur();
+            } catch(err) {}
+            
+            return false;
+        }
+        return true;
+    }
+    
+    // 为不同 IE 版本添加事件监听
+    if (urlInput.addEventListener) {
+        // 现代浏览器（包括 IE9+）
+        // 使用 keydown 而非 keypress，因为 IE8 及以下不支持 keypress
+        urlInput.addEventListener('keydown', handleEnterKey);
+    } else if (urlInput.attachEvent) {
+        // IE8 及以下
+        urlInput.attachEvent('onkeydown', handleEnterKey);
+    } else {
+        // 极旧浏览器回退方案
+        urlInput.onkeydown = handleEnterKey;
+    }
+    
+    // 额外修复：对于 IE 低版本，确保 input 框不会触发表单提交
+    if (isIE && ieVersion <= 9) {
+        // 阻止任何可能的表单自动提交
+        var parentForm = urlInput.parentNode;
+        while (parentForm && parentForm.tagName !== 'FORM') {
+            parentForm = parentForm.parentNode;
+        }
+        if (parentForm && parentForm.tagName === 'FORM') {
+            addEvent(parentForm, 'submit', function(e) {
+                e = e || window.event;
+                if (e.preventDefault) {
+                    e.preventDefault();
+                } else {
+                    e.returnValue = false;
+                }
+                return false;
+            });
+        }
+    }
+})();
 
 // 添加快捷键切换搜索引擎（仅电脑端）
 if (isDesktop()) {
-    document.addEventListener('keydown', function(e) {
+    // 获取搜索引擎下拉框的可见选项（兼容IE所有版本）
+    function getVisibleEngineOptions() {
+        var engineSelect = document.getElementById('engineSelect');
+        if (!engineSelect) return [];
+        var options = engineSelect.options;
+        var visibleOptions = [];
+        for (var i = 0; i < options.length; i++) {
+            var opt = options[i];
+            // 检查选项是否可见（非隐藏、非禁用、非空选项）- 兼容IE
+            var isHidden = false;
+            try {
+                if (opt.style && opt.style.display === 'none') isHidden = true;
+                if (opt.parentNode && opt.parentNode.style && opt.parentNode.style.display === 'none') isHidden = true;
+                if (opt.disabled === true) isHidden = true;
+            } catch(e) {
+                isHidden = opt.disabled === true;
+            }
+            if (!isHidden && opt.value && opt.value !== '') {
+                visibleOptions.push({ index: i, value: opt.value });
+            }
+        }
+        return visibleOptions;
+    }
+    
+    // 兼容IE的事件添加函数
+    function addKeyEvent(element, eventName, handler) {
+        if (element.addEventListener) {
+            element.addEventListener(eventName, handler);
+        } else if (element.attachEvent) {
+            element.attachEvent('on' + eventName, handler);
+        }
+    }
+    
+    // 快捷键处理函数
+    function handleShortcutKey(e) {
         e = e || window.event;
         var keyCode = e.keyCode || e.which;
         
-        // Alt+Shift+N 切换下一个搜索引擎
-        if (keyCode === 78 && e.altKey && e.shiftKey) {
-            if (document.getElementById('hideSearchContainerCheckbox').checked) {
-                return;
+        // 判断 Alt 键是否按下（兼容IE）
+        var altPressed = false;
+        if (e.altKey !== undefined) {
+            altPressed = e.altKey === true;
+        } else if (window.event && window.event.altKey !== undefined) {
+            altPressed = window.event.altKey === true;
+        }
+        if (!altPressed) return true;
+        
+        // 检查是否有模态框打开
+        var modals = document.querySelectorAll('div[style*="position: fixed"][style*="z-index: 10000"]');
+        var modalOpen = false;
+        for (var i = 0; i < modals.length; i++) {
+            if (modals[i] && modals[i].style && modals[i].style.display !== 'none' && modals[i].parentNode) {
+                modalOpen = true;
+                break;
             }
-            e.preventDefault();
-            var engineSelect = document.getElementById('engineSelect');
-            var options = engineSelect.options;
-            var currentIndex = engineSelect.selectedIndex;
-            var nextIndex = currentIndex + 1;
-            while (nextIndex < options.length) {
-                if (options[nextIndex].style.display !== 'none' && !options[nextIndex].disabled) {
-                    engineSelect.selectedIndex = nextIndex;
-                    var event = document.createEvent('HTMLEvents');
-                    event.initEvent('change', true, false);
-                    engineSelect.dispatchEvent(event);
-                    break;
+        }
+        if (modalOpen) return true;
+        
+        // 搜索框隐藏时不处理
+        var hideSearchCheckbox = document.getElementById('hideSearchContainerCheckbox');
+        if (hideSearchCheckbox && hideSearchCheckbox.checked) return true;
+        
+        // 修改位置：当勾选focusCheckbox并且搜索输入框已在聚焦时禁止使用快捷键切换搜索引擎
+        var focusCheckbox = document.getElementById('focusCheckbox');
+        var urlInput = document.getElementById('urlInput');
+        if (focusCheckbox && focusCheckbox.checked && urlInput && document.activeElement === urlInput) {
+            return true;
+        }
+        
+        var engineSelect = document.getElementById('engineSelect');
+        if (!engineSelect) return true;
+        
+        var visibleOptions = getVisibleEngineOptions();
+        if (visibleOptions.length === 0) return true;
+        
+        var currentValue = engineSelect.value;
+        var currentIndex = -1;
+        for (var i = 0; i < visibleOptions.length; i++) {
+            if (visibleOptions[i].value === currentValue) {
+                currentIndex = i;
+                break;
+            }
+        }
+        if (currentIndex === -1 && visibleOptions.length > 0) currentIndex = 0;
+        
+        // 执行切换
+        function performSwitch(step) {
+            var newIndex = currentIndex + step;
+            if (newIndex < 0) newIndex = visibleOptions.length - 1;
+            if (newIndex >= visibleOptions.length) newIndex = 0;
+            if (newIndex !== currentIndex && visibleOptions[newIndex]) {
+                engineSelect.selectedIndex = visibleOptions[newIndex].index;
+                if (document.createEvent) {
+                    var evt = document.createEvent('HTMLEvents');
+                    evt.initEvent('change', true, false);
+                    engineSelect.dispatchEvent(evt);
+                } else if (engineSelect.fireEvent) {
+                    engineSelect.fireEvent('onchange');
                 }
-                nextIndex++;
+                currentIndex = newIndex;
             }
+        }
+        
+        // Alt+P (keyCode 80) 或 Alt+↑ (keyCode 38) 切换上一个搜索引擎
+        if (keyCode === 80 || keyCode === 38) {
+            if (e.preventDefault) e.preventDefault();
+            e.returnValue = false;
+            performSwitch(-1);
             return false;
         }
         
-        // Alt+Shift+P 切换上一个搜索引擎
-        if (keyCode === 80 && e.altKey && e.shiftKey) {
-            if (document.getElementById('hideSearchContainerCheckbox').checked) {
-                return;
+        // Alt+N (keyCode 78) 或 Alt+↓ (keyCode 40) 切换下一个搜索引擎
+        if (keyCode === 78 || keyCode === 40) {
+            if (e.preventDefault) e.preventDefault();
+            e.returnValue = false;
+            performSwitch(1);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // 绑定键盘事件（兼容IE所有版本）
+    addKeyEvent(document, 'keydown', handleShortcutKey);
+}
+
+// 添加localStorage检测函数
+function isLocalStorageAvailable() {
+    try {
+        var test = '__storage_test__';
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        return true;
+    } catch(e) {
+        return false;
+    }
+}
+
+// 全局错误处理（防止IE下个别错误导致页面功能失效）
+window.onerror = function(msg, url, line, col, error) {
+    // 只记录错误，不中断执行
+    if (window.console && console.error) {
+        console.error('捕获到错误: ' + msg + ' at ' + url + ':' + line);
+    }
+    // 返回true表示已处理，不触发浏览器默认错误处理
+    return true;
+};
+
+// 在使用localStorage前检查
+if (isLocalStorageAvailable()) {
+    localStorage.setItem('key', 'value');
+}
+
+// 搜索建议键盘导航（仅电脑端）
+if (isDesktop()) {
+    var suggestionIndex = -1;
+    var originalInputValue = '';
+
+    function updateSuggestionSelection(index) {
+        var items = searchSuggestions.getElementsByTagName('div');
+        // 过滤掉清空历史记录列 ===
+        var selectableItems = [];
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].id !== 'suggestion_clear_history') {
+                selectableItems.push(items[i]);
             }
-            e.preventDefault();
-            var engineSelect = document.getElementById('engineSelect');
-            var options = engineSelect.options;
-            var currentIndex = engineSelect.selectedIndex;
-            var prevIndex = currentIndex - 1;
-            while (prevIndex >= 0) {
-                if (options[prevIndex].style.display !== 'none' && !options[prevIndex].disabled) {
-                    engineSelect.selectedIndex = prevIndex;
-                    var event = document.createEvent('HTMLEvents');
-                    event.initEvent('change', true, false);
-                    engineSelect.dispatchEvent(event);
-                    break;
+        }
+        for (var i = 0; i < items.length; i++) {
+            items[i].style.backgroundColor = '';
+            items[i].style.color = '';
+            // === 通过 id 判断是否为访问建议 ===
+            if (items[i].id === 'suggestion_visit_website') {
+                items[i].style.backgroundColor = '#f8f8f8';
+            }
+            if (items[i].id === 'suggestion_clear_history') {
+                items[i].style.backgroundColor = '#f8f8f8';
+            }
+        }
+        // === 使用 selectableItems 计算索引 ===
+        if (index >= 0 && index < selectableItems.length) {
+            var selectedItem = selectableItems[index];
+            selectedItem.style.backgroundColor = '#e0e0e0';
+            selectedItem.style.color = '';
+            var selectedText = selectedItem.textContent;
+            if (selectedItem.id === 'suggestion_visit_website') {
+                var urlPart = selectedText.replace(/^访问:\s*/, '');
+                var altEnterIndex = urlPart.indexOf('Alt+Enter');
+                if (altEnterIndex !== -1) {
+                    urlPart = urlPart.substring(0, altEnterIndex).trim();
                 }
-                prevIndex--;
+                selectedText = urlPart;
             }
+            document.getElementById('urlInput').value = selectedText;
+            localStorage.setItem('isSuggestionSelected', 'true');
+        } else if (index === -1) {
+            document.getElementById('urlInput').value = originalInputValue;
+            localStorage.removeItem('isSuggestionSelected');
+        }
+    }
+    
+    document.getElementById('urlInput').addEventListener('keydown', function(e) {
+        e = e || window.event;
+        var keyCode = e.keyCode || e.which;
+        
+        if (!document.getElementById('searchSuggestionsCheckbox').checked) return;
+        if (searchSuggestions.style.display !== 'block') return;
+        
+        var items = searchSuggestions.getElementsByTagName('div');
+        // === 过滤掉清空历史记录列 ===
+        var selectableItems = [];
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].id !== 'suggestion_clear_history') {
+                selectableItems.push(items[i]);
+            }
+        }
+        var selectableCount = selectableItems.length;
+        
+        if (selectableCount === 0) return;
+        
+        // 下箭头
+        if (keyCode === 40) {
+            e.preventDefault();
+            if (suggestionIndex === -1) {
+                originalInputValue = this.value;
+            }
+            // === 使用 selectableCount ===
+            if (suggestionIndex < selectableCount - 1) {
+                suggestionIndex++;
+            } else {
+                suggestionIndex = -1;
+            }
+            updateSuggestionSelection(suggestionIndex);
+            return false;
+        }
+        
+        // 上箭头
+        if (keyCode === 38) {
+            e.preventDefault();
+            if (suggestionIndex === -1) {
+                originalInputValue = this.value;
+                // 未选择时按上键，直接选择到最后一项
+                // === 使用 selectableCount ===
+                suggestionIndex = selectableCount - 1;
+            } else if (suggestionIndex > 0) {
+                suggestionIndex--;
+            } else {
+                suggestionIndex = -1;
+            }
+            updateSuggestionSelection(suggestionIndex);
+            return false;
+        }
+        
+        // Enter 键确认选择
+        if (keyCode === 13 && suggestionIndex !== -1) {
+            e.preventDefault();
+            // === 获取可选项中的选中项 ===
+            if (suggestionIndex >= 0 && suggestionIndex < selectableCount) {
+                var selectedItem = selectableItems[suggestionIndex];
+                if (selectedItem) {
+                    if (typeof selectedItem.click === 'function') {
+                        selectedItem.click();
+                    } else {
+                        var clickEvent = document.createEvent('MouseEvents');
+                        clickEvent.initEvent('click', true, true);
+                        selectedItem.dispatchEvent(clickEvent);
+                    }
+                }
+            }
+            fetchSearchSuggestions(urlInput.value);
+            setTimeout(function() {
+            if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {}
+            }, 10);
+            setTimeout(function() {
+            fetchSearchSuggestions(urlInput.value);
+            }, 150);
+            suggestionIndex = -1;
+            searchSuggestions.style.display = 'none';
             return false;
         }
     });
+    
+    // 建议列表消失时重置索引
+    var originalHideSuggestions = function() {
+        suggestionIndex = -1;
+        originalInputValue = '';
+    };
+    
+    document.getElementById('urlInput').addEventListener('blur', function() {
+        setTimeout(function() {
+            if (searchSuggestions.style.display !== 'block') {
+                suggestionIndex = -1;
+                originalInputValue = '';
+            }
+        }, 150);
+    });
+    
+    document.addEventListener('click', function(e) {
+        var target = e.target || e.srcElement;
+        if (target !== searchSuggestions && !searchSuggestions.contains(target) && target !== document.getElementById('urlInput')) {
+            suggestionIndex = -1;
+            originalInputValue = '';
+        }
+    });
 }
+setTimeout(function() {
+    if (typeof localStorage !== 'undefined' && localStorage) try { localStorage.removeItem('isSuggestionSelected'); } catch(e) {}
+}, 10);

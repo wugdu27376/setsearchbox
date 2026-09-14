@@ -1,10 +1,14 @@
 <html>
 <head>
-    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>搜索Easy V7.2</title>
+    <title>搜索Easy V7.3</title>
+    <meta
+        name="description"
+        content="这是一个简陋搜索页面，简陋到只有一个搜索框和顶部的一个大链接。"
+    />
     
-<link rel="icon" href="https://wugdu27376.github.io/setsearchbox/favicon.ico">
+<link rel="icon" href="https://wugdu27376.github.io/setsearchbox/favicon.ico"/>
 
 <script>
     (function() {
@@ -18,11 +22,11 @@
         
         var currentIndex = 0;
         var head = document.getElementsByTagName('head')[0];
-        var loadedSuccessfully = false;  // 【修改位置】添加加载成功标记
-        var timeoutId = null;  // 【修改位置】保存超时ID以便清除
+        var loadedSuccessfully = false;
+        var timeoutId = null;
         
         function loadCSS(url) {
-            if (loadedSuccessfully) return;  // 【修改位置】已加载成功则直接返回
+            if (loadedSuccessfully) return;
             
             var link = document.createElement('link');
             link.rel = 'stylesheet';
@@ -35,21 +39,49 @@
                 timeoutId = null;
             }
             
-            // 兼容 Chrome 7 及低版本浏览器的加载检测
+            // ========== 【修改位置】加载成功标记（兼容所有浏览器） ==========
+            // 现代浏览器：使用 onload 事件
+            link.onload = function() {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                loadedSuccessfully = true;
+                // 清除 onreadystatechange 防止重复触发
+                link.onreadystatechange = null;
+            };
+            
+            // IE 兼容：使用 onreadystatechange 检测加载状态
+            link.onreadystatechange = function() {
+                if (!this.readyState || this.readyState === 'loaded' || this.readyState === 'complete') {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    loadedSuccessfully = true;
+                    // 清除 onreadystatechange 防止重复触发
+                    link.onreadystatechange = null;
+                }
+            };
+            
+            // 额外安全检测：使用 img 标签检测加载失败（兼容老浏览器）
             var img = document.createElement('img');
             img.onerror = function() {
-                if (!loadedSuccessfully) {  // 【修改位置】仅当未成功时才尝试下一个
+                if (!loadedSuccessfully) {
                     currentIndex++;
                     if (currentIndex < links.length) {
                         loadCSS(links[currentIndex]);
                     }
                 }
+                // 清理 img 引用
+                img.onerror = null;
+                img.src = '';
             };
             img.src = url;
             
             // 使用 setTimeout 检测加载失败（兼容不支持 onerror 的浏览器）
             timeoutId = setTimeout(function() {
-                if (!loadedSuccessfully && !link.sheet && !link.styleSheet) {  // 【修改位置】仅当未成功时才尝试下一个
+                if (!loadedSuccessfully && !link.sheet && !link.styleSheet) {
                     currentIndex++;
                     if (currentIndex < links.length) {
                         loadCSS(links[currentIndex]);
@@ -57,6 +89,7 @@
                 }
                 timeoutId = null;
             }, 3000);
+            // ========== 【修改结束】 ==========
             
             // 添加到 head
             if (head) {
@@ -64,17 +97,6 @@
             } else {
                 document.body.appendChild(link);
             }
-            
-            // 清理超时并标记加载成功
-            link.onload = link.onreadystatechange = function() {
-                if (!this.readyState || this.readyState === 'loaded' || this.readyState === 'complete') {
-                    if (timeoutId) {
-                        clearTimeout(timeoutId);
-                        timeoutId = null;
-                    }
-                    loadedSuccessfully = true;  // 【修改位置】标记加载成功，阻止后续备用链接加载
-                }
-            };
         }
         
         // 开始加载第一个链接
@@ -84,7 +106,7 @@
     })();
 </script>
 
-<div id="centerBoxDisplay" style="height: 25% display: none;"></div>
+<div id="centerBoxDisplay" style="height: 25%; display: none;"></div>
 
 <body>
 <p><strong><a href="javascript:void(0)" id="85727544071588039023" class="link-85727544071588039023" style="font-size: 30px; text-decoration: underline;">Baidu.com</a></strong></p>
@@ -210,12 +232,12 @@
             }
         }
         
-        #autoFillhttps input[type="checkbox"] {
+        #showToolPanel input[type="checkbox"] {
             margin: 0; /* 移除默认外边距 */
             vertical-align: middle; /* 垂直对齐 */
         }
 
-        #autoFillhttps label {
+        #showToolPanel label {
             margin: 0;
             vertical-align: middle;
             margin-right: 7px;
@@ -223,7 +245,7 @@
             display: inline-block;
         }
         
-        #autoFillhttps {
+        #showToolPanel {
             display: none;
             text-align: center;
             margin-top: 10px;
@@ -234,8 +256,8 @@
             justify-content: center;
         }
         
-        /* 限制在 #autoFillhttps 和 #iframeContainer 区域内，排除与checkbox关联的label和指定ID */
-        #autoFillhttps label:active:not([for*="Checkbox"]):not(#noActiveLab),
+        /* 限制在 #showToolPanel 和 #iframeContainer 区域内，排除与checkbox关联的label和指定ID */
+        #showToolPanel label:active:not([for*="Checkbox"]):not(#noActiveLab),
         #iframeContainer label:active:not([for*="Checkbox"]):not(#noActiveLab),
         #iframePlusSizeBtn label:active:not([for*="Checkbox"]):not(#noActiveLab),
         #clearHistoryBtn label:active {
@@ -251,10 +273,10 @@
         .text-select-wrapper select option:hover,
         .text-select-wrapper select option:focus,
         .text-select-wrapper select option:checked {
-            color: #000000 !important;
+            color: inherit !important;
         }
         
-        #autoFillhttps label, #iframeContainer label, #hitokotoDisplay, #searchSuggestions, #quickInputBtn1Head, #quickInputBtn2, #quickInputBtn3, #browserInfo, #engineSelect, #submitBtn, #userSelectModalDisabled {
+        #showToolPanel label, #iframeContainer label, #hitokotoDisplay, #searchSuggestions, #quickInputBtn1Head, #quickInputBtn2, #quickInputBtn3, #browserInfo, #engineSelect, #submitBtn, #userSelectModalDisabled {
             user-select: none;
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -277,6 +299,10 @@
             -webkit-appearance: none;
             -moz-appearance: none;
             border: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
             background: transparent;
             font-family: inherit;
             font-size: inherit;
@@ -294,6 +320,44 @@
             outline: none;
         }
         
+        input[type="checkbox"]:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        input[type="checkbox"]:disabled + label {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        #submitBtn:disabled {
+            cursor: not-allowed !important;
+        }
+        
+        /* 【新增】修复 text-select-wrapper 禁用状态下的点击样式 */
+        .text-select-wrapper select:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .text-select-wrapper select:disabled:active,
+        .text-select-wrapper select:disabled:focus,
+        .text-select-wrapper select:disabled:hover {
+            color: #000000 !important;
+            background: transparent !important;
+            outline: none !important;
+        }
+        
+        /* 【新增】修复移动端点击高亮问题 */
+        .text-select-wrapper select {
+            tap-highlight-color: transparent;
+        }
+        
+        .text-select-wrapper select:disabled {
+            -webkit-tap-highlight-color: transparent;
+            tap-highlight-color: transparent;
+        }
+        
         @media (min-width: 768px) {
             #quickLinks {
                 width: 80%;
@@ -304,16 +368,91 @@
         }
         
         /* 更多设置项默认隐藏 */
-        #autoFillhttps [id="showMoreCheckboxBlock"],
+        #showToolPanel [id="showMoreCheckboxBlock"],
         #autoFillhas [id="showMoreLabelBtns"],
-        #autoFillhttps .text-select-wrapper {
+        #showToolPanel .text-select-wrapper {
             display: none;
+        }
+        
+        /* ========== IE9/10 专用布局修复 ========== */
+        .ie9-fallback, .ie10-fallback {
+            display: block !important;
+        }
+        
+        /* IE9/10 表格布局替代 flex */
+        .ie-legacy .search-container {
+            display: table !important;
+            width: 100% !important;
+            text-align: center !important;
+        }
+        
+        .ie-legacy #engineSelect,
+        .ie-legacy #urlInput,
+        .ie-legacy #submitBtn {
+            display: inline-block !important;
+            vertical-align: middle !important;
+        }
+        
+        .ie-legacy #urlInput {
+            width: 60% !important;
+            min-width: 100px !important;
+        }
+        
+        .ie-legacy #engineSelect {
+            width: 90px !important;
+            min-width: 90px !important;
+        }
+        
+        .ie-legacy #submitBtn {
+            width: auto !important;
+            min-width: 50px !important;
+        }
+        
+        /* IE9 输入框高度修复 */
+        .ie9-legacy input,
+        .ie9-legacy select,
+        .ie9-legacy button {
+            height: 26px !important;
+            line-height: normal !important;
+        }
+        
+        /* 确保所有内联元素正常显示 */
+        .ie-legacy div,
+        .ie-legacy span,
+        .ie-legacy label {
+            display: inline-block;
+            zoom: 1;
+            *display: inline;
+        }
+        
+        /* IE9/10 搜索建议框修复 */
+        .ie9-legacy #searchSuggestions,
+        .ie10-legacy #searchSuggestions {
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 10002;
+            background: #ffffff;
+            border: 1px solid #cccccc;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .ie9-legacy #searchSuggestions div,
+        .ie10-legacy #searchSuggestions div {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* 确保建议框在最上层 */
+        #searchSuggestions {
+            z-index: 10002;
         }
     </style>
 </head>
 <body>
     <div class="search-container" id="searchContainer">
-        <select id="engineSelect" style="height: 24px;">
+        <select id="engineSelect" style="height: 24px;" required>
             <optgroup label="搜索引擎">
                 <option value="baidu_0" id="nullBaidu" style="display: none" disabled selected>百度</option>
                 <option value="baidu">百度</option>
@@ -323,6 +462,7 @@
                 <option value="so">360搜索</option>
                 <option value="yandex">Yandex</option>
                 <option value="yahooSearch">Yahoo</option>
+                <option value="braveSearch">Brave Search</option>
                 <option value="duckduckgo">DuckDuckGo</option>
             </optgroup>
             <optgroup label="网页">
@@ -333,42 +473,49 @@
                 <option value="httpsAutoFill">提交表单网址</option>
             </optgroup>
             <optgroup label="手机搜索" id="mobileSearchGroup">
-                <option value="sodouyinM" id="douyinOption">抖音搜索</option>
+                <option value="sodouyinM">抖音搜索</option>
                 <option value="yzmsmM" id="shenmaOption">神马搜索</option>
-                <option value="sotoutiaoM" id="toutiaoOption">头条搜索</option>
+                <option value="sotoutiaoM">头条搜索</option>
                 <option value="qksmSearch" id="quarksoOption">夸克搜索</option>
                 <option value="baiduMEasy" id="baidueasyOption">百度精简版</option>
             </optgroup>
             <optgroup label="AI搜索" id="aiSearchGroup">
                 <option value="metasosuoAI">秘塔搜索</option>
-                <option value="baiduAI">百度AI</option>
-                <option value="360namisoAI">360纳米AI</option>
+                <option value="baiduAI">百度文心助手</option>
                 <option value="zhihuZhiDaAI">知乎直答(需登录)</option>
+                <option value="360namisoAI" id="namiAiDisabledOption">纳米AI(需登录)</option>
                 <option value="quarkpcAI" id="quarkaiOption">夸克AI(需登录)</option>
+                <option value="cKnowOfCsdn">C知道(需登录)</option>
             </optgroup>
             <optgroup label="快捷翻译" id="translateGroup">
                 <option value="googleTranslate">谷歌翻译</option>
                 <option value="mcTranslator">必应翻译</option>
                 <option value="yandexTranslate">Yandex翻译</option>
                 <option value="sogouFanyi">搜狗翻译</option>
-                <option value="oldBaiduFanyi" id="baiduFanyiOption">百度翻译</option>
+                <option value="oldBaiduFanyi">百度翻译</option>
                 <option value="fanyiSo">360翻译</option>
                 <option value="quarkTranslateTools" id="quarkFanyiOption">夸克翻译</option>
-                <option value="volcTranslate">火山翻译</option>
                 <option value="transmartQQTs" id="tencentFanyi2">腾讯交互翻译</option>
             </optgroup>
             <optgroup label="购物" id="shoppingGroup">
                 <option value="taobaoWeb">淘宝(需登录)</option>
                 <option value="jdWebPage">京东(需登录)</option>
+                <option value="pddWebPage" id="pinduoduoOption">拼多多(需登录)</option>
             </optgroup>
             <optgroup label="视频" id="videoGroup">
                 <option value="biliTv">哔哩哔哩</option>
                 <option value="dyIsWindows" id="douyinpcOption">抖音电脑版</option>
                 <option value="haokanVideo">好看视频</option>
-                <option value="enUsYoutubeVideo">Youtube</option>
+                <option value="fastHandVideo" id="kuaiHandOption">快手(需登录)</option>
+                <option value="hongshuVideo" id="xHongshuOption">小红书(需登录)</option>
+                <option value="soHuVideo">搜狐视频(含广告)</option>
+                <option value="tencentTv">腾讯视频(含广告)</option>
+                <option value="enUsYoutubeVideo">Youtube(含广告)</option>
             </optgroup>
             <optgroup label="社区\博客" id="communityGroup">
                 <option value="githubCode">Github</option>
+                <option value="gitCodeRepo">GitCode</option>
+                <option value="giteeCode">Gitee</option>
                 <option value="zhihuFriends">知乎(需登录)</option>
                 <option value="csdnWebPage">CSDN(含付费)</option>
                 <option value="weiboFriends">微博(电脑需登录)</option>
@@ -386,7 +533,7 @@
                 <option value="customSearch" id="customSearchOption">自定义</option>
             </optgroup>
         </select>
-        <input type="search" id="urlInput" placeholder="输入网址" style="height: 24px;">
+        <input type="search" id="urlInput" placeholder="输入网址" style="height: 24px;" autocomplete="off" autofill="off" autofill-preview="off" autofill-section="off">
         <button type="submit" id="submitBtn" style="height: 24px; white-space: nowrap; overflow: hidden;">跳转</button>
     </div>
     
@@ -396,7 +543,7 @@
         <label id="closeAllIframePlusBtn" style="display: inline-block; vertical-align: middle; cursor: pointer; user-select: none;">关闭窗口</label>
     </div>
     
-    <div id="autoFillhttps" style="display: none; text-align: center; margin-top: 10px;" aria-hidden="true">
+    <div id="showToolPanel" style="display: none; text-align: center; margin-top: 10px;" aria-hidden="true">
         <div style="display: inline-block;">
             <input type="checkbox" id="customCheckbox">
                 <label for="customCheckbox">自动填充Https</label>
@@ -506,9 +653,11 @@
             <input type="submit" id="linkSpacingBtn" style="display: none;">
             <label id="showMoreLabelBtns" for="quickLinksSizePicker" style="vertical-align: middle; cursor: pointer;">快捷链接大小: <span id="quickLinksSizeValue">Default</span></label>
             <input type="text" id="quickLinksSizePicker" style="display: none;">
-            <label class="text-select-wrapper"><select id="searchApiSelect">
-                <option value="baidu_sugrec">建议接口: 百度1</option>
+            <label class="text-select-wrapper"><select id="searchApiSelect" disabled>
+                <option value="baidu_sugrec" selected>建议接口: 百度1</option>
                 <option value="baidu_su">建议接口: 百度2</option>
+                <option value="google_sug">建议接口: 谷歌</option>
+                <option value="so_sug">建议接口: 360</option>
             </select></label>
             <div id="showMoreCheckboxBlock">
                 <input type="checkbox" id="clearOnSearchCheckbox">
@@ -543,13 +692,67 @@
                 <option value="center" selected>快捷链接: 居中</option>
                 <option value="right">快捷链接: 靠右</option>
             </select></label>
+            <div id="showMoreCheckboxBlock">
+                <label class="text-select-wrapper">
+                    <select id="rightClickActionSelect">
+                        <option value="disabled">右键操作: 禁用</option>
+                        <option value="focusInput">右键操作: 聚焦</option>
+                    </select>
+                </label>
+                <label for="rightClickActionSelect" style="vertical-align: middle; display: none;">右键/长按操作</label>
+            </div>
+            <div id="showMoreCheckboxBlock">
+                <input type="checkbox" id="swipeSwitchCheckbox">
+                <label for="swipeSwitchCheckbox">左右滑动切换选项</label>
+            </div>
+            <div id="showMoreCheckboxBlock">
+                <label id="hitokotoColorBtn" for="hitokotoColorPicker" style="vertical-align: middle; cursor: pointer;">一言颜色: <span id="hitokotoColorValue">#000000</span></label>
+                <input type="text" id="hitokotoColorPicker" style="display: none;">
+            </div>
+            <div id="showMoreCheckboxBlock">
+                <label id="hitokotoStyleBtn" style="vertical-align: middle; cursor: pointer;">一言字体样式: <span id="hitokotoStyleValue">italic</span></label>
+            </div>
+            <label id="showMoreLabelBtns" for="hitokotoSizePicker" style="vertical-align: middle; cursor: pointer;">一言大小: <span id="hitokotoSizeValue">14px</span></label>
+            <input type="text" id="hitokotoSizePicker" style="display: none;">
+            <label id="showMoreLabelBtns" for="historyLinksSizePicker" style="vertical-align: middle; cursor: pointer;">历史链接大小: <span id="historyLinksSizeValue">Default</span></label>
+            <input type="text" id="historyLinksSizePicker" style="display: none;">
+            <div id="showMoreCheckboxBlock">
+                <input type="checkbox" id="searchHistoryInSuggestCheckbox" disabled>
+                <label for="searchHistoryInSuggestCheckbox">新版历史记录</label>
+            </div>
+            <label id="showMoreLabelBtns" for="historyLinksColorPicker" style="vertical-align: middle; cursor: pointer;">历史链颜色: <span id="historyLinksColorValue">#0000ee</span></label>
+            <input type="text" id="historyLinksColorPicker" style="display: none;">
+            <label id="showMoreLabelBtns" for="quickInputRowSelectBtn" style="vertical-align: middle; cursor: pointer;">快捷输入行显示</label>
+            <input type="submit" id="quickInputRowSelectBtn" style="display: none;">
+            <div id="showMoreCheckboxBlock">
+                <input type="checkbox" id="wheelScrollCheckbox">
+                <label for="wheelScrollCheckbox">滚轮支持光标移动</label>
+            </div>
+            <label class="text-select-wrapper"><select id="hitokotoApiSelect">
+                <option value="hitokApi_v1" selected>一言接口: V1</option>
+                <option value="hitokApi_v2">一言接口: V2</option>
+                <option value="hitokApi_v3">一言接口: V3</option>
+                <option value="hitokApi_v4">一言接口: V4</option>
+                <option value="hitokApi_v5">一言接口: V5</option>
+                <option value="hitokApi_v6">一言接口: V6</option>
+                <option value="hitokApi_v7">一言接口: V7</option>
+                <option value="hitokApi_v8">一言接口: V8</option>
+                <option value="hitokApi_v9">一言接口: V9</option>
+            </select></label>
+            <label id="showMoreLabelBtns" for="hitokotoTypeBtn" style="vertical-align: middle; cursor: pointer;">一言显示高级设置</label>
+            <input type="submit" id="hitokotoTypeBtn" style="display: none;">
+            <label id="showMoreLabelBtns" for="searchContainerMaxWidthBtn" style="vertical-align: middle; cursor: pointer;">搜索框最大宽: <span id="searchContainerMaxWidthValue">800px</span></label>
+            <input type="submit" id="searchContainerMaxWidthBtn" style="display: none;">
+            <label id="showMoreLabelBtns" for="toolPanelSpacingBtn" style="vertical-align: middle; cursor: pointer;">工具面板间距</label>
+            <input type="submit" id="toolPanelSpacingBtn" style="display: none;">
+            <div id="showMoreCheckboxBlock">
+                <label id="localStorageManagerBtn" style="display: none; vertical-align: middle; cursor: pointer;">LocalStorage管理</label>
+            </div>
             <label id="showMoreSettingsBtn" style="vertical-align: middle; cursor: pointer;">展开更多设置</label>
             <label for="clearAllSettingsBtn" style="vertical-align: middle; cursor: pointer;">重置所有设置</label>
             <br/>
-            <label style="margin-right: 0;" id="noActiveLab">超链接:</label>
-            <span id="linkCreatorBtn">
-            <label for="linkCreatorBtn0" style="margin-right: 0; vertical-align: middle; cursor: pointer;">新建</label>
-            </span>
+            <label for="quickLinksHeadName" style="margin-right: 0;" id="noActiveLab">超链接:</label>
+            <label for="linkCreatorBtn" style="margin-right: 0; vertical-align: middle; cursor: pointer;">新建</label>
             <label for="defaultLinksBtn" style="margin-right: 0; vertical-align: middle; cursor: pointer;">书签</label>
             <label for="importLinksBtn" style="margin-right: 0; vertical-align: middle; cursor: pointer;">导入</label>
             <label for="exportLinksBtn" style="margin-right: 0; vertical-align: middle; cursor: pointer;">导出</label>
@@ -558,7 +761,7 @@
             <div id="linkCreatorPanel" style="display: none; margin-top: 10px; margin-bottom: -20px;">
         </div>
         <br/>
-        <div style="margin-top: 10px;">
+        <div id="browserInfosBlock" style="margin-top: 10px;">
             <span id="browserInfo"></span>
         </div>
     </div>
@@ -597,7 +800,6 @@
         <button><span>.cn</span></button>
         <button><span>.net</span></button>
         </div>
-        <br/>
         <div id="quickInputBtn2">
             <button id="pos_minusInf"><span>-Inf</span></button>
             <button id="pos_minus10"><span>-10</span></button>
@@ -606,7 +808,6 @@
             <button id="pos_plus10"><span>+10</span></button>
             <button id="pos_plusInf"><span>+Inf</span></button>
         </div>
-        <br/>
         <div id="quickInputBtn3">
             <button><span>/</span></button>
             <button><span>\</span></button>
@@ -628,6 +829,283 @@
     
     <div id="hitokotoDisplay" style="display: none; left: 0; right: 0; margin: 0 auto; margin-top: 10px; text-align: center; font-size: 14px; font-style: italic; top: 85%;"></div>
     
-    <script src="corescript.js" type="text/javascript"></script>
+    
+    <!-- ========== IE4-IE7专属兼容传统跳转搜索 ========== -->
+    <script type="text/javascript">
+    (function() {
+        var isIE4or5or6 = false;
+        var isIE4 = false;
+        var ua = navigator.userAgent;
+        var msiePos = -1;
+        var msieSearch = 'MSIE ';
+        for (var i = 0; i < ua.length - msieSearch.length + 1; i++) {
+            var match = true;
+            for (var j = 0; j < msieSearch.length; j++) {
+                if (ua.charAt(i + j) !== msieSearch.charAt(j)) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                msiePos = i;
+                break;
+            }
+        }
+        if (msiePos !== -1) {
+            var versionStart = msiePos + msieSearch.length;
+            var versionEnd = versionStart;
+            while (versionEnd < ua.length && ua.charAt(versionEnd) >= '0' && ua.charAt(versionEnd) <= '9') {
+                versionEnd++;
+            }
+            if (versionEnd > versionStart) {
+                var versionStr = '';
+                for (var k = versionStart; k < versionEnd; k++) {
+                    versionStr += ua.charAt(k);
+                }
+                var version = parseInt(versionStr, 10);
+                if (version <= 7) { // 注释 >
+                    isIE4or5or6 = true;
+                    if (version <= 4) { // 注释 >
+                        isIE4 = true;
+                    }
+                }
+            }
+        }
+        
+        // 【修改】根据IE版本选择编码函数
+        function encodeUrl(str) {
+            if (isIE4) {
+                // IE4浏览器：使用escape编码
+                if (typeof escape === 'function') {
+                    return escape(str);
+                }
+                return str;
+            } else {
+                // IE5及以上浏览器：使用encodeURIComponent编码
+                if (typeof encodeURIComponent === 'function') {
+                    return encodeURIComponent(str);
+                }
+                // 如果encodeURIComponent不可用，回退到escape
+                if (typeof escape === 'function') {
+                    return escape(str);
+                }
+                return str;
+            }
+        }
+        
+        if (isIE4or5or6) {
+            function getElem(id) {
+                if (typeof document.getElementById === 'function') {
+                    return document.getElementById(id);
+                } else if (typeof document.all !== 'undefined') {
+                    return document.all[id] || null;
+                } else {
+                    var elements = document.getElementsByTagName('*');
+                    for (var i = 0; i < elements.length; i++) {
+                        if (elements[i].id && elements[i].id === id) {
+                            return elements[i];
+                        }
+                    }
+                    return null;
+                }
+            }
+            var submitBtn = getElem('submitBtn');
+            var urlInput = getElem('urlInput');
+            var engineSelect = getElem('engineSelect');
+            
+            function hasProtocol(str) {
+                var protocols = ['://'];
+                for (var i = 0; i < protocols.length; i++) {
+                    var proto = protocols[i];
+                    var found = false;
+                    var pos = 0;
+                    while (pos < str.length) {
+                        var match = true;
+                        for (var j = 0; j < proto.length; j++) {
+                            if (pos + j >= str.length || str.charAt(pos + j) !== proto.charAt(j)) {
+                                match = false;
+                                break;
+                            }
+                        }
+                        if (match) {
+                            found = true;
+                            break;
+                        }
+                        pos++;
+                    }
+                    if (found) return true;
+                }
+                return false;
+            }
+            function getSearchUrl(keyword, engine) {
+                if (!keyword) return '';
+                if (hasProtocol(keyword)) return keyword;
+                if (engine === 'baidu') {
+                    return 'http://www.baidu.com/s?wd=' + encodeUrl(keyword);
+                } else if (engine === 'google') {
+                    return 'http://www.google.com/search?q=' + encodeUrl(keyword);
+                } else if (engine === 'bing') {
+                    return 'http://www.bing.com/search?q=' + encodeUrl(keyword);
+                } else if (engine === 'sogou') {
+                    return 'http://www.sogou.com/web?query=' + encodeUrl(keyword);
+                } else if (engine === 'so') {
+                    return 'http://www.so.com/s?ie=utf-8&src=doodle&q=' + encodeUrl(keyword);
+                } else if (engine === 'autofillHttp1') {
+                    return 'http://' + encodeUrl(keyword);
+                } else if (engine === 'autofillHttps') {
+                    return 'https://' + encodeUrl(keyword);
+                } else if (engine === 'baiduTw') {
+                    return 'https://www.baidu.com/s?cl=3&tn=baidubig5&ie=utf8&wd=' + encodeUrl(keyword);
+                } else {
+                    return 'http://www.baidu.com/s?wd=' + encodeUrl(keyword);
+                }
+            }
+            
+            if (submitBtn && urlInput) {
+                submitBtn.onclick = function(e) {
+                    e = e || window.event;
+                    var keyword = urlInput.value;
+                    if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                        return false;
+                    }
+                    var engine = engineSelect ? engineSelect.value : 'baidu';
+                    var searchUrl = getSearchUrl(keyword, engine);
+                    location.href = searchUrl;
+                    return false;
+                };
+                submitBtn.onmouseup = function() {
+                    var keyword = urlInput.value;
+                    if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                        return false;
+                    }
+                    var engine = engineSelect ? engineSelect.value : 'baidu';
+                    var searchUrl = getSearchUrl(keyword, engine);
+                    location.href = searchUrl;
+                    return false;
+                };
+            }
+            
+            if (urlInput) {
+                urlInput.onkeydown = function(e) {
+                    e = e || window.event;
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode === 13) {
+                        e.returnValue = false;
+                        var keyword = urlInput.value;
+                        if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                            return false;
+                        }
+                        var engine = engineSelect ? engineSelect.value : 'baidu';
+                        var searchUrl = getSearchUrl(keyword, engine);
+                        location.href = searchUrl;
+                        return false;
+                    }
+                    return true;
+                };
+                urlInput.onkeyup = function(e) {
+                    e = e || window.event;
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode === 13) {
+                        e.returnValue = false;
+                        var keyword = urlInput.value;
+                        if (!keyword || keyword === 'https://' || keyword === 'http://') {
+                            return false;
+                        }
+                        var engine = engineSelect ? engineSelect.value : 'baidu';
+                        var searchUrl = getSearchUrl(keyword, engine);
+                        location.href = searchUrl;
+                        return false;
+                    }
+                    return true;
+                };
+            }
+            var searchContainers = document.getElementById('searchContainer');
+            var engineSelects = document.getElementById('engineSelect');
+            var urlInputs = document.getElementById('urlInput');
+            var submitBtns = document.getElementById('submitBtn');
+            
+            if (searchContainers) {
+                searchContainers.style.display = 'block';
+                searchContainers.style.width = '100%';
+                searchContainers.style.textAlign = 'center';
+                searchContainers.style.zoom = '1';
+            }
+            if (engineSelects) {
+                engineSelects.style.display = 'inline';
+                engineSelects.style.width = '80px';
+                engineSelects.style.height = '22px';
+                engineSelects.style.zoom = '1';
+            }
+            if (urlInputs) {
+                urlInputs.style.display = 'inline';
+                urlInputs.style.width = '55%';
+                urlInputs.style.height = '22px';
+                urlInputs.style.zoom = '1';
+            }
+            if (submitBtns) {
+                submitBtns.style.display = 'inline';
+                submitBtns.style.height = '22px';
+                submitBtns.style.zoom = '1';
+            }
+        } else {
+            // 创建script元素
+            document.write('<script src="corescript.js" type="text/javascript" charset="UTF-8"><\/script>');
+        }
+    })();
+    (function() {
+        var isOldIE = false;
+        var ua = navigator.userAgent;
+        var msiePos = -1;
+        var msieSearch = 'MSIE ';
+        for (var i = 0; i < ua.length - msieSearch.length + 1; i++) {
+            var match = true;
+            for (var j = 0; j < msieSearch.length; j++) {
+                if (ua.charAt(i + j) !== msieSearch.charAt(j)) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                msiePos = i;
+                break;
+            }
+        }
+        if (msiePos !== -1) {
+            var versionStart = msiePos + msieSearch.length;
+            var versionEnd = versionStart;
+            while (versionEnd < ua.length && ua.charAt(versionEnd) >= '0' && ua.charAt(versionEnd) <= '9') { // 注释 >
+                versionEnd++;
+            }
+            if (versionEnd > versionStart) {
+                var versionStr = '';
+                for (var k = versionStart; k < versionEnd; k++) {
+                    versionStr += ua.charAt(k);
+                }
+                var version = parseInt(versionStr, 10);
+                if (version <= 8) isOldIE = true; // 注释 >
+            }
+        }
+        
+        if (isOldIE) {
+            var tipDiv = document.createElement('div');
+            tipDiv.id = 'ieVersionTip';
+            tipDiv.innerHTML = '你的浏览器版本过低，升级浏览器后可体验完整功能';
+            tipDiv.style.position = 'absolute';
+            tipDiv.style.top = '0';
+            tipDiv.style.left = '0';
+            tipDiv.style.fontSize = '12px';
+            tipDiv.style.color = '#dddddd';
+            tipDiv.style.cursor = 'default';
+            tipDiv.style.padding = '2px 6px';
+            tipDiv.style.zIndex = '9999';
+            tipDiv.style.fontFamily = 'Arial, sans-serif';
+            if (document.body) {
+                document.body.appendChild(tipDiv);
+            } else {
+                document.write('<div id="ieVersionTip" style="position:absolute;top:0;left:0;font-size:12px;color:#dddddd;cursor:default;padding:2px 6px;z-index:9999;font-family:Arial, sans-serif;">你的浏览器版本过低，升级浏览器后可体验完整功能</div>');
+            }
+        }
+    })();
+    </script>
 </body>
 </html>
