@@ -8217,88 +8217,88 @@ function fetchHitokoto() {
     var hitokotoDisplay = document.getElementById('hitokotoDisplay');
     if (!hitokotoDisplay) return;
     
-    // 鼠标悬停时显示完整内容
-    hitokotoDisplay.addEventListener('mouseenter', function() {
-        var hideSource = false;
-        try {
-            if (typeof localStorage !== 'undefined' && localStorage) {
-                hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+    if (isMobileAndroidApple()) {
+        hitokotoDisplay.addEventListener('touchstart', function(e) {
+            var hideSource = false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+                }
+            } catch(e) {}
+            
+            if (hideSource) {
+                var fullText = this.getAttribute('data-fulltext');
+                if (fullText) {
+                    this.textContent = fullText;
+                    this.setAttribute('data-touch-active', 'true');
+                }
             }
-        } catch(e) {}
+        });
+        hitokotoDisplay.addEventListener('touchend', function(e) {
+            var hideSource = false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+                }
+            } catch(e) {}
+            
+            if (hideSource) {
+                var displayText = this.getAttribute('data-displaytext');
+                if (displayText) {
+                    this.textContent = displayText;
+                }
+            }
+        });
+        hitokotoDisplay.addEventListener('mouseleave', function() {
+            var hideSource = false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+                }
+            } catch(e) {}
+            
+            if (hideSource) {
+                var displayText = this.getAttribute('data-displaytext');
+                if (displayText) {
+                    this.textContent = displayText;
+                }
+            }
+        });
+    } else {
+        // 鼠标悬停时显示完整内容
+        hitokotoDisplay.addEventListener('mouseenter', function() {
+            var hideSource = false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+                }
+            } catch(e) {}
+            
+            if (hideSource) {
+                var fullText = this.getAttribute('data-fulltext');
+                if (fullText) {
+                    this.textContent = fullText;
+                }
+            }
+        });
         
-        if (hideSource) {
-            var fullText = this.getAttribute('data-fulltext');
-            if (fullText) {
-                this.textContent = fullText;
+        // 鼠标离开时恢复显示
+        hitokotoDisplay.addEventListener('mouseleave', function() {
+            var hideSource = false;
+            try {
+                if (typeof localStorage !== 'undefined' && localStorage) {
+                    hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
+                }
+            } catch(e) {}
+            
+            if (hideSource) {
+                var displayText = this.getAttribute('data-displaytext');
+                if (displayText) {
+                    this.textContent = displayText;
+                }
             }
-        }
-    });
-    
-    // 鼠标离开时恢复显示
-    hitokotoDisplay.addEventListener('mouseleave', function() {
-        var hideSource = false;
-        try {
-            if (typeof localStorage !== 'undefined' && localStorage) {
-                hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
-            }
-        } catch(e) {}
-        
-        if (hideSource) {
-            var displayText = this.getAttribute('data-displaytext');
-            if (displayText) {
-                this.textContent = displayText;
-            }
-        }
-    });
-    // ========== 【修改位置】点击时切换 active 状态，显示/隐藏来源 ==========
-    hitokotoDisplay.addEventListener('click', function(e) {
-        var hideSource = false;
-        try {
-            if (typeof localStorage !== 'undefined' && localStorage) {
-                hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
-            }
-        } catch(e) {}
-        
-        if (hideSource) {
-            var isActive = this.getAttribute('data-active') === 'true';
-            // 切换 active 状态
-            updateHitokotoDisplay(!isActive);
-        }
-    });
-    // ========== 【修改结束】 ==========
-    // 移动端触摸支持 - 触摸开始
-    hitokotoDisplay.addEventListener('touchstart', function(e) {
-        var hideSource = false;
-        try {
-            if (typeof localStorage !== 'undefined' && localStorage) {
-                hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
-            }
-        } catch(e) {}
-        
-        if (hideSource) {
-            var fullText = this.getAttribute('data-fulltext');
-            if (fullText) {
-                this.textContent = fullText;
-                this.setAttribute('data-touch-active', 'true');
-            }
-        }
-    });
-    hitokotoDisplay.addEventListener('touchend', function(e) {
-        var hideSource = false;
-        try {
-            if (typeof localStorage !== 'undefined' && localStorage) {
-                hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
-            }
-        } catch(e) {}
-        
-        if (hideSource) {
-            var fullText = this.getAttribute('data-fulltext');
-            if (fullText) {
-                this.textContent = fullText;
-                this.setAttribute('data-touch-active', 'true');
-            }
-        }
-    });
+        });
+    }
 })();
 // ========== 【修改结束】 ==========
 
