@@ -7404,7 +7404,7 @@ document.getElementById('hitokotoDisplay').addEventListener('contextmenu', funct
                 if (successful) {
                     alert('复制成功');
                 } else {
-                    prompt('Copy Text', hitokotoText);
+                    prompt('复制失败，请手动复制', hitokotoText);
                 }
             } catch (err) {
                 prompt('Copy Text', hitokotoText);
@@ -8217,6 +8217,8 @@ function fetchHitokoto() {
     var hitokotoDisplay = document.getElementById('hitokotoDisplay');
     if (!hitokotoDisplay) return;
     
+    var apiSelectElem = document.getElementById('hitokotoApiSelect');
+    
     if (isMobileAndroidApple()) {
         hitokotoDisplay.addEventListener('touchstart', function(e) {
             var hideSource = false;
@@ -8226,7 +8228,7 @@ function fetchHitokoto() {
                 }
             } catch(e) {}
             
-            if (hideSource) {
+            if (hideSource && apiSelectElem.value === 'hitokApi_v1') {
                 var fullText = this.getAttribute('data-fulltext');
                 if (fullText) {
                     this.textContent = fullText;
@@ -8242,7 +8244,7 @@ function fetchHitokoto() {
                 }
             } catch(e) {}
             
-            if (hideSource) {
+            if (hideSource && apiSelectElem.value === 'hitokApi_v1') {
                 var displayText = this.getAttribute('data-displaytext');
                 if (displayText) {
                     this.textContent = displayText;
@@ -8257,7 +8259,7 @@ function fetchHitokoto() {
                 }
             } catch(e) {}
             
-            if (hideSource) {
+            if (hideSource && apiSelectElem.value === 'hitokApi_v1') {
                 var displayText = this.getAttribute('data-displaytext');
                 if (displayText) {
                     this.textContent = displayText;
@@ -8269,12 +8271,12 @@ function fetchHitokoto() {
         hitokotoDisplay.addEventListener('mouseenter', function() {
             var hideSource = false;
             try {
-                if (typeof localStorage !== 'undefined' && localStorage) {
+                if (typeof localStorage === 'undefined' && localStorage) {
                     hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
                 }
             } catch(e) {}
             
-            if (hideSource) {
+            if (hideSource && apiSelectElem.value === 'hitokApi_v1') {
                 var fullText = this.getAttribute('data-fulltext');
                 if (fullText) {
                     this.textContent = fullText;
@@ -8286,12 +8288,12 @@ function fetchHitokoto() {
         hitokotoDisplay.addEventListener('mouseleave', function() {
             var hideSource = false;
             try {
-                if (typeof localStorage !== 'undefined' && localStorage) {
+                if (typeof localStorage === 'undefined' && localStorage) {
                     hideSource = localStorage.getItem('hitokotoHideSourceChecked') === 'true';
                 }
             } catch(e) {}
             
-            if (hideSource) {
+            if (hideSource && apiSelectElem.value !== 'hitokApi_v1') {
                 var displayText = this.getAttribute('data-displaytext');
                 if (displayText) {
                     this.textContent = displayText;
